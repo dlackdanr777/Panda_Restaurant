@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Muks.BackEnd;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -56,7 +58,7 @@ public sealed class DiamondConsumerRegressionTests
             Assert.That(grants, Is.EqualTo(scenario == "normal" ? 1 : 0), product + "/" + scenario);
             Assert.That(presentations, Is.EqualTo(scenario == "normal" ? 1 : 0), product + "/" + scenario);
             Assert.That(UserInfo.Money, Is.EqualTo(1000));
-            Assert.That(UserInfo.SkinToken, Is.EqualTo(scope.InitialSkinTokens));
+            Assert.That(UserInfo.PandaTokens, Is.EqualTo(scope.InitialPandaTokens));
             if (scenario == "normal")
             {
                 Assert.That(product == "furniture" ? UserInfo.IsGiveFurniture(EStage.Stage1, data.Id)
@@ -186,7 +188,7 @@ public sealed class DiamondConsumerRegressionTests
             int itemCount = UserInfo.GetGiveGachaItemCountDic().TryGetValue(item.Id, out int ownedCount) ? ownedCount : 0;
             Assert.That(itemCount, Is.EqualTo(scenario == "normal" && !skinMode ? count : 0), label);
             Assert.That(UserInfo.IsGiveStaffSkin(skin.Id), Is.EqualTo(scenario == "normal" && skinMode), label);
-            Assert.That(UserInfo.SkinToken, Is.EqualTo(scope.InitialSkinTokens + (scenario == "normal" && skinMode ? (count - 1) * 5 : 0)), label);
+            Assert.That(UserInfo.PandaTokens, Is.EqualTo(scope.InitialPandaTokens + (scenario == "normal" && skinMode ? (count - 1) * 5 : 0)), label);
             Assert.That((int)Field(typeof(UserInfo), "_totalUseGachaMachineCount").GetValue(null), Is.Zero,
                 "Count/save/animation are the isolated presentation callback; its count argument is checked below.");
             if (scenario == "normal")
@@ -221,17 +223,15 @@ public sealed class DiamondConsumerRegressionTests
         private readonly UnityEngine.Random.State _random = UnityEngine.Random.state;
         public StageInfo Stage { get; }
         public GameManager Game { get; }
-        public int InitialSkinTokens { get; }
+        public long InitialPandaTokens => 0;
 
         public ConsumerScope()
         {
-            InitialSkinTokens = UserInfo.SkinToken;
             ReplaceStatic(typeof(Muks.DataBind.DataBind), "_textBindDic", new Muks.DataBind.DataBindContainer<string>());
             foreach (FieldInfo field in typeof(UserInfo).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
                 if (typeof(Delegate).IsAssignableFrom(field.FieldType)) ReplaceStatic(typeof(UserInfo), field.Name, null);
             foreach (string name in new[] { "_dia", "_score", "_addCustomerDiaCount", "_feverDiaCount", "_staffCostCommitDepth", "_totalUseGachaMachineCount" })
                 ReplaceStatic(typeof(UserInfo), name, name == "_dia" ? 110 : 0);
-            ReplaceStatic(typeof(UserInfo), "_skinToken", InitialSkinTokens);
             foreach (string name in new[] { "_money", "_totalAddMoney", "_dailyAddMoney", "_weeklyAddMoney" })
                 ReplaceStatic(typeof(UserInfo), name, name == "_money" ? 1000L : 0L);
             ReplaceStatic(typeof(UserInfo), "_currentStage", EStage.Stage1);
@@ -252,10 +252,26 @@ public sealed class DiamondConsumerRegressionTests
             }
             Game = Create<GameManager>();
             ReplaceStatic(typeof(GameManager), "_instance", Game);
-            ReplaceStatic(typeof(CustomerController), "_callCustomers", new List<NormalCustomer>());
             ReplaceStatic(typeof(FurnitureDataManager), "_instance", Create<FurnitureDataManager>());
             ReplaceStatic(typeof(KitchenUtensilDataManager), "_instance", Create<KitchenUtensilDataManager>());
             ReplaceStatic(typeof(FoodDataManager), "_instance", Create<FoodDataManager>());
+            var context = new GameDataRestoreContext(() => "offline:diamond-consumer");
+            var query = context.BeginQuery();
+            var catalog = Resources.LoadAll<StaffData>("StaffData");
+            var row = new JObject
+            {
+                ["owner_inDate"] = new JObject { ["S"] = query.AccountInDate },
+                ["inDate"] = new JObject { ["S"] = "offline:row" },
+                ["Dia"] = new JObject { ["N"] = "110" },
+                ["StaffAccount"] = new JObject { ["S"] = "{\"Version\":1,\"Staff\":[],\"PandaTokens\":0}" }
+            };
+            var restored = context.TryRestore(query, true, new JObject { ["rows"] = new JArray(row) }.ToString(),
+                () => catalog, () => true);
+            Assert.That(restored.Status, Is.EqualTo(GameDataRestoreStatus.Ready), restored.Reason);
+            var backend = Create<BackendManager>();
+            SetField(backend, "_staffAccountRuntime", new StaffAccountRuntime(() => context.Result,
+                () => context.LegacyQuery, () => true, () => catalog));
+            ReplaceStatic(typeof(BackendManager), "_instance", backend);
         }
 
         public T Create<T>() where T : Component

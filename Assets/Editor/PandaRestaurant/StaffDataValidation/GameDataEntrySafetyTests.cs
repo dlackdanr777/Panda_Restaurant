@@ -75,18 +75,20 @@ public class GameDataEntrySafetyTests
             Assert.That(fixture.Manager.CanSaveLegacyGameData, Is.False);
             Assert.That(fixture.Manager.RestoredGameData, Is.Null);
             JObject initial = JObject.Parse(fixture.Transport.Inserts[0].Values.GetJson());
-            Assert.That(initial.Count, Is.EqualTo(65));
+            Assert.That(initial.Count, Is.EqualTo(67));
             Assert.That(initial["FirstTutorialStartRewardGranted"].Type, Is.EqualTo(JTokenType.Boolean));
             Assert.That((bool)initial["FirstTutorialStartRewardGranted"], Is.False);
             Assert.That((int)initial["Dia"], Is.Zero);
             Assert.That((long)initial["Money"], Is.Zero);
-            Assert.That((int)initial["SkinToken"], Is.Zero);
+            Assert.That(initial["SkinToken"], Is.Null);
             Assert.That((int)initial["TotalUseGachaMachineCount"], Is.Zero);
             Assert.That(initial[GameDataRestoreContext.StaffAccountFieldName], Is.Null);
             Assert.That((string)initial["LastAccessTime"], Is.EqualTo(FakeBackend.FixedTime.ToString()));
             foreach (JProperty property in initial.Properties())
             {
-                if (property.Value.Type == JTokenType.Integer) Assert.That((long)property.Value, Is.Zero, property.Name);
+                if (property.Value.Type == JTokenType.Integer)
+                    Assert.That((long)property.Value, Is.EqualTo(property.Name == CustomerEncounterCatalog.StateVersionField
+                        ? CustomerEncounterCatalog.StateVersion : 0), property.Name);
                 if (property.Value.Type == JTokenType.Boolean) Assert.That((bool)property.Value, Is.False, property.Name);
                 if (property.Value is JArray list) Assert.That(list, Is.Empty, property.Name);
             }
@@ -118,7 +120,6 @@ public class GameDataEntrySafetyTests
                 Assert.That(parsed.IsValid, Is.True);
                 Assert.That(parsed.Dia, Is.Zero);
                 Assert.That(parsed.Money, Is.Zero);
-                Assert.That(parsed.SkinToken, Is.Zero);
                 Assert.That(parsed.Score, Is.Zero);
                 Assert.That(parsed.TotalUseGachaMachineCount, Is.Zero);
                 Assert.That(parsed.IsFirstTutorialClear, Is.False);
@@ -1058,7 +1059,7 @@ public class GameDataEntrySafetyTests
         }).ToArray();
         return JsonConvert.SerializeObject(new
         {
-            UserInfo.Dia, UserInfo.Money, UserInfo.SkinToken, UserInfo.TotalUseGachaMachineCount,
+            UserInfo.Dia, UserInfo.Money, UserInfo.PandaTokens, UserInfo.TotalUseGachaMachineCount,
             UserInfo.CurrentStage, UserInfo.IsFirstTutorialClear, UserInfo.IsTutorialStart, Stages = stageState,
             PaymentInfo.PaymentDatas, PaymentInfo.GachaPaymentDatas
         });

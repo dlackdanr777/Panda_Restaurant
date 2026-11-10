@@ -153,7 +153,7 @@ public sealed class QuestStaffTutorialStateTests
     };
     private static string Response(JObject row) => new JObject { ["rows"] = new JArray(row), ["firstKey"] = JValue.CreateNull() }.ToString(Formatting.None);
     private static string GameState() => JsonConvert.SerializeObject(new
-    { UserInfo.Dia, UserInfo.Money, UserInfo.SkinToken, UserInfo.TotalUseGachaMachineCount,
+    { UserInfo.Dia, UserInfo.Money, UserInfo.PandaTokens, UserInfo.TotalUseGachaMachineCount,
         Payments = PaymentInfo.PaymentDatas, GachaPayments = PaymentInfo.GachaPaymentDatas });
 
     private sealed class Fixture : IDisposable

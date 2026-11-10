@@ -233,7 +233,7 @@ public sealed class TutorialRewardSchemaTests
     }
     private static string GameState() => JsonConvert.SerializeObject(new
     {
-        UserInfo.Dia, UserInfo.Money, UserInfo.SkinToken, UserInfo.TotalUseGachaMachineCount,
+        UserInfo.Dia, UserInfo.Money, UserInfo.PandaTokens, UserInfo.TotalUseGachaMachineCount,
         Payments = PaymentInfo.PaymentDatas, GachaPayments = PaymentInfo.GachaPaymentDatas
     });
 }

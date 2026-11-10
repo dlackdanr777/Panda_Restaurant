@@ -13,6 +13,93 @@ using Object = UnityEngine.Object;
 public partial class StaffStageMigrationCollectionTests
 {
     [Test]
+    public void EconomyBackend_StaffSkinPurchaseAndDuplicateRewardUseOnlyPandaTokens()
+    {
+        using (var scope = new EconomyUserInfoScope())
+        using (var staffScope = new RuntimeStaffScope(Catalog()))
+        {
+            var fixture = CreateAccountRuntimeFixture(out _);
+            var backendField = Field(typeof(BackendManager), "_instance", true);
+            var skinManagerField = Field(typeof(SkinDataManager), "_instance", true);
+            var skinDictionaryField = Field(typeof(SkinDataManager), "_staffSkinDataDic", true);
+            object oldBackend = backendField.GetValue(null), oldManager = skinManagerField.GetValue(null);
+            object oldDictionary = skinDictionaryField.GetValue(null);
+            var stagesField = Field(typeof(UserInfo), "_stageInfos", true);
+            var stageField = Field(typeof(UserInfo), "_currentStage", true);
+            object oldStages = stagesField.GetValue(null), oldStage = stageField.GetValue(null);
+            var root = new GameObject("Inactive isolated token skin manager");
+            root.SetActive(false);
+            var skin = ScriptableObject.CreateInstance<StaffSkinData>();
+            try
+            {
+                fixture.Manager = BackendManager.CreateEditorOfflineOwner(fixture.Game, fixture.Stage,
+                    UserInfo.StaffPurchaseWallet, _ => null, _ => { });
+                Authenticate(fixture, fixture.Account);
+                RestoreAccountJson(fixture, CommonAccountJson());
+                backendField.SetValue(null, fixture.Manager);
+                skinManagerField.SetValue(null, root.AddComponent<SkinDataManager>());
+                typeof(BasicData).GetField("_id", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(skin, "SKIN_STAFF_TOKEN_TEST");
+                Field(typeof(SkinData), "_equipId").SetValue(skin, "STAFF01");
+                Field(typeof(SkinData), "_buyPrice").SetValue(skin, 40);
+                Field(typeof(SkinData), "_duplicationToken").SetValue(skin, 5);
+                skinDictionaryField.SetValue(null, new Dictionary<string, StaffSkinData> { [skin.Id] = skin });
+                stagesField.SetValue(null, new[] { fixture.Stage.Runtime[EStage.Stage1],
+                    fixture.Stage.Runtime[EStage.Stage2], fixture.Stage.Runtime[EStage.Stage3] });
+                stageField.SetValue(null, EStage.Stage1);
+                fixture.Game.LatestFactory = () =>
+                {
+                    var values = new Param();
+                    values.Add("GiveStaffSkinList", new List<string>((HashSet<string>)
+                        Field(typeof(UserInfo), "_giveStaffSkinSet", true).GetValue(null)));
+                    return values;
+                };
+                int changes = 0, grants = 0;
+                bool ownedAtNotification = false, reentrantPurchase = false;
+                UserInfo.OnChangePandaTokensHandler += () =>
+                {
+                    changes++;
+                    ownedAtNotification = UserInfo.IsGiveStaffSkin(skin.Id);
+                    reentrantPurchase |= UserInfo.TryPurchaseStaffSkin(skin, out _);
+                };
+                UserInfo.OnGiveStaffSkinHandler += () => grants++;
+                Assert.That(UserInfo.PandaTokens, Is.EqualTo(55));
+                Assert.That(UserInfo.TryPurchaseStaffSkin(skin, out string error), Is.True, error);
+                Assert.That(UserInfo.PandaTokens, Is.EqualTo(15));
+                Assert.That(changes, Is.EqualTo(1));
+                Assert.That(ownedAtNotification, Is.True);
+                Assert.That(reentrantPurchase, Is.False, "Listener reentry cannot buy twice.");
+                Assert.That(grants, Is.EqualTo(1));
+                Assert.That(UserInfo.TryPurchaseStaffSkin(skin, out _), Is.False);
+                Assert.That(fixture.Game.Writes, Is.EqualTo(1));
+                var saved = JObject.Parse(fixture.Game.WriteValues[0].GetJson());
+                Assert.That(saved["SkinToken"], Is.Null);
+                Assert.That((string)saved["GiveStaffSkinList"][0], Is.EqualTo(skin.Id));
+                Assert.That(StaffAccountSaveConverter.Read((string)saved["StaffAccount"]).Data.PandaTokens, Is.EqualTo(15));
+                fixture.Game.WriteReplies[0](Bro("204", ""));
+                UserInfo.GiveStaffSkin(skin);
+                Assert.That(UserInfo.PandaTokens, Is.EqualTo(20));
+                Assert.That(changes, Is.EqualTo(2));
+                Assert.That(grants, Is.EqualTo(1), "Duplicate rewards do not grant the skin twice.");
+                Assert.That(UserInfo.TryAddPandaTokens(long.MaxValue, out error), Is.False);
+                Assert.That(UserInfo.PandaTokens, Is.EqualTo(20));
+            }
+            finally
+            {
+                fixture.Manager.InvalidateGameDataRestore();
+                fixture.Manager.DestroyEditorOfflineOwner();
+                backendField.SetValue(null, oldBackend);
+                skinManagerField.SetValue(null, oldManager);
+                skinDictionaryField.SetValue(null, oldDictionary);
+                stagesField.SetValue(null, oldStages);
+                stageField.SetValue(null, oldStage);
+                Object.DestroyImmediate(root);
+                Object.DestroyImmediate(skin);
+            }
+        }
+    }
+
+    [Test]
     public void EconomyBackend_OneAtomicPayload_AcknowledgementAndDuplicateCallback_UsesRealRuntime()
     {
         using (var scope = new EconomyUserInfoScope())
@@ -28,6 +115,8 @@ public partial class StaffStageMigrationCollectionTests
                 int commits = 0; service.Committed += _ => commits++;
                 var before = service.Snapshot;
                 Assert.That(service.TryExchange("item:OFFLINE-ECONOMY-ITEM", 1, null, out string error), Is.True, error);
+                Assert.That(fixture.Manager.StaffRuntime.TryChangePandaTokens(5, out _), Is.False,
+                    "Skin rewards/purchases cannot alter a reserved gacha account.");
                 Assert.That(fixture.Game.Writes, Is.EqualTo(purchaseWrite + 1));
                 Assert.That(service.Snapshot.HasSameState(before), Is.True, "No debit or grant before acknowledgement");
                 Assert.That(service.TryDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, null, out _), Is.False);
@@ -300,7 +389,8 @@ public partial class StaffStageMigrationCollectionTests
             Replace("_dia",110); Replace("_totalUseGachaMachineCount",0);
             Replace("_staffCostCommitDepth",1); // Suppress live DataBind notifications for this isolated wallet scope.
             Replace("_notificationMessageSet",new HashSet<string>()); Replace("_clearNotificationMessageSet",new HashSet<string>());
-            foreach(string name in new[]{"OnChangeDiaHandler","OnGiveGachaItemHandler","OnGiveRecipeHandler","OnGiveStaffHandler","OnUseGachaMachineHandler","OnAddNotificationHandler"})
+            Replace("_giveStaffSkinSet", new HashSet<string>());
+            foreach(string name in new[]{"OnChangeDiaHandler","OnChangePandaTokensHandler","OnGiveStaffSkinHandler","OnGiveGachaItemHandler","OnGiveRecipeHandler","OnGiveStaffHandler","OnUseGachaMachineHandler","OnAddNotificationHandler"})
             {
                 var field=typeof(UserInfo).GetField(name,BindingFlags.Static|BindingFlags.NonPublic);
                 if(field!=null){_original[field]=field.GetValue(null);field.SetValue(null,null);}

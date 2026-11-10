@@ -20,7 +20,7 @@ public sealed class UserGachaCountRestoreTests
             int useEvents = 0, diamondEvents = 0, tokenEvents = 0;
             UserInfo.OnUseGachaMachineHandler += () => useEvents++;
             UserInfo.OnChangeDiaHandler += () => diamondEvents++;
-            UserInfo.OnChangeSkinTokenHandler += () => tokenEvents++;
+            UserInfo.OnChangePandaTokensHandler += () => tokenEvents++;
             string paymentsBefore = JsonConvert.SerializeObject(PaymentInfo.PaymentDatas);
             string gachaPaymentsBefore = JsonConvert.SerializeObject(PaymentInfo.GachaPaymentDatas);
 
@@ -50,10 +50,10 @@ public sealed class UserGachaCountRestoreTests
                     Assert.That((int)savedAgain["TotalUseGachaMachineCount"], Is.EqualTo(count));
                     Assert.That(UserInfo.Dia, Is.EqualTo(73));
                     Assert.That(UserInfo.Money, Is.EqualTo(1234L));
-                    Assert.That(UserInfo.SkinToken, Is.EqualTo(19));
+                    Assert.That(UserInfo.PandaTokens, Is.Null, "Legacy SkinToken is not a second runtime wallet.");
                     Assert.That((int)savedAgain["Dia"], Is.EqualTo(73));
                     Assert.That((long)savedAgain["Money"], Is.EqualTo(1234L));
-                    Assert.That((int)savedAgain["SkinToken"], Is.EqualTo(19));
+                    Assert.That(savedAgain["SkinToken"], Is.Null, "Retired fields are not written back.");
                     Assert.That(useEvents, Is.Zero, "Restore must not count another purchase or publish a use event");
                     Assert.That(diamondEvents, Is.Zero, "Restore must not award/spend diamonds");
                     Assert.That(tokenEvents, Is.Zero, "Restore must not award tokens");

@@ -187,6 +187,40 @@ public sealed class StaffAccountRuntime
     }
 
     public bool IsOwned(string id) => GetLevel(id).HasValue;
+
+    public bool CanChangePandaTokens(long delta, out string error)
+    {
+        error = null;
+        if (!CanMutate || _mode != StaffAccountRuntimeMode.Common)
+        { error = "현재 계정의 판다토큰을 변경할 수 없습니다."; return false; }
+        try
+        {
+            if (checked(_current.PandaTokens + delta) < 0)
+            { error = "판다토큰이 부족합니다."; return false; }
+        }
+        catch (OverflowException)
+        { error = "판다토큰 수량 범위를 초과했습니다."; return false; }
+        return true;
+    }
+
+    public bool TryChangePandaTokens(long delta, out string error)
+    {
+        if (!CanChangePandaTokens(delta, out error)) return false;
+        _changing = true;
+        try
+        {
+            var before = _current;
+            var query = _query;
+            var next = new StaffAccountSaveData(before.Version, before.Staff,
+                checked(before.PandaTokens + delta), before.GachaEconomy);
+            if (!StillSame(query, before, StaffAccountRuntimeMode.Common))
+            { error = "판다토큰 변경 중 계정 상태가 변경되었습니다."; return false; }
+            _current = next;
+            return true;
+        }
+        finally { _changing = false; }
+    }
+
     internal bool TryCommitEconomy(BackendGachaEconomyStore store, GameDataSaveReceipt receipt, out string error)
     {
         error = null; Refresh();

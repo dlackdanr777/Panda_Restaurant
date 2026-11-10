@@ -54,10 +54,6 @@ public class LoadUserData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
-    public int SkinToken;
-
-
-
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
     public Dictionary<string, int> RecipeCookCountDic = new Dictionary<string, int>();
 
@@ -123,7 +119,7 @@ public class LoadUserData
             "TotalCleanCount", "DailyCleanCount", "WeeklyCleanCount", "TotalVisitSpecialCustomerCount",
             "TotalExterminationGatecrasherCustomer1Count", "TotalExterminationGatecrasherCustomer2Count",
             "WeeklyExterminationGatecrasherCustomerCount", "TotalUseGachaMachineCount", "TotalAttendanceDays",
-            "SkinToken", "AddCustomerAdCount", "DoubleTipCounterAdCount", "FeverAdCount",
+            "AddCustomerAdCount", "DoubleTipCounterAdCount", "FeverAdCount",
             "AddCustomerDiaCount", "FeverDiaCount", "DailyAdGoldRewardCount", "DailyAdDiaRewardCount"
         })
             param.Add(field, 0);
@@ -228,7 +224,6 @@ public class LoadUserData
             LoadCustomerDataList(data);
             LoadCustomerEncounterState(data);
             LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
-            SkinToken = GetInt("SkinToken");
             LoadTimeData(data);
             foreach (var item in TimeDataDic)
             {

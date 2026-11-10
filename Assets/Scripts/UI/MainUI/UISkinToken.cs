@@ -10,7 +10,7 @@ public class UISkinToken : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _tokenText;
     [SerializeField] private ParticleSystem _animeEffect;
 
-    private long _currentMoney;
+    private long? _currentMoney;
     private Vector3 _tmpScale;
     private Coroutine _moneyAnimeRoutine;
 
@@ -21,18 +21,17 @@ public class UISkinToken : MonoBehaviour
 
     private void OnEnable()
     {
-        _currentMoney = UserInfo.SkinToken;
-        _tokenText.text = Utility.ConvertToMoney(UserInfo.SkinToken);
+        RefreshTokens(UserInfo.PandaTokens, false);
     }
 
+    private void Update()
+    {
+        RefreshTokens(UserInfo.PandaTokens, true);
+    }
 
     private void Init()
     {
-
-        _currentMoney = UserInfo.SkinToken;
         _tmpScale = _rect.localScale;
-
-        UserInfo.OnChangeSkinTokenHandler += OnChangeSkinToken;
     }
 
 
@@ -48,48 +47,52 @@ public class UISkinToken : MonoBehaviour
     }
 
 
-    private void OnChangeSkinToken()
+    private void RefreshTokens(long? balance, bool animate)
     {
-        if (!gameObject.activeInHierarchy)
+        if (animate && balance == _currentMoney)
             return;
 
-        long addMoney = UserInfo.SkinToken - _currentMoney;
-
-        if (addMoney == 0)
+        long? previous = _currentMoney;
+        StopMoneyAnime();
+        _currentMoney = balance;
+        if (!animate || !previous.HasValue || !balance.HasValue)
+        {
+            _tokenText.SetText(balance.HasValue ? Utility.ConvertToMoney(balance.Value) : "-");
             return;
+        }
 
-        _currentMoney = UserInfo.SkinToken;
-       
-        if(_moneyAnimeRoutine != null)
-            StopCoroutine( _moneyAnimeRoutine );
-
-        _moneyAnimeRoutine = StartCoroutine(AddMoneyAnime(addMoney));
-
+        _moneyAnimeRoutine = StartCoroutine(AddMoneyAnime(previous.Value, balance.Value));
         StartAnime();
     }
 
 
-    private IEnumerator AddMoneyAnime(long addMoney)
+    private IEnumerator AddMoneyAnime(long startMoney, long targetMoney)
     {
-        long startMoney = UserInfo.SkinToken - addMoney;
-        long targetMoney = UserInfo.SkinToken;
         float time = 0; 
 
         while(time < 1)
         {
-            _tokenText.SetText(Utility.ConvertToMoney(Mathf.FloorToInt(Mathf.Lerp(startMoney, targetMoney, time))));
+            // PandaTokens is a 64-bit balance; float/int interpolation can overflow or lose precision.
+            long value = (long)decimal.Floor(startMoney + ((decimal)targetMoney - startMoney) * (decimal)time);
+            _tokenText.SetText(Utility.ConvertToMoney(value));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _tokenText.SetText(Utility.ConvertToMoney(UserInfo.SkinToken));
+        _tokenText.SetText(Utility.ConvertToMoney(targetMoney));
+        _moneyAnimeRoutine = null;
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
-        UserInfo.OnChangeSkinTokenHandler -= OnChangeSkinToken;
+        StopMoneyAnime();
+        _rect.TweenStop();
+        _rect.localScale = _tmpScale;
+    }
+
+    private void StopMoneyAnime()
+    {
         if (_moneyAnimeRoutine != null)
             StopCoroutine(_moneyAnimeRoutine);
-        
-        _moneyAnimeRoutine = null;        
+        _moneyAnimeRoutine = null;
     }
 }

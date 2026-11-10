@@ -30,7 +30,7 @@ public class StaffGachaAcquisitionCalculatorTests
         _equipHandler = (floor, type) => _mutationEvents++;
         UserInfo.OnChangeDiaHandler += _mutationHandler;
         UserInfo.OnChangeMoneyHandler += _mutationHandler;
-        UserInfo.OnChangeSkinTokenHandler += _mutationHandler;
+        UserInfo.OnChangePandaTokensHandler += _mutationHandler;
         UserInfo.OnGiveStaffHandler += _mutationHandler;
         UserInfo.OnUpgradeStaffHandler += _mutationHandler;
         UserInfo.OnUseGachaMachineHandler += _mutationHandler;
@@ -50,7 +50,7 @@ public class StaffGachaAcquisitionCalculatorTests
         {
             UserInfo.OnChangeDiaHandler -= _mutationHandler;
             UserInfo.OnChangeMoneyHandler -= _mutationHandler;
-            UserInfo.OnChangeSkinTokenHandler -= _mutationHandler;
+            UserInfo.OnChangePandaTokensHandler -= _mutationHandler;
             UserInfo.OnGiveStaffHandler -= _mutationHandler;
             UserInfo.OnUpgradeStaffHandler -= _mutationHandler;
             UserInfo.OnUseGachaMachineHandler -= _mutationHandler;
@@ -271,7 +271,7 @@ public class StaffGachaAcquisitionCalculatorTests
         }).ToArray();
         return JsonConvert.SerializeObject(new
         {
-            UserInfo.Dia, UserInfo.Money, UserInfo.SkinToken,
+            UserInfo.Dia, UserInfo.Money, UserInfo.PandaTokens,
             UserInfo.TotalUseGachaMachineCount, UserInfo.CurrentStage,
             UserInfo.IsFirstTutorialClear, UserInfo.IsTutorialStart,
             Stages = stageState

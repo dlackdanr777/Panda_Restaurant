@@ -800,7 +800,7 @@ public class MailManager : MonoBehaviour
             try
             {
                 if (!IsCurrent() || rewards == null) { error = "계정 또는 원래 Stage가 변경되었습니다."; return false; }
-                long gold = 0, dia = 0, skinTokens = 0;
+                long gold = 0, dia = 0, pandaTokens = 0;
                 var itemCounts = new Dictionary<string, long>(StringComparer.Ordinal);
                 var staffSkins = new HashSet<string>(StringComparer.Ordinal);
                 IReadOnlyList<StaffData> staffCatalog = null;
@@ -827,7 +827,7 @@ public class MailManager : MonoBehaviour
                             break;
                         case RewardKind.StaffSkin:
                             if (UserInfo.IsGiveStaffSkin(reward.Id) || !staffSkins.Add(reward.Id))
-                                skinTokens = checked(skinTokens + ((StaffSkinData)resolved.Data).DuplicationToken);
+                                pandaTokens = checked(pandaTokens + ((StaffSkinData)resolved.Data).DuplicationToken);
                             break;
                         case RewardKind.Staff:
                             if (!BackendManager.Instance.StaffRuntime.CanMutate)
@@ -849,9 +849,10 @@ public class MailManager : MonoBehaviour
                     long afterTotal = UserInfo.TotalAddMoney + gold;
                     long afterDaily = UserInfo.DailyAddMoney + gold;
                     long afterWeekly = UserInfo.WeeklyAddMoney + gold;
-                    if (UserInfo.Money < 0 || UserInfo.Dia < 0 || UserInfo.SkinToken < 0 ||
-                        UserInfo.Dia + dia > int.MaxValue || UserInfo.SkinToken + skinTokens > int.MaxValue || skinTokens < 0)
+                    if (UserInfo.Money < 0 || UserInfo.Dia < 0 ||
+                        UserInfo.Dia + dia > int.MaxValue || pandaTokens < 0)
                     { error = "재화 범위를 초과하거나 현재 잔액이 잘못되었습니다."; return false; }
+                    if (pandaTokens > 0 && !UserInfo.CanChangePandaTokens(pandaTokens, out error)) return false;
                     foreach (var item in itemCounts)
                     {
                         int before = UserInfo.GetGiveItemCount((GachaItemData)_resolved[item.Key].Data);
@@ -912,10 +913,10 @@ public class MailManager : MonoBehaviour
                         () => UserInfo.IsGiveCustomerSkin(reward.Id));
                 case RewardKind.StaffSkin:
                     bool duplicate = UserInfo.IsGiveStaffSkin(reward.Id);
-                    int tokens = UserInfo.SkinToken;
+                    long? tokens = UserInfo.PandaTokens;
                     var skin = (StaffSkinData)resolved.Data;
                     return ApplyOnce(reward, () => UserInfo.GiveStaffSkin(skin),
-                        () => duplicate ? UserInfo.SkinToken == checked(tokens + skin.DuplicationToken) : UserInfo.IsGiveStaffSkin(reward.Id));
+                        () => duplicate ? tokens.HasValue && UserInfo.PandaTokens == checked(tokens.Value + skin.DuplicationToken) : UserInfo.IsGiveStaffSkin(reward.Id));
                 case RewardKind.Furniture:
                     return ApplyOnce(reward, () => UserInfo.GiveFurniture(_stage, (FurnitureData)resolved.Data),
                         () => UserInfo.IsGiveFurniture(_stage, reward.Id));
@@ -979,4 +980,3 @@ public class MailManager : MonoBehaviour
 
     #endregion
 }
-

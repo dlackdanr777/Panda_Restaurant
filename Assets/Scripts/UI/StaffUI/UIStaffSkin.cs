@@ -63,6 +63,7 @@ public class UIStaffSkin : MonoBehaviour
 
         Hide();
         UserInfo.OnChangeStaffSkinHandler += UpdateUI;
+        UserInfo.OnChangePandaTokensHandler += UpdateUI;
     }
 
     public void SetViewData(string name, string description, string effectText, Sprite skinSprite)
@@ -221,7 +222,7 @@ public class UIStaffSkin : MonoBehaviour
 
     private void ShowPurchaseButtons(StaffSkinData skinData)
     {
-        if (UserInfo.IsSkinTokenValid(skinData.BuyPrice))
+        if (UserInfo.CanPurchaseStaffSkin(skinData, out _))
         {
             DebugLog.Log("구매 가능");
             _buyButton.gameObject.SetActive(true);
@@ -297,21 +298,20 @@ public class UIStaffSkin : MonoBehaviour
             return;
         }
 
-        if (UserInfo.IsSkinTokenValid(_currentSkinData.BuyPrice))
+        if (UserInfo.TryPurchaseStaffSkin(_currentSkinData, out string error))
         {
-            UserInfo.AddSkinToken(-_currentSkinData.BuyPrice);
-            UserInfo.GiveStaffSkin(_currentSkinData.Id);
             UpdateUI();
             PopupManager.Instance.ShowDisplayText("스킨을 구매했습니다.");
         }
         else
         {
-            PopupManager.Instance.ShowDisplayText("스킨 토큰이 부족합니다.");
+            PopupManager.Instance.ShowDisplayText(error);
         }
     }
 
     private void OnDestroy()
     {
         UserInfo.OnChangeStaffSkinHandler -= UpdateUI;
+        UserInfo.OnChangePandaTokensHandler -= UpdateUI;
     }
 }

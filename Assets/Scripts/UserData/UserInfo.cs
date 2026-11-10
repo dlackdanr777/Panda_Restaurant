@@ -18,7 +18,6 @@ public static partial class UserInfo
     public static event Action OnAddPromotionCountHandler;
     public static event Action OnAddAdvertisingViewCountHandler;
     public static event Action OnAddCleanCountHandler;
-    public static event Action OnChangeSkinTokenHandler;
 
     public static event Action<ERestaurantFloorType, EquipStaffType> OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
@@ -201,8 +200,6 @@ public static partial class UserInfo
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
     private static HashSet<string> _clearNotificationMessageSet = new HashSet<string>(); //알림이 완료된 Id값을 모아두는 해쉬셋
 
-    private static int _skinToken;
-    public static int SkinToken => _skinToken;
 
 
     //################################환경 설정 관련 변수################################
@@ -440,7 +437,6 @@ public static partial class UserInfo
         param.Add("LastAttendanceTime", _lastAttendanceTime);
         param.Add("TotalAttendanceDays", _totalAttendanceDays);
 
-        param.Add("SkinToken", _skinToken);
 
         List<SaveLevelData> giveRecipeSaveDataList = new List<SaveLevelData>();
         foreach (var value in _giveRecipeLevelDic)
@@ -784,7 +780,6 @@ public static partial class UserInfo
         _notificationMessageSet = loadData.NotificationMessageSet;
         _clearNotificationMessageSet = loadData.ClearNotificationMessageSet;
 
-        _skinToken = loadData.SkinToken;
 
         _addCustomerAdCount = loadData.AddCustomerAdCount;
         _addCustomerDiaCount = loadData.AddCustomerDiaCount;
@@ -1324,12 +1319,6 @@ public static partial class UserInfo
         }
     }
 
-    public static void AddSkinToken(int value)
-    {
-        _skinToken += value;
-        DebugLog.Log($"스킨 토큰이 {value}만큼 추가되었습니다. 현재 스킨 토큰: {_skinToken}");
-        OnChangeSkinTokenHandler?.Invoke();
-    }
 
 
     public static void DataBindTip(EStage stage)
@@ -1442,13 +1431,6 @@ public static partial class UserInfo
         return DiamondWallet.CanSpend(dia);
     }
 
-    public static bool IsSkinTokenValid(int skinToken)
-    {
-        if (SkinToken < skinToken)
-            return false;
-
-        return true;
-    }
 
     public static bool IsFloorValid(EStage stage, ERestaurantFloorType type)
     {
@@ -1663,7 +1645,13 @@ public static partial class UserInfo
 
         if (_giveStaffSkinSet.Contains(data.Id))
         {
-            AddSkinToken(data.DuplicationToken);
+            if (data.DuplicationToken < 0)
+            {
+                DebugLog.LogError("Invalid staff skin duplicate token reward.");
+                return;
+            }
+            if (!TryAddPandaTokens(data.DuplicationToken, out string error))
+                DebugLog.LogError(error);
             return;
         }
 

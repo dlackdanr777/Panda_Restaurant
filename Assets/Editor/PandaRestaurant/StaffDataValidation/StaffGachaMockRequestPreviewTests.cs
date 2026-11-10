@@ -410,7 +410,7 @@ public class StaffGachaMockRequestPreviewTests
         }).ToArray();
         return JsonConvert.SerializeObject(new
         {
-            UserInfo.Dia, UserInfo.Money, UserInfo.SkinToken, UserInfo.TotalUseGachaMachineCount,
+            UserInfo.Dia, UserInfo.Money, UserInfo.PandaTokens, UserInfo.TotalUseGachaMachineCount,
             UserInfo.CurrentStage, UserInfo.IsFirstTutorialClear, UserInfo.IsTutorialStart, Stages = stageState,
             PaymentInfo.PaymentDatas, PaymentInfo.GachaPaymentDatas
         });

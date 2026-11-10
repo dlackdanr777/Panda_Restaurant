@@ -7,7 +7,7 @@ public enum GachaMachineKind { Item, Staff }
 public enum GachaPaymentKind { DiamondsSingle, DiamondsEleven, TicketSingle, TicketEleven }
 public enum GachaAcquisitionKind { Item, Staff, Recipe }
 
-/// <summary>Account-scoped monotonic history survives consumed inventory and is separate from legacy SkinToken.</summary>
+/// <summary>Account-scoped monotonic history survives consumed inventory.</summary>
 public sealed class GachaEconomySaveData
 {
     public int ItemTickets { get; }
@@ -31,7 +31,7 @@ public sealed class GachaEconomySaveData
     public int Counter(GachaMachineKind machine) => machine == GachaMachineKind.Staff ? StaffCounter : ItemCounter;
     public int Tickets(GachaMachineKind machine) => machine == GachaMachineKind.Staff ? StaffTickets : ItemTickets;
     public static string Key(GachaAcquisitionKind kind, string id) => kind.ToString() + ":" + id;
-    internal bool Validate(out string error)
+    internal bool Validate(out string error) 
     {
         error = null;
         if (ItemTickets < 0 || StaffTickets < 0 || ItemCounter < 0 || ItemCounter >= 100 || StaffCounter < 0 || StaffCounter >= 100)

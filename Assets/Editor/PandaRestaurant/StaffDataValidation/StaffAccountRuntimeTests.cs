@@ -15,6 +15,55 @@ using UnityEngine.TestTools;
 public partial class StaffStageMigrationCollectionTests
 {
     [Test]
+    public void AccountRuntime_PandaTokenChangesUseCommonWalletAndExistingSaveField()
+    {
+        using (var scope = new RuntimeStaffScope(Catalog()))
+        {
+            var fixture = CreateAccountRuntimeFixture(out _);
+            var runtime = fixture.Manager.StaffRuntime;
+            var original = runtime.Snapshot;
+            Assert.That(runtime.TryChangePandaTokens(10, out string error), Is.True, error);
+            Assert.That(runtime.Snapshot.PandaTokens, Is.EqualTo(65));
+            Assert.That(runtime.TryChangePandaTokens(-40, out error), Is.True, error);
+            Assert.That(runtime.Snapshot.PandaTokens, Is.EqualTo(25));
+            Assert.That(original.PandaTokens, Is.EqualTo(55), "Immutable restore evidence is not rewritten.");
+            var values = new Param();
+            Assert.That(runtime.TryAddSaveField(values, out error), Is.True, error);
+            Assert.That(StaffAccountSaveConverter.Read((string)JObject.Parse(values.GetJson())["StaffAccount"])
+                .Data.PandaTokens, Is.EqualTo(25));
+            Assert.That(JObject.Parse(values.GetJson())["SkinToken"], Is.Null);
+            foreach (long delta in new[] { -26L, long.MinValue, long.MaxValue })
+            {
+                var before = runtime.Snapshot;
+                Assert.That(runtime.TryChangePandaTokens(delta, out error), Is.False);
+                Assert.That(error, Is.Not.Empty);
+                Assert.That(runtime.Snapshot, Is.SameAs(before));
+            }
+            Assert.That(runtime.TryChangePandaTokens(-25, out error), Is.True, error);
+            Assert.That(runtime.Snapshot.PandaTokens, Is.Zero);
+            fixture.Manager.RequestGameDataAutosave();
+            var coordinator = fixture.Manager.CurrentGameDataSaveCoordinator;
+            Assert.That(coordinator.MarkResponseMissing(coordinator.CurrentIdentity, "Memory-only response missing"), Is.True);
+            Assert.That(runtime.TryChangePandaTokens(1, out error), Is.False, "Unresolved save protects the common wallet.");
+            fixture.Manager.InvalidateGameDataRestore();
+            Assert.That(runtime.TryChangePandaTokens(1, out error), Is.False);
+        }
+    }
+
+    [Test]
+    public void AccountRuntime_LegacyAccountHasNoFallbackTokenWallet()
+    {
+        using (var scope = new RuntimeStaffScope(Catalog()))
+        {
+            var fixture = CreateAccountRuntimeFixture(out _, common: false);
+            Assert.That(fixture.Manager.StaffRuntime.Snapshot, Is.Null);
+            Assert.That(fixture.Manager.StaffRuntime.TryChangePandaTokens(5, out string error), Is.False);
+            Assert.That(error, Is.Not.Empty);
+            Assert.That(fixture.Game.Writes, Is.Zero);
+        }
+    }
+
+    [Test]
     public void AccountRuntime_CommonRestoreOverridesOldStageGrowthWithoutRewritingOriginalSnapshots()
     {
         using (var scope = new RuntimeStaffScope(Catalog()))

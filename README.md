@@ -1,5 +1,19 @@
 # Panda_Restaurant
 
+## Shared panda token wallet
+
+Gacha exchange, staff skin purchases and duplicate staff skin rewards use only
+`StaffAccount.PandaTokens` (`UserInfo.PandaTokens`, a nullable 64-bit balance).
+The main token display shows `-` until the common account is available.
+Token changes respect account/session and pending-transaction protection and are
+included in the existing GameData save flow. The retired `UserInfo.SkinToken`
+wallet, event and save/load field are no longer used. Old backend `SkinToken`
+fields are ignored, not erased or automatically added to the new wallet.
+In SDK-free Edit Mode, the existing review request bridge accepts `tokens` in
+`Temp/GachaReview20260917-2213/tests-request.txt` to run wallet, skin purchase,
+duplicate reward, display, restore and save-protection regressions in memory.
+Results are written to `Logs/GachaReview20260917-2213/related-tokens-tests.json`.
+
 ## Android APK: kitchen duplicate textures
 
 Starting from main `ab2243095e814aa896deddb9eb00503949f47b24`, the original

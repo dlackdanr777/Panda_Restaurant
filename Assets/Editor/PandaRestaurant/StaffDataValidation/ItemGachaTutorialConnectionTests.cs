@@ -195,7 +195,7 @@ public sealed class ItemGachaTutorialConnectionTests
         public GameDataSaveCoordinator Coordinator { get; }
         public bool SessionCurrent = true;
         private static string Unrelated() => JsonConvert.SerializeObject(new
-        { UserInfo.Dia, UserInfo.Money, UserInfo.SkinToken, UserInfo.QuestStaffGrantMask,
+        { UserInfo.Dia, UserInfo.Money, UserInfo.PandaTokens, UserInfo.QuestStaffGrantMask,
             PaymentInfo.PaymentDatas, PaymentInfo.GachaPaymentDatas });
 
         public Fixture()

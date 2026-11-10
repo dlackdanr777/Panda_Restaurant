@@ -741,7 +741,8 @@ public class TutorialAttendanceAndStaffEffectTests
         object backendBefore = backend.GetValue(null), gameBefore = game.GetValue(null);
         object upgradeBefore = upgrade.GetValue(null), sceneBefore = scene.GetValue(null);
         long money = UserInfo.Money;
-        int diamonds = UserInfo.Dia, skinToken = UserInfo.SkinToken, gachaCount = UserInfo.TotalUseGachaMachineCount;
+        int diamonds = UserInfo.Dia, gachaCount = UserInfo.TotalUseGachaMachineCount;
+        long? pandaTokens = UserInfo.PandaTokens;
         bool clear = UserInfo.IsFirstTutorialClear, active = UserInfo.IsTutorialStart;
         try { probe(); }
         finally
@@ -752,7 +753,7 @@ public class TutorialAttendanceAndStaffEffectTests
             Assert.That(scene.GetValue(null), Is.EqualTo(sceneBefore));
             Assert.That(UserInfo.Money, Is.EqualTo(money));
             Assert.That(UserInfo.Dia, Is.EqualTo(diamonds));
-            Assert.That(UserInfo.SkinToken, Is.EqualTo(skinToken));
+            Assert.That(UserInfo.PandaTokens, Is.EqualTo(pandaTokens));
             Assert.That(UserInfo.TotalUseGachaMachineCount, Is.EqualTo(gachaCount));
             Assert.That(UserInfo.IsFirstTutorialClear, Is.EqualTo(clear));
             Assert.That(UserInfo.IsTutorialStart, Is.EqualTo(active));

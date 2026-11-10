@@ -149,14 +149,14 @@ public class StaffGachaRandomSelectorTests
     {
         int originalDia = UserInfo.Dia;
         long originalMoney = UserInfo.Money;
-        int originalSkinToken = UserInfo.SkinToken;
+        long? originalPandaTokens = UserInfo.PandaTokens;
         int originalGachaCount = UserInfo.TotalUseGachaMachineCount;
         int mutationEventCount = 0;
         Action mutationHandler = () => mutationEventCount++;
 
         UserInfo.OnChangeDiaHandler += mutationHandler;
         UserInfo.OnGiveStaffHandler += mutationHandler;
-        UserInfo.OnChangeSkinTokenHandler += mutationHandler;
+        UserInfo.OnChangePandaTokensHandler += mutationHandler;
         UserInfo.OnUseGachaMachineHandler += mutationHandler;
 
         try
@@ -167,7 +167,7 @@ public class StaffGachaRandomSelectorTests
             Assert.That(selected, Is.Not.Null);
             Assert.That(UserInfo.Dia, Is.EqualTo(originalDia));
             Assert.That(UserInfo.Money, Is.EqualTo(originalMoney));
-            Assert.That(UserInfo.SkinToken, Is.EqualTo(originalSkinToken));
+            Assert.That(UserInfo.PandaTokens, Is.EqualTo(originalPandaTokens));
             Assert.That(UserInfo.TotalUseGachaMachineCount, Is.EqualTo(originalGachaCount));
             Assert.That(mutationEventCount, Is.Zero);
         }
@@ -175,7 +175,7 @@ public class StaffGachaRandomSelectorTests
         {
             UserInfo.OnChangeDiaHandler -= mutationHandler;
             UserInfo.OnGiveStaffHandler -= mutationHandler;
-            UserInfo.OnChangeSkinTokenHandler -= mutationHandler;
+            UserInfo.OnChangePandaTokensHandler -= mutationHandler;
             UserInfo.OnUseGachaMachineHandler -= mutationHandler;
         }
     }

@@ -1196,7 +1196,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 official.DuplicationTokenRaw,
                 StaffDryRunFieldDisposition.FUTURE_PANDA_TOKEN_SYSTEM_REQUIRED,
                 false,
-                "PandaToken remains separate from SkinToken and MoneyType."));
+                "PandaToken uses the common account wallet, not StaffData MoneyType."));
             fields.Add(new StaffDataDryRunFieldPlan(
                 sourcePrefix + "TokenPurchasePriceRaw",
                 string.Empty,

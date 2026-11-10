@@ -116,7 +116,7 @@ public static class StaffGachaAcquisitionCalculator
 
     private static bool TryGetDuplicatePandaTokens(Rank rank, out int amount)
     {
-        // 판다토큰 지급 예정량의 단일 정책 지점. 기존 SkinToken과는 별개이다.
+        // 판다토큰 지급 예정량의 단일 정책 지점.
         switch (rank)
         {
             case Rank.Normal1:

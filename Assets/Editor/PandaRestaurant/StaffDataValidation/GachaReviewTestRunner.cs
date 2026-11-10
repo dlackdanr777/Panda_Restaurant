@@ -273,8 +273,8 @@ public static class GachaReviewTestRunner
             }
             else if (command == "known-fever") CheckKnownFeverAssertion();
             else if (command == "run") Begin("all");
-            else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
-            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, customer-unlock, ui-refresh, ui-deferred-refresh, kitchen-apk, or known-fever for the related review tests.");
+            else if (command == "economy" || command == "fairy" || command == "ui" || command == "tokens") Begin(command);
+            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, tokens, run, staff-ai, party-movement, customer-unlock, ui-refresh, ui-deferred-refresh, kitchen-apk, or known-fever for the related review tests.");
         }
         catch (Exception error)
         {
@@ -365,6 +365,8 @@ public static class GachaReviewTestRunner
         if (_group == "ui-sprite-baseline") fixtures = new[] { "UIRefreshRegressionTests", "QuestShortcutRoutingTests", "DiamondConsumerRegressionTests" };
         if (_group == "ui-sprite") fixtures = new[] { "FurnitureKitchenRefreshTests", "UIRefreshRegressionTests", "QuestShortcutRoutingTests", "DiamondConsumerRegressionTests" };
         if (_group == "kitchen-apk") fixtures = new[] { "KitchenSpriteAssetTests" };
+        if (_group == "tokens") fixtures = new[] { "StaffStageMigrationCollectionTests", "GachaCollectionUiTests",
+            "DiamondConsumerRegressionTests", "UserGachaCountRestoreTests", "GameDataEntrySafetyTests" };
         if (_group == "ui-deferred-refresh") fixtures = new[] { "UIDeferredRefreshRegressionTests", "StaffStageMigrationCollectionTests" };
         if (_group == "customer-unlock") fixtures = new[] { "CustomerUnlockRegressionTests", "CustomerNaturalPartyTests",
             "CustomerTableUseRegressionTests", "CustomerEncounterTests", "UIRefreshRegressionTests" };
@@ -381,6 +383,17 @@ public static class GachaReviewTestRunner
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                if (_group == "tokens" && name == "StaffStageMigrationCollectionTests"
+                    && !new[] { "AccountRuntime_PandaToken", "AccountRuntime_LegacyAccountHasNoFallbackTokenWallet",
+                        "EconomyBackend_StaffSkinPurchaseAndDuplicateRewardUseOnlyPandaTokens",
+                        "EconomyBackend_OneAtomicPayload", "EconomyBackend_UnknownResponse" }
+                    .Any(prefix => method.Name.StartsWith(prefix, StringComparison.Ordinal))) continue;
+                if (_group == "tokens" && name == "GachaCollectionUiTests"
+                    && !method.Name.StartsWith("TokenBalance_", StringComparison.Ordinal)) continue;
+                if (_group == "tokens" && name == "DiamondConsumerRegressionTests"
+                    && method.Name != "OtherGachaConsumers_ValidateBeforeChargeAndDoNotRepeatEffectsOnReentry") continue;
+                if (_group == "tokens" && name == "GameDataEntrySafetyTests"
+                    && method.Name != "ConfirmedGuestAndGoogleSignup_InitializesOnceThenEntersOnlyAfterRequeryAndRestore") continue;
                 // This review permits memory instances only: the user forbids saved
                 // verification Scene/Prefab copies and disk copies of test settings.
                 // Exclude these asset-roundtrip cases from Staff AI and movement checks;
@@ -411,7 +424,7 @@ public static class GachaReviewTestRunner
                     && !method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) continue;
                 if (_customerUse && _group != "ui-refresh" && _group != "ui-deferred-refresh" && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
                     "FirstTutorial_ConfirmedSignup", "FirstTutorial_StageBootstrap", "FirstTutorial_UnknownInitial", "FirstTutorial_OrdinaryStageWrite" }.Any(prefix => method.Name.StartsWith(prefix, StringComparison.Ordinal))) continue;
-                if (!_customerUse && name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                if (!_customerUse && _group != "tokens" && name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
                     && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||

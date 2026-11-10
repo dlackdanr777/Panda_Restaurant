@@ -372,6 +372,17 @@ public class UISkinGacha : GachaMachineParent
                 ReportPurchaseError("스킨 뽑기 자료를 확인할 수 없습니다.");
                 return;
             }
+            long duplicateTokens = 0;
+            var newStaffSkins = new HashSet<string>();
+            foreach (var skin in results.OfType<StaffSkinData>())
+            {
+                if (skin.DuplicationToken < 0)
+                { ReportPurchaseError("스킨 중복 보상 수량이 올바르지 않습니다."); return; }
+                if (UserInfo.IsGiveStaffSkin(skin.Id) || !newStaffSkins.Add(skin.Id))
+                    duplicateTokens += skin.DuplicationToken;
+            }
+            if (duplicateTokens > 0 && !UserInfo.CanChangePandaTokens(duplicateTokens, out string tokenError))
+            { ReportPurchaseError(tokenError); return; }
             if (!UserInfo.TrySpendDia(cost, out string error))
             { ReportPurchaseError(error); return; }
             ApplyPurchaseResults(results);

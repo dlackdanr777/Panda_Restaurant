@@ -670,6 +670,55 @@ public sealed class GachaCollectionUiTests
             => _inner.Save(transaction, completed);
     }
 
+    [Test]
+    public void TokenBalance_RefreshUsesProvidedPandaBalanceAndClearsUnavailableState()
+    {
+        var token = _root.AddComponent<UISkinToken>();
+        var text = new GameObject("Token balance", typeof(RectTransform), typeof(TextMeshProUGUI))
+            .GetComponent<TextMeshProUGUI>();
+        text.transform.SetParent(_root.transform, false);
+        typeof(UISkinToken).GetField("_rect", Fields).SetValue(token, (RectTransform)_root.transform);
+        typeof(UISkinToken).GetField("_tokenText", Fields).SetValue(token, text);
+        var refresh = typeof(UISkinToken).GetMethod("RefreshTokens", Fields);
+
+        refresh.Invoke(token, new object[] { 1234L, false });
+        Assert.That(text.text, Is.EqualTo(Utility.ConvertToMoney(1234)));
+        refresh.Invoke(token, new object[] { null, true });
+        Assert.That(text.text, Is.EqualTo("-"), "An unavailable account must not show a stale or zero balance.");
+        refresh.Invoke(token, new object[] { 0L, true });
+        Assert.That(text.text, Is.EqualTo(Utility.ConvertToMoney(0)));
+        refresh.Invoke(token, new object[] { long.MaxValue, false });
+        Assert.That(text.text, Is.EqualTo(Utility.ConvertToMoney(long.MaxValue)));
+        text.text = "stale";
+        refresh.Invoke(token, new object[] { long.MaxValue, false });
+        Assert.That(text.text, Is.EqualTo(Utility.ConvertToMoney(long.MaxValue)),
+            "Re-enabling must snap to the balance even when the cached value is unchanged.");
+    }
+
+    [TestCase(0L, long.MaxValue)]
+    [TestCase(long.MaxValue, 0L)]
+    [TestCase(2147483648L, 2147483748L)]
+    public void TokenBalance_AnimationKeeps64BitRangeAndExactTarget(long start, long target)
+    {
+        var token = _root.AddComponent<UISkinToken>();
+        var text = new GameObject("Token balance", typeof(RectTransform), typeof(TextMeshProUGUI))
+            .GetComponent<TextMeshProUGUI>();
+        text.transform.SetParent(_root.transform, false);
+        typeof(UISkinToken).GetField("_rect", Fields).SetValue(token, (RectTransform)_root.transform);
+        typeof(UISkinToken).GetField("_tokenText", Fields).SetValue(token, text);
+        var routine = (System.Collections.IEnumerator)typeof(UISkinToken).GetMethod("AddMoneyAnime", Fields)
+            .Invoke(token, new object[] { start, target });
+        Assert.That(routine.MoveNext(), Is.True);
+        Assert.That(text.text, Is.EqualTo(Utility.ConvertToMoney(start)));
+        int frames = 1;
+        while (routine.MoveNext())
+        {
+            Assert.That(text.text, Does.Not.StartWith("-"));
+            Assert.That(++frames, Is.LessThan(30));
+        }
+        Assert.That(text.text, Is.EqualTo(Utility.ConvertToMoney(target)));
+    }
+
     private void AssertBadge(bool expected)
     {
         var badge = _slotRoot.GetComponentInChildren<GachaAcquisitionBadge>(true);
