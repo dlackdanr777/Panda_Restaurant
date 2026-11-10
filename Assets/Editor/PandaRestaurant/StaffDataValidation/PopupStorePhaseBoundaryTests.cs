@@ -268,14 +268,38 @@ public sealed class PopupStorePhaseBoundaryTests
     }
 
     [Test]
-    public void OriginalPrefabAndSceneDependenciesHaveNoPhaseCoreBinding()
+    public void OriginalPrefabAndSceneDependenciesAllowApprovedPresentationWithoutPhaseAuthorityBinding()
     {
         var paths = new[] { "Assets/Resources/UI/PopupStore/UIPopupStore.prefab", "Assets/Scenes/Stage1.unity", "Assets/Scenes/FirstLoadingScene.unity" };
         var before = paths.Select(File.ReadAllBytes).ToArray();
+        // Latest entry intentionally references the approved tutorial even while account mode is OFF.
+        // That presentation dependency must not bring in a running phase or an operating profile.
+        const string tutorialPath = "Assets/Resources/UI/PopupStore/Account/PopupStorePhasePreviewView.prefab";
+        const string configurationPath = "Assets/Resources/UI/PopupStore/Account/PopupStoreAccountPhaseConfiguration.asset";
+        var allowedPhasePresentation = new HashSet<string>(StringComparer.Ordinal)
+        {
+            tutorialPath,
+            "Assets/Scripts/UI/Floor3UI/PopupStorePhasePreviewView.cs",
+            "Assets/Scripts/UI/Floor3UI/PopupStorePhasePreviewPolish.cs"
+        };
         foreach (string path in paths)
         {
-            Assert.That(AssetDatabase.GetDependencies(path, true).Any(dependency => dependency.Contains("PopupStorePhase")), Is.False, path);
+            var dependencies = AssetDatabase.GetDependencies(path, true);
+            foreach (string dependency in dependencies.Where(dependency => dependency.Contains("PopupStorePhase")))
+                Assert.That(allowedPhasePresentation.Contains(dependency), Is.True, path + " -> " + dependency);
+            Assert.That(dependencies, Does.Not.Contain(configurationPath), "The entry prefab must not serialize an operating phase policy into the Scene.");
         }
+        var popup = AssetDatabase.LoadAssetAtPath<GameObject>(paths[0]);
+        Assert.That(popup.GetComponent<PopupStorePhasePreview>(), Is.Null);
+        Assert.That(popup.GetComponent<PopupStoreAccountRecoveryPresentation>(), Is.Null);
+        var start = popup.GetComponent<PopupStoreStartController>();
+        Assert.That(start.Host, Is.Null); Assert.That(start.IsApproved, Is.False);
+        Assert.That(new SerializedObject(start).FindProperty("_unavailableTutorialPrefab").objectReferenceValue,
+            Is.SameAs(AssetDatabase.LoadAssetAtPath<GameObject>(tutorialPath)));
+        var clock = new SerializedObject(popup.GetComponent<PopupStoreBusinessClock>());
+        Assert.That(clock.FindProperty("_initialSeconds").doubleValue, Is.EqualTo(90));
+        Assert.That(clock.FindProperty("_autoStartForEditorReview").boolValue, Is.False);
+        Assert.That(AssetDatabase.LoadAssetAtPath<PopupStoreAccountPhaseConfiguration>(configurationPath).EnableAccountMode, Is.False);
         var session = Started();
         CompleteGoal(session);
         MoveToNextPhase(session);

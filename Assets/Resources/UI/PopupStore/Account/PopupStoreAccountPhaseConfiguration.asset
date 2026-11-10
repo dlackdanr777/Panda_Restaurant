@@ -11,10 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a074e6b9feee4fbe9f46c3508e450cb5, type: 3}
   m_Name: PopupStoreAccountPhaseConfiguration
-  m_EditorClassIdentifier:
-  _enableAccountMode: 0
-  _tutorialPrefab: {fileID: 1835415097359430429, guid: 968ae38d8cbb4572b6e7ada117d1634b, type: 3}
-  _rewardPrefab: {fileID: 5721431612438584291, guid: 5385a40c601f484eb2a0a2fce398c651, type: 3}
+  m_EditorClassIdentifier: 
+  _enableAccountMode: 1
+  _tutorialPrefab: {fileID: 1835415097359430429, guid: 968ae38d8cbb4572b6e7ada117d1634b,
+    type: 3}
+  _rewardPrefab: {fileID: 5721431612438584291, guid: 5385a40c601f484eb2a0a2fce398c651,
+    type: 3}
   _rewardTable: {fileID: 11400000, guid: 44cd6378d68845c183a7efa349de7d71, type: 2}
   _profileId: EDITOR_PHASE_PREVIEW_CUMULATIVE_V1
   _profileVersion: 2

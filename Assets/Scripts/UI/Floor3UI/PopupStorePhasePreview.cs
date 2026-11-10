@@ -599,6 +599,7 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
             || Session.State != PopupStorePhaseState.Ready || _startArmed || originalClose == null
             || !originalClose.transform.IsChildOf(transform) || originalClose.transform.IsChildOf(view.transform)
             || !view.ValidateConfiguration(out _)) return false;
+        _start.ReleaseUnavailablePresentation();
         view.SetExitControl(originalClose.transform as RectTransform);
         view.Bind(() => {
             _tutorialStartRequested = true;

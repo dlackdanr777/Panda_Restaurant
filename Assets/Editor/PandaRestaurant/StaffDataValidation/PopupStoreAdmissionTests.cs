@@ -26,7 +26,7 @@ public sealed class PopupStoreAdmissionTests
         Assert.That(panel, Is.Not.Null);
         Assert.That(Read(prefab.GetComponent<PopupStoreStartController>(), "_panel"), Is.SameAs(panel));
         var overlay = (GameObject)Read(panel, "_overlay");
-        Assert.That(overlay.activeSelf, Is.True);
+        Assert.That(overlay.activeSelf, Is.False, "Ordinary entry starts on the latest tutorial; only an explicit 90-second review may display this panel.");
         Assert.That(overlay.GetComponent<Image>().raycastTarget, Is.True);
         Assert.That(overlay.GetComponent<CanvasGroup>().ignoreParentGroups, Is.True);
         Assert.That(((Button)Read(panel, "_startButton")).interactable, Is.False);
@@ -48,7 +48,11 @@ public sealed class PopupStoreAdmissionTests
             Assert.That(h.Clock.TryStartSession(), Is.False);
             h.AssertNotStartedAndUntouched();
             Assert.That(h.StartButton.interactable, Is.False);
-            Assert.That(h.Panel.IsVisible, Is.True);
+            Assert.That(h.Panel.IsVisible, Is.False);
+            var tutorial = h.Root.GetComponentsInChildren<PopupStorePhasePreviewView>(true).Single(x => x.IsTutorialVisible);
+            Assert.That(tutorial.PageCount, Is.EqualTo(5));
+            while (tutorial.TryNext()) { }
+            Assert.That(tutorial.TryPlay(), Is.False, "No authority is created by showing the approved tutorial.");
         }
     }
 

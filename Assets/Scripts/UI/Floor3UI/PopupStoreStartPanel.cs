@@ -21,7 +21,7 @@ public sealed class PopupStoreStartPanel : MonoBehaviour
     [SerializeField] private string _usageHudFormat = "영업권 {0}/{1}";
 
     private Button _boundStart, _boundClose;
-    private bool _hasRender, _show = true, _canStart, _canClose = true;
+    private bool _hasRender, _show, _canStart, _canClose = true;
     private bool _ownsInput, _oldInteractable, _oldRaycasts, _dispatching;
     private GameObject _previousSelection;
 
@@ -169,7 +169,7 @@ public sealed class PopupStoreStartPanel : MonoBehaviour
 
     private void OnEnable()
     {
-        if (!_hasRender) Render(true, false, true, -1, -1, "조회 중", false);
+        if (!_hasRender) Render(false, false, false, -1, -1, string.Empty, false);
         else if (Refresh()) ApplyVisibility();
     }
     private void OnDisable() { ReleaseInput(); Unbind(); }

@@ -284,6 +284,9 @@ public sealed class PopupStoreApprovedUiTests
     {
         using (var host = new Host(width, height, false))
         {
+            // This retained legacy-modal test explicitly owns the optional 90-second review.
+            // Ordinary hostless entry is covered by PopupStoreLatestEntryTests instead.
+            PopupStoreApprovedTestSession.Attach(host.Root);
             var start = host.Root.GetComponent<PopupStoreStartPanel>();
             var overlay = Read<GameObject>(start, "_overlay");
             Assert.That(start.IsVisible, Is.True);

@@ -824,9 +824,9 @@ public sealed class PopupStoreCustomerPatienceTests
             Assert.That(templates.Count(order => order.PlushIds.Count == 2), Is.EqualTo(8));
             Assert.That(templates.Count(order => order.PlushIds.Count == 3), Is.EqualTo(4));
             Assert.That(Read(host.Entrance, "_entryInterval"), Is.EqualTo(4f));
-            int objects = host.Root.GetComponentsInChildren<Transform>(true).Length;
             var timers = new Dictionary<string, PopupStorePatienceTimer>();
             host.Start();
+            int objects = host.Root.GetComponentsInChildren<Transform>(true).Length;
             int safety = 0;
             while (host.Entrance.CompletedOrderCount < 20 && safety++ < 1000)
             {

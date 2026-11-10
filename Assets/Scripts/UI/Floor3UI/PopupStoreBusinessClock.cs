@@ -263,7 +263,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     internal void SetExitConfirmationPaused(bool paused) => SetCondition(ref _exitConfirmationPaused, paused);
     internal void SetAccountAccessSuspended(bool suspended) => SetCondition(ref _accountAccessSuspended, suspended);
     internal TMP_Text PhaseTimeText => _timeText;
-    internal void UsePhaseTimePlaceholder() { _notStartedText = "—"; UpdateHud(); }
+    internal void UsePhaseTimePlaceholder() { UpdateHud(); }
     internal bool BindAccountRecovery(PopupStoreAccountRecoveryPresentation owner)
     {
         if (owner == null || owner.gameObject != gameObject || _accountRecovery != null || IsPhasePreview

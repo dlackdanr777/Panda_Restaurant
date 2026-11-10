@@ -39,6 +39,8 @@ public sealed class PopupStoreAccountRecoveryPresentation : MonoBehaviour
         if (clock == null || !clock.BindAccountRecovery(this) || !reward.BindClock(clock)
             || !GetComponent<PopupStoreResultPanel>().BindAccountRecovery(this))
         { Snapshot = null; return false; }
+        // Transfer the original close control before recovery takes exclusive ownership.
+        GetComponent<PopupStoreStartController>()?.ReleaseUnavailablePresentation();
         reward.HidePresentation();
         GetComponent<UIPopupStore>().PhaseCloseButton.gameObject.SetActive(false);
         return true;

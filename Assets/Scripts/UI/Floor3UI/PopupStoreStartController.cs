@@ -5,6 +5,12 @@ using UnityEngine;
 public sealed class PopupStoreStartController : MonoBehaviour
 {
     [SerializeField] private PopupStoreStartPanel _panel;
+    [Header("Approved entry presentation — independent of account permission")]
+    [SerializeField] private GameObject _unavailableTutorialPrefab;
+    [SerializeField] private string _unavailableTicketText = "이용권 조회 불가";
+    private PopupStorePhasePreviewView _unavailableTutorial;
+    private UnityEngine.UI.Button _entryClose;
+    private bool _entryCloseWasActive, _ownsEntryClose;
     public PopupStoreAdmissionHost Host { get; private set; }
     public bool IsApproved => Host != null && Host.IsApprovedFor(this);
     public string LastError => Host?.Transaction?.LastError ?? Host?.LastError;
@@ -32,6 +38,8 @@ public sealed class PopupStoreStartController : MonoBehaviour
     private bool WaitingForEditorPhaseView => false;
 #endif
     internal bool CanRequestApproval => isActiveAndEnabled && !IsRetired && !string.IsNullOrEmpty(LocalSessionId)
+        && (Host?.IsEditorReview == true || (GetComponent<PopupStorePhasePreview>()?.IsAccountMode == true
+            && GetComponent<PopupStorePhasePreview>().TutorialView != null))
         && !WaitingForEditorPhaseView
         && (GetComponent<PopupStorePhasePreview>()?.CanRequestTutorialAdmission ?? true)
         && Clock != null && Clock.CanPrepareForAdmission
@@ -43,6 +51,7 @@ public sealed class PopupStoreStartController : MonoBehaviour
         if (Host != null) Host.Changed -= RefreshPresentation;
         Host = host;
         Host.Changed += RefreshPresentation;
+        ReleaseUnavailablePresentation();
         BindPanel();
         Host.RefreshAccess();
         RefreshPresentation();
@@ -97,7 +106,7 @@ public sealed class PopupStoreStartController : MonoBehaviour
     {
         if (Panel == null || Clock == null) return;
         if (GetComponent<PopupStoreAccountRecoveryPresentation>()?.IsBound == true)
-        { Panel.Render(false, false, false, 0, 1, string.Empty, false); return; }
+        { ReleaseUnavailablePresentation(); Panel.Render(false, false, false, 0, 1, string.Empty, false); return; }
         bool show = Clock.State == PopupStoreBusinessState.NotStarted;
         var access = Host?.Access;
         var tx = Host?.Transaction;
@@ -128,6 +137,7 @@ public sealed class PopupStoreStartController : MonoBehaviour
         var preview = GetComponent<PopupStorePhasePreview>();
         if (WaitingForEditorPhaseView)
         {
+            ReleaseUnavailablePresentation();
             // The preview bridge binds on the Editor update after Stage1 first shows this view.
             // Hide the ordinary explanation immediately; the old start control cannot consume a use.
             Panel.Render(false, false, false, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
@@ -136,6 +146,7 @@ public sealed class PopupStoreStartController : MonoBehaviour
         }
         if (preview != null && preview.TutorialView != null)
         {
+            ReleaseUnavailablePresentation();
             // Release the ordinary modal's input ownership before showing the authored preview tutorial.
             Panel.Render(false, false, false, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
                 string.Empty, true);
@@ -145,11 +156,77 @@ public sealed class PopupStoreStartController : MonoBehaviour
                 canStart ? null : status, pending, confirmedTicketExhaustion);
             return;
         }
+        // A missing transaction authority must not select an obsolete screen or a fake ticket.
+        // Only an explicitly injected isolated 90-second review may use its legacy start panel.
+        if (Host?.IsEditorReview != true)
+        {
+            Panel.Render(false, false, false, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
+                string.Empty, false);
+            if (show && GetComponent<UIPopupStore>()?.VisibleState == VisibleState.Appeared)
+                ShowUnavailablePresentation();
+            else HideUnavailablePresentation();
+            return;
+        }
+        ReleaseUnavailablePresentation();
         Panel.Render(show, canStart, true, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
             status, Host?.IsEditorReview == true);
     }
 
+    private void ShowUnavailablePresentation()
+    {
+        var popup = GetComponent<UIPopupStore>();
+        if (popup == null || _unavailableTutorialPrefab == null) return;
+        if (_unavailableTutorial == null)
+        {
+            var authored = _unavailableTutorialPrefab.GetComponent<PopupStorePhasePreviewView>();
+            if (authored == null || !authored.ValidateConfiguration(out _)) return;
+            var instance = Instantiate(_unavailableTutorialPrefab, transform, false);
+            _unavailableTutorial = instance.GetComponent<PopupStorePhasePreviewView>();
+            try { _unavailableTutorial.Bind(RejectUnavailableStart, CloseUnavailablePresentation); }
+            catch (System.Exception)
+            {
+                ReleaseUnavailablePresentation();
+                return; // Original X remains available; no approval or gameplay is created.
+            }
+        }
+        _unavailableTutorial.gameObject.SetActive(true);
+        if (!_ownsEntryClose && popup.PhaseCloseButton != null)
+        {
+            _entryClose = popup.PhaseCloseButton;
+            _entryCloseWasActive = _entryClose.gameObject.activeSelf;
+            _ownsEntryClose = true;
+            _entryClose.gameObject.SetActive(false);
+        }
+        _unavailableTutorial.RenderTutorial(true, false, _unavailableTicketText);
+        _unavailableTutorial.transform.SetAsLastSibling();
+    }
+
+    private bool RejectUnavailableStart() => false;
+    private bool CloseUnavailablePresentation() => GetComponent<UIPopupStore>()?.TryRequestExit() == true;
+
+    private void HideUnavailablePresentation()
+    {
+        if (_unavailableTutorial != null)
+        {
+            _unavailableTutorial.HideAll();
+            _unavailableTutorial.gameObject.SetActive(false);
+        }
+        if (_ownsEntryClose && _entryClose != null) _entryClose.gameObject.SetActive(_entryCloseWasActive);
+        _entryClose = null; _ownsEntryClose = false;
+    }
+
+    internal void ReleaseUnavailablePresentation()
+    {
+        HideUnavailablePresentation();
+        var owned = _unavailableTutorial;
+        _unavailableTutorial = null;
+        if (owned == null) return;
+        if (Application.isPlaying) Destroy(owned.gameObject);
+        else DestroyImmediate(owned.gameObject);
+    }
+
     private void OnEnable() { BindPanel(); RefreshPresentation(); }
+    private void OnDisable() => HideUnavailablePresentation();
     private void Update()
     {
         Host?.ObserveElapsed(Time.unscaledDeltaTime);

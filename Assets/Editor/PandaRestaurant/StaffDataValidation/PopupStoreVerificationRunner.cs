@@ -960,7 +960,7 @@ public static partial class PopupStoreVerificationRunner
                 && request != "run-server-fairy" && request != "run-server-all" && request != "run-server01b"
                 && request != "run-server01c" && request != "run-server01c-all"
                 && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b"
-                && request != "run-sound")
+                && request != "run-sound" && request != "run-entry")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1023,7 +1023,11 @@ public static partial class PopupStoreVerificationRunner
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        var selected = request == "run-sound" ? new[] {
+        var selected = request == "run-entry" ? Fixtures.Concat(new[] {
+                "PopupStoreSoundTests", "PresentationSoundTests", "PopupStoreAccountPhaseConnectionTests",
+                "PopupStorePhasePreviewEntryGuideTests", "PopupStoreLatestEntryTests"
+            }).Distinct().ToArray()
+            : request == "run-sound" ? new[] {
                 "PopupStoreSoundTests", "PresentationSoundTests",
                 "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
                 "PopupStorePackingTests", "PopupStoreUnorderedPackingTests", "PopupStorePackingPresentationTests",

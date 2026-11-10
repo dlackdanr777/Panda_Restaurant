@@ -281,6 +281,101 @@ public sealed class PopupStorePackingPresentationTests
         }
     }
 
+    [TestCase("Idle", false)]
+    [TestCase("Boom", false)]
+    [TestCase("Move", false)]
+    [TestCase("Move", true)]
+    public void NativeParentDeactivationDefersSiblingRestoreAndReentryKeepsOneReceiptOutcome(string phase, bool ancestor)
+    {
+        using (var host = new Host())
+        {
+            var parent = ancestor ? new GameObject("presentation-deactivation-ancestor") : null;
+            UIRefreshActivationProbe probe = null;
+            var errors = new List<string>();
+            Application.LogCallback capture = (message, stack, type) => {
+                if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert) errors.Add(message);
+            };
+            Application.logMessageReceived += capture;
+            try
+            {
+                if (parent != null) host.Root.transform.SetParent(parent.transform, false);
+                host.Boom.transform.SetSiblingIndex(3);
+                host.Result.transform.SetSiblingIndex(4);
+                int boomIndex = host.Boom.transform.GetSiblingIndex(), resultIndex = host.Result.transform.GetSiblingIndex();
+                host.Begin();
+                PopupStorePackingReceipt receipt = null;
+                if (phase != "Idle")
+                {
+                    receipt = host.Pack(0);
+                    host.Presentation.TickPresentation(0);
+                    host.AdvanceTo(phase);
+                }
+                var transaction = new TransactionSnapshot(host);
+                int disabled = 0;
+                // Ordinary MonoBehaviours do not receive EditMode callbacks. This existing
+                // ExecuteAlways test probe invokes the real cleanup callback *inside*
+                // Unity's parent SetActive transition, where native sibling validation runs.
+                probe = host.Root.AddComponent<UIRefreshActivationProbe>();
+                probe.OnDeactivated = () => { disabled++; InvokeLifecycle(host.Presentation, "OnDisable"); };
+                if (parent != null) parent.SetActive(false);
+                host.View.Hide();
+                Assert.That(disabled, Is.EqualTo(1));
+                Assert.That(errors, Is.Empty, string.Join("\n", errors));
+                AssertHidden(host);
+                Assert.That(host.Presentation.IsReady, Is.False);
+                Assert.That(host.Presentation.VisualOutcomes.Count, Is.EqualTo(receipt == null ? 0 : 1));
+                if (receipt != null)
+                {
+                    Assert.That(host.Presentation.VisualOutcomes[0].Receipt, Is.SameAs(receipt));
+                    Assert.That(host.Presentation.VisualOutcomes[0].Kind, Is.EqualTo(PopupStoreVisualOutcomeKind.Cancelled));
+                }
+                // A later duplicate cleanup while hidden must retain the pending original order.
+                host.Presentation.EndVisibleSession();
+                if (parent != null) parent.SetActive(true);
+                host.Reopen();
+                Assert.That(Read(host.Presentation, "_originalBoomSibling"), Is.EqualTo(boomIndex));
+                Assert.That(Read(host.Presentation, "_originalResultSibling"), Is.EqualTo(resultIndex));
+                host.Presentation.TickPresentation(10);
+                AssertHidden(host);
+                Assert.That(host.Presentation.StartedPresentationCount, Is.EqualTo(receipt == null ? 0 : 1));
+                Assert.That(host.Presentation.VisualOutcomes.Count, Is.EqualTo(receipt == null ? 0 : 1));
+                transaction.AssertUnchanged(host);
+                host.Presentation.EndVisibleSession();
+                Assert.That(host.Boom.transform.GetSiblingIndex(), Is.EqualTo(boomIndex));
+                Assert.That(host.Result.transform.GetSiblingIndex(), Is.EqualTo(resultIndex));
+                Assert.That(errors, Is.Empty, string.Join("\n", errors));
+            }
+            finally
+            {
+                if (probe != null) probe.OnDeactivated = null;
+                Application.logMessageReceived -= capture;
+                if (parent != null)
+                {
+                    if (host.Root != null) host.Root.transform.SetParent(null, false);
+                    Object.DestroyImmediate(parent);
+                }
+            }
+        }
+    }
+
+    [Test]
+    public void ExplicitCleanupWhileParentIsStableRestoresAuthoredSiblingOrderImmediately()
+    {
+        using (var host = new Host())
+        {
+            host.Result.transform.SetSiblingIndex(3);
+            host.Boom.transform.SetSiblingIndex(4);
+            int boomIndex = host.Boom.transform.GetSiblingIndex(), resultIndex = host.Result.transform.GetSiblingIndex();
+            host.Begin();
+            host.Presentation.EndVisibleSession();
+            host.Presentation.EndVisibleSession();
+            Assert.That(host.Boom.transform.GetSiblingIndex(), Is.EqualTo(boomIndex));
+            Assert.That(host.Result.transform.GetSiblingIndex(), Is.EqualTo(resultIndex));
+            AssertHidden(host);
+            Assert.That(host.Presentation.VisualOutcomes, Is.Empty);
+        }
+    }
+
     [Test]
     public void BeginningASessionKeepsOldQueuedReceiptsForDeliveryButDoesNotReplayThem()
     {

@@ -88,14 +88,17 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     private Image _sessionResult;
     private Vector3 _baseScale;
     private Vector3 _basePosition;
-    private Transform _resultParent;
+    private Transform _boomParent, _resultParent;
     private Color _resultColor;
     private int _originalBoomSibling, _originalResultSibling;
+    private Transform _pendingBoomRestore, _pendingBoomParent, _pendingResultRestore, _pendingResultParent;
+    private int _pendingBoomIndex, _pendingResultIndex;
     private Color _boomColor;
     private float _elapsed;
     private bool _sessionActive;
     private bool _endingSession;
     private bool _publishingOutcome;
+    private bool _beginSessionPending;
     private string _lastError;
 
     public bool IsReady { get; private set; }
@@ -141,6 +144,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     public bool BeginVisibleSession()
     {
         if (_endingSession) return false;
+        _beginSessionPending = false;
         if (_sessionActive) return IsReady;
         EndVisibleSession();
         if (!isActiveAndEnabled) return false;
@@ -157,6 +161,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         _sessionResult = _resultImage;
         _baseScale = _resultImage.rectTransform.localScale;
         _basePosition = _resultImage.rectTransform.anchoredPosition3D;
+        _boomParent = _boomAnimator.transform.parent;
         _resultParent = _resultImage.transform.parent;
         _resultColor = _resultImage.color;
         _originalBoomSibling = _boomAnimator.transform.GetSiblingIndex();
@@ -183,6 +188,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     public void EndVisibleSession()
     {
         if (_endingSession) return;
+        _beginSessionPending = false;
         _endingSession = true;
         try
         {
@@ -201,9 +207,22 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
             const string reason = "Popup presentation closed or disabled.";
             if (receipt != null) RecordCancellation(reason);
             HideVisuals();
-            if (Owned(_sessionBoom)) _sessionBoom.transform.SetSiblingIndex(_originalBoomSibling);
-            if (Owned(_sessionResult) && _sessionResult.transform.parent == _resultParent)
-                _sessionResult.transform.SetSiblingIndex(_originalResultSibling);
+            // Unity rejects sibling changes inside a parent's SetActive(false) callback.
+            // Receipt cleanup remains immediate; only the original draw order waits for
+            // the next safe visible-session start, before its indices are captured again.
+            if (Owned(_sessionBoom))
+            {
+                _pendingBoomRestore = _sessionBoom.transform;
+                _pendingBoomParent = _boomParent;
+                _pendingBoomIndex = _originalBoomSibling;
+            }
+            if (Owned(_sessionResult))
+            {
+                _pendingResultRestore = _sessionResult.transform;
+                _pendingResultParent = _resultParent;
+                _pendingResultIndex = _originalResultSibling;
+            }
+            RestoreSiblingOrderWhenActive();
             CurrentReceipt = null;
             CurrentTarget = null;
             CurrentPhase = Phase.Idle;
@@ -215,12 +234,30 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
             _sessionBoom = null;
             _sessionBoomImage = null;
             _sessionResult = null;
+            _boomParent = null;
             _resultParent = null;
             if (receipt != null) RecordOutcome(receipt, target, PopupStoreVisualOutcomeKind.Cancelled, reason);
             // Only drain our own popup's queue, including receipts committed just before a close.
             ArchiveOutstanding(source, orders, reason);
         }
         finally { _endingSession = false; }
+    }
+
+    private void RestoreSiblingOrderWhenActive()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        // Restore lower indices first when the two authored visuals share a parent.
+        bool resultFirst = _pendingBoomParent == _pendingResultParent && _pendingResultIndex < _pendingBoomIndex;
+        if (resultFirst) RestoreSibling(_pendingResultRestore, _pendingResultParent, _pendingResultIndex);
+        RestoreSibling(_pendingBoomRestore, _pendingBoomParent, _pendingBoomIndex);
+        if (!resultFirst) RestoreSibling(_pendingResultRestore, _pendingResultParent, _pendingResultIndex);
+        _pendingBoomRestore = _pendingBoomParent = _pendingResultRestore = _pendingResultParent = null;
+    }
+
+    private void RestoreSibling(Transform target, Transform parent, int index)
+    {
+        if (Owned(target) && target.parent == parent && target.GetSiblingIndex() != index)
+            target.SetSiblingIndex(index);
     }
 
     public void TickPresentation(float unscaledDelta)
@@ -653,10 +690,12 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         Debug.LogError("PopupStorePackingPresentation: " + error, this);
     }
 
-    private void OnEnable() { if (Application.isPlaying) BeginVisibleSession(); }
+    // Draw-order changes must also happen after the parent's activation callback ends.
+    private void OnEnable() { _beginSessionPending = Application.isPlaying; }
     private void Update()
     {
         if (!Application.isPlaying) return;
+        if (_beginSessionPending) BeginVisibleSession();
         var clock = _sessionClock != null ? _sessionClock : GetComponent<PopupStoreBusinessClock>();
         if (clock != null)
             TickPresentation(clock.FilterAutomaticVisualDelta(Time.unscaledDeltaTime, ref _visualResumeVersion));

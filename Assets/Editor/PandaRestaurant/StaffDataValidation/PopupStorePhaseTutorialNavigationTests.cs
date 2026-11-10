@@ -23,7 +23,16 @@ public sealed class PopupStorePhaseTutorialNavigationTests
         {
             var h = t.Game;
             var time = Field<TMP_Text>(h.Clock, "_timeText");
-            Assert.That(time.text, Is.Not.EqualTo("—"), "The authored label reproduces the stale pre-binding text.");
+            var clockSettings = new SerializedObject(h.Clock);
+            Assert.That(clockSettings.FindProperty("_notStartedText").stringValue, Is.EqualTo("—"));
+            Assert.That(time.text, Is.EqualTo("—"), "The latest authored value no longer duplicates the separate time heading.");
+            var headings = Array.FindAll(h.Root.GetComponentsInChildren<TMP_Text>(true), text => text.name == "Time Label");
+            Assert.That(headings.Length, Is.EqualTo(1));
+            Assert.That(headings[0].text, Is.EqualTo("남은 시간"));
+            // Exercise a real Inspector override and a stale label on this memory instance only.
+            clockSettings.FindProperty("_notStartedText").stringValue = "대기 중";
+            clockSettings.ApplyModifiedPropertiesWithoutUndo();
+            time.text = "남은 시간 —";
             double remaining = h.Clock.RemainingSeconds;
             double elapsed = h.Clock.ElapsedSeconds;
             t.AssertUnused();
@@ -34,7 +43,11 @@ public sealed class PopupStorePhaseTutorialNavigationTests
             // Exercise the actual menu binder synchronously: no Update, focus, start or elapsed-time tick.
             bind.Invoke(null, new object[] { h.View, t.View, h.Preview });
 
-            Assert.That(time.text, Is.EqualTo("—"));
+            Assert.That(time.text, Is.EqualTo("대기 중"));
+            clockSettings.Update();
+            Assert.That(clockSettings.FindProperty("_notStartedText").stringValue, Is.EqualTo("대기 중"));
+            Assert.That(headings[0].text, Is.EqualTo("남은 시간"));
+            Assert.That(time.text, Does.Not.Contain("남은 시간"));
             Assert.That(t.View.IsTutorialVisible, Is.True);
             Assert.That(h.Clock.RemainingSeconds, Is.EqualTo(remaining));
             Assert.That(h.Clock.ElapsedSeconds, Is.EqualTo(elapsed));

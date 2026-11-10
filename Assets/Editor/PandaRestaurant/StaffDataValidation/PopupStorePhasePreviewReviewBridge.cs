@@ -33,13 +33,10 @@ public static partial class PopupStoreVerificationRunner
     {
         if (command == "phase-preview-status")
         { Debug.Log("POPUP_STORE_PHASE_PREVIEW_STATUS " + ReadPhasePreviewStatus()); return; }
-        string reason;
-        bool accepted;
-        if (command == "phase-preview-start") accepted = TryStartPhasePreview(out reason);
-        else if (command == "phase-preview-reset") accepted = TryResetPhasePreview(out reason);
-        else { Debug.LogWarning("POPUP_STORE_PHASE_PREVIEW_REFUSED unknown explicit command"); return; }
+        bool accepted = PopupStorePhasePreviewCommands.TryExecute(new PopupStoreExistingPhasePreviewActions(), command, out string reason);
         if (accepted) Debug.Log("POPUP_STORE_PHASE_PREVIEW_COMMAND " + command + "; " + reason);
-        else Debug.LogWarning("POPUP_STORE_PHASE_PREVIEW_REFUSED " + command + "; " + reason);
+        else Debug.LogWarning("POPUP_STORE_PHASE_PREVIEW_REFUSED " + command + "; " + reason
+            + "\n" + PopupStorePhasePreviewEntryGuide.Format(ReadPhasePreviewEntryState()));
     }
 
     internal static bool TryStartPhasePreview(out string reason)
@@ -47,7 +44,7 @@ public static partial class PopupStoreVerificationRunner
         reason = null;
         if (SessionState.GetString(PhasePreviewStateKey, "").Length != 0 || _phasePreviewAccessOwner != null
             || _phasePreviewView != null || _phasePreviewRestorePending)
-        { reason = "기존 단계 프리뷰 기록이 있습니다. Play 종료 후 '6단계 프리뷰 초기화'를 먼저 실행하세요."; return false; }
+        { reason = "기존 단계 프리뷰 기록 또는 소유자가 있어 새 시작을 차단합니다. '6단계 프리뷰 상태 확인'의 현재 상태별 다음 조작을 확인하세요."; return false; }
         var status = ReadPlannerManualTestStatus();
         // A stopped ordinary review's history remains untouched; it is not an active data owner.
         if (status.Stopped && !status.OwnerPresent && !status.StartPending && !status.OwnerLost)
@@ -100,8 +97,37 @@ public static partial class PopupStoreVerificationRunner
         SessionState.EraseString(PhasePreviewStateKey); SessionState.EraseString(PhasePreviewProfileKey);
         SessionState.EraseBool(PhasePreviewOwnerKey); SessionState.EraseString(PhasePreviewErrorKey);
         SessionState.EraseString(PhasePreviewWorkspaceKey);
-        reason = "단계 프리뷰 기록만 초기화했습니다. Inspector 밸런스 에셋·이전 v0 파일·일반 90초 테스트 기록은 보존합니다.";
+        reason = "단계 프리뷰 기록만 초기화했습니다. SDK·로그인 세션·인증정보·실계정 저장은 정리하지 않았습니다. "
+            + "Inspector 밸런스 에셋·이전 v0 파일·일반 90초 테스트 기록은 보존합니다.";
         return true;
+    }
+
+    internal static bool TryStopPhasePreview(out string reason)
+    {
+        reason = PopupStorePhasePreviewCommands.BlockReason(ReadPhasePreviewEntryState(), "phase-preview-stop");
+        if (reason != null) return false;
+        CustomerPartyStage1Preview.StopManual();
+        reason = "현재 단계 프리뷰의 정상 종료를 요청했습니다. 원본 검수기의 Scene·선택·Manager 복원이 끝날 때까지 기다리세요.";
+        return true;
+    }
+
+    internal static PopupStorePhasePreviewEntryState ReadPhasePreviewEntryState()
+    {
+        bool optionsEnabled = EditorSettings.enterPlayModeOptionsEnabled;
+        var options = EditorSettings.enterPlayModeOptions;
+        return new PopupStorePhasePreviewEntryState {
+            Policy = ReadPlannerManualTestStatus(),
+            SdkInitialized = BackEnd.Backend.IsInitialized,
+            LoggedIn = BackEnd.Backend.IsLogin,
+            DomainReloadEnabled = !optionsEnabled || (options & EnterPlayModeOptions.DisableDomainReload) == 0,
+            SceneReloadEnabled = !optionsEnabled || (options & EnterPlayModeOptions.DisableSceneReload) == 0,
+            PhaseState = SessionState.GetString(PhasePreviewStateKey, ""),
+            PhaseOwnerPresent = _phasePreviewAccessOwner != null,
+            PhaseViewPresent = _phasePreviewView != null,
+            PhaseOwnerRecorded = SessionState.GetBool(PhasePreviewOwnerKey, false),
+            ManualPlayReserved = SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false),
+            RestorePending = _phasePreviewRestorePending
+        };
     }
 
     internal static string ReadPhasePreviewStatus()
@@ -117,16 +143,23 @@ public static partial class PopupStoreVerificationRunner
             + "\n다음 시작의 Inspector 설정=" + PopupStorePhasePreviewSettings.BalanceAssetPath
             + "\n이전 v0 파일 보존(현재 시작에서 사용하지 않음)=" + PopupStorePhasePreviewSettings.SettingsPath
             + "\n진입: 원본 Manual Play 검수창의 카메라: VIP 홀 → Game 빈 배경을 아래로 드래그 → 3층 지도 → 패스트푸드 아이콘 → 튜토리얼 마지막 페이지 플레이."
-            + "\n반복: 기존 테스트 종료 (Play 중지) → 6단계 프리뷰 초기화 → 6단계 프리뷰 시작. 일반 테스트 메뉴는 원래 90초 경로입니다.";
+            + "\n" + PopupStorePhasePreviewEntryGuide.Format(ReadPhasePreviewEntryState())
+            + "\n일반 '테스트 시작' 메뉴는 명시적인 원래 90초 검수 경로입니다.";
     }
 
     private static void TickPhasePreviewReview()
     {
         string state = SessionState.GetString(PhasePreviewStateKey, "");
         if ((state != "starting" && state != "ready") || !EditorApplication.isPlaying) return;
-        if (!SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false)
-            || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
-        { RecordPhasePreviewFailure("원본 메모리 세션 안전 경계를 확인할 수 없습니다."); return; }
+        if (!SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false))
+        { RecordPhasePreviewFailure("원본 메모리 검수 예약이 없습니다. 현재 Play에 검수 소유자를 다시 연결하지 않습니다. 기존 실행을 정상 종료하세요."); return; }
+        if (BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+        {
+            RecordPhasePreviewFailure("실행 중 SDK 또는 로그인 상태가 감지되어 단계 프리뷰를 차단합니다. "
+                + "SDK 초기화=" + BackEnd.Backend.IsInitialized + "; 로그인 세션=" + BackEnd.Backend.IsLogin
+                + "; 현재 Play를 정상 종료하고 원본 Editor를 정상 재시작하세요. 프리뷰 초기화로 SDK 세션을 정리하지 않습니다.");
+            return;
+        }
         if (!CustomerPartyManualPlayBootstrap.Active
             || !SceneManager.GetSceneByPath(CustomerPartyStage1Preview.ScenePath).isLoaded) return;
         if (!HasOriginalMemoryOwner())
@@ -200,9 +233,7 @@ public static partial class PopupStoreVerificationRunner
         var polish = tutorial.GetComponent<PopupStorePhasePreviewPolish>();
         var exit = new SerializedObject(popup.GetComponent<PopupStoreExitConfirmation>());
         var clock = new SerializedObject(popup.GetComponent<PopupStoreBusinessClock>());
-        // Instance-only preview formatting: the authored frame already contains its static time label.
-        clock.FindProperty("_notStartedText").stringValue = "—";
-        clock.ApplyModifiedPropertiesWithoutUndo();
+        // The authored clock owns its placeholder; preserve Inspector overrides.
         popup.GetComponent<PopupStoreBusinessClock>().RefreshPhasePreview();
         var overlay = exit.FindProperty("_overlay").objectReferenceValue as GameObject;
         var panel = overlay != null ? overlay.transform.Find("Exit Confirmation Panel") as RectTransform : null;

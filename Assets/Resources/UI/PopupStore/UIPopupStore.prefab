@@ -617,7 +617,7 @@ MonoBehaviour:
   _entryCutoffSeconds: 10
   _timeText: {fileID: 200025}
   _timeFormat: '{0:00}:{1:00}'
-  _notStartedText: "\uB0A8\uC740 \uC2DC\uAC04  \u2014"
+  _notStartedText: "\u2014"
   _autoStartForEditorReview: 0
 --- !u!114 &1100001
 MonoBehaviour:
@@ -968,6 +968,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _panel: {fileID: 2200001}
+  _unavailableTutorialPrefab: {fileID: 1835415097359430429, guid: 968ae38d8cbb4572b6e7ada117d1634b, type: 3}
+  _unavailableTicketText: "\uC870\uD68C \uBD88\uAC00"
 --- !u!114 &3956467343012488940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12798,7 +12800,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2200011
 RectTransform:
   m_ObjectHideFlags: 0

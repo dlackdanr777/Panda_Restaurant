@@ -622,8 +622,8 @@ public sealed class PopupStoreScoreTests
             Assert.That(templates.Count(value => value.PlushIds.Count == 1), Is.EqualTo(8));
             Assert.That(templates.Count(value => value.PlushIds.Count == 2), Is.EqualTo(8));
             Assert.That(templates.Count(value => value.PlushIds.Count == 3), Is.EqualTo(4));
-            int objects = host.Root.GetComponentsInChildren<Transform>(true).Length;
             host.Start();
+            int objects = host.Root.GetComponentsInChildren<Transform>(true).Length;
             int safety = 0;
             while (host.Entrance.ReleasedCount < 20 && safety++ < 2000)
             {
