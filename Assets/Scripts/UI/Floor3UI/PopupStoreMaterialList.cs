@@ -225,6 +225,8 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
         _boundScrollRect.onValueChanged.AddListener(OnScrolled);
         _boundPrevious.onClick.AddListener(PreviousPage);
         _boundNext.onClick.AddListener(NextPage);
+        PopupStoreSound.BindButton(_boundPrevious);
+        PopupStoreSound.BindButton(_boundNext);
         _boundClock = GetComponentInParent<UIPopupStore>(true).GetComponent<PopupStoreBusinessClock>();
         if (_boundClock != null) { _boundClock.StateChanged += CancelPendingClick; _boundClock.ContextChanged += CancelPendingClick; }
     }

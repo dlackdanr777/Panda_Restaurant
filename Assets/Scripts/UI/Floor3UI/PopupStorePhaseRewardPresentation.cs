@@ -109,6 +109,7 @@ public sealed class PopupStorePhaseRewardPresentation : MonoBehaviour
     private string _disclaimer;
     private bool _visible;
     private bool _listenersBound;
+    private bool _suppressAcquisitionSounds;
     private uint _resumeVersion;
     public PopupStorePhaseRewardVisualSession Session => _session;
     public PopupStorePhaseRewardVisualState State => _session.State;
@@ -146,11 +147,13 @@ public sealed class PopupStorePhaseRewardPresentation : MonoBehaviour
     {
         if (owner == null || !transform.IsChildOf(owner.transform) || !owner.IsConfirmed
             || !owner.Snapshot.EligibleReward || owner.Reward != this) return Reject("Saved reward confirmation is required.");
-        return BeginCore(owner.Snapshot, gradeSprite, owner.Snapshot.Diamonds, "보상 수령 완료", closeCallback, true);
+        // Recovery may describe a reward already claimed in an earlier view or login.
+        // Its confirmation contract does not prove a new grant, so it stays acquisition-silent.
+        return BeginCore(owner.Snapshot, gradeSprite, owner.Snapshot.Diamonds, "보상 수령 완료", closeCallback, true, true);
     }
 
     private bool BeginCore(object resultIdentity, Sprite gradeSprite, int amount, string disclaimer,
-        Func<bool> closeCallback, bool accountConfirmed)
+        Func<bool> closeCallback, bool accountConfirmed, bool suppressAcquisitionSounds = false)
     {
         if (!ValidateConfiguration(out string error)) return Reject(error);
         if (_clock == null || !isActiveAndEnabled || resultIdentity == null || gradeSprite == null
@@ -159,7 +162,10 @@ public sealed class PopupStorePhaseRewardPresentation : MonoBehaviour
         if (_session.ResultIdentity != null && (!ReferenceEquals(_session.ResultIdentity, resultIdentity)
             || _shownSprite != gradeSprite || _session.Amount != amount || _disclaimer != disclaimer))
             return Reject("An observed reward presentation cannot be rebound to another result or payload.");
+        int previousBeginCount = _session.BeginCount;
         if (!_session.TryBegin(resultIdentity, amount)) return false;
+        bool firstPresentation = _session.BeginCount > previousBeginCount;
+        if (firstPresentation) _suppressAcquisitionSounds = suppressAcquisitionSounds;
         if (_shownSprite == null)
         {
             _shownSprite = gradeSprite; _disclaimer = disclaimer; _close = closeCallback;
@@ -167,6 +173,8 @@ public sealed class PopupStorePhaseRewardPresentation : MonoBehaviour
             _disclaimerText.text = disclaimer;
         }
         BindListeners(); _visible = true; LastError = null; Render();
+        if (firstPresentation && !_suppressAcquisitionSounds)
+            PopupStoreSound.Play(this, PopupStoreSoundCue.RewardAppeared, resultIdentity);
         return true;
     }
 
@@ -177,13 +185,19 @@ public sealed class PopupStorePhaseRewardPresentation : MonoBehaviour
         if (!ValidateConfiguration(out string error)) { Reject(error); HidePresentation(); return; }
         if (!contextAlreadyFiltered && Application.isPlaying)
             delta = _clock.FilterAutomaticVisualDelta(delta, ref _resumeVersion);
+        var previousState = State;
         _session.Advance(delta, _riseDuration, _openingDuration);
         Render();
+        if (previousState == PopupStorePhaseRewardVisualState.Opening
+            && State == PopupStorePhaseRewardVisualState.Revealed && !_suppressAcquisitionSounds && _session.Amount > 0)
+            PopupStoreSound.Play(this, PopupStoreSoundCue.DiamondsShown, _session.ResultIdentity);
     }
 
     public bool TryOpen()
     {
         if (!CanReceiveInput() || !_session.TryOpen()) return false;
+        if (!_suppressAcquisitionSounds)
+            PopupStoreSound.Play(this, PopupStoreSoundCue.RewardOpen, _session.ResultIdentity);
         Render(); Log("OPEN"); return true;
     }
 
@@ -337,6 +351,8 @@ public sealed class PopupStorePhaseRewardPresentation : MonoBehaviour
     {
         if (_listenersBound) return;
         _boxButton.onClick.AddListener(OnBoxClicked); _confirmButton.onClick.AddListener(OnConfirmClicked);
+        PopupStoreSound.BindButton(_boxButton);
+        PopupStoreSound.BindButton(_confirmButton);
         _listenersBound = true;
     }
     private void OnBoxClicked() => TryOpen();

@@ -325,6 +325,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         slot.ComplaintElapsed = 0;
         slot.ExitElapsed = slot.ExitProgress = 0;
         StartedComplaintCount++;
+        PopupStoreSound.Play(this, PopupStoreSoundCue.CustomerExpired, slot.Order);
         UpdateComplaintIcon(index, slot);
         if (notify) _orders.ApplyCustomerEntrySlot(index);
 #if UNITY_EDITOR
@@ -510,6 +511,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                 {
                     slot.State = PopupStoreCustomerState.Waiting;
                     ArrivedCount++;
+                    PopupStoreSound.Play(this, PopupStoreSoundCue.OrderShown, slot.Order);
                     NotifySlotChanged(i, ref changed);
 #if UNITY_EDITOR
                     if (Application.isPlaying)
@@ -816,6 +818,8 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         slot.ExitElapsed = 0;
         slot.ExitProgress = 0;
         StartedDepartureCount++;
+        if (outcome.Kind == PopupStoreVisualOutcomeKind.VisualCompleted)
+            PopupStoreSound.Play(this, PopupStoreSoundCue.CustomerSatisfied, receipt);
 #if UNITY_EDITOR
         if (Application.isPlaying)
             Debug.Log("POPUP_STORE_CUSTOMER_LEAVING receipt=" + receipt.ReceiptId + "; slot=" + index

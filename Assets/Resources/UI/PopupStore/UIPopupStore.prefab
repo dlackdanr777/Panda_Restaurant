@@ -34,6 +34,7 @@ GameObject:
   - component: {fileID: 2200002}
   - component: {fileID: 3956467343012488940}
   - component: {fileID: 8670176176136927254}
+  - component: {fileID: 2300001}
   m_Layer: 5
   m_Name: UIPopupStore
   m_TagString: Untagged
@@ -256,7 +257,7 @@ MonoBehaviour:
     - {fileID: 601223}
     - {fileID: 601233}
     - {fileID: 601243}
-  _matchSound: {fileID: 8300000, guid: 68aaadd7f8016994587b3cd16494f2f8, type: 3}
+  _matchSound: {fileID: 0}
   _soundVolume: 0.35
   _soundDuration: 0.75
   _pulseScale: 1.05
@@ -18847,3 +18848,108 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &2300001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ba915cb44ba4bddba7afc8b2249d7a1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _cues:
+  - Cue: 0
+    Clip: {fileID: 8300000, guid: 924be5a011bb21e448fc2086f911e9fe, type: 3}
+    Volume: 0.45
+    MinimumInterval: 0.07
+  - Cue: 1
+    Clip: {fileID: 8300000, guid: 0bf1c17a789ae864db6771f37bc92cb7, type: 3}
+    Volume: 0.5
+    MinimumInterval: 0.15
+  - Cue: 2
+    Clip: {fileID: 8300000, guid: 2c309399d3328e64a8d1d17460c9dcc9, type: 3}
+    Volume: 0.55
+    MinimumInterval: 0.15
+  - Cue: 3
+    Clip: {fileID: 8300000, guid: dbfbfd0d635fc5c4e8c9f86e0da35547, type: 3}
+    Volume: 0.4
+    MinimumInterval: 0.4
+  - Cue: 4
+    Clip: {fileID: 8300000, guid: 8f5971b5e545d704fa079b8c1477d829, type: 3}
+    Volume: 0.5
+    MinimumInterval: 0.15
+  - Cue: 5
+    Clip: {fileID: 8300000, guid: 5ca8e9bc866df42428e71d45dc0fc48e, type: 3}
+    Volume: 0.35
+    MinimumInterval: 0.15
+  - Cue: 6
+    Clip: {fileID: 8300000, guid: 6ecffe9faeb5ce944a8a47924a548f29, type: 3}
+    Volume: 0.35
+    MinimumInterval: 0.15
+  - Cue: 7
+    Clip: {fileID: 8300000, guid: 5e388b40317ec374f87b7b18937f4f1a, type: 3}
+    Volume: 0.35
+    MinimumInterval: 0.7
+  - Cue: 8
+    Clip: {fileID: 8300000, guid: b5d3832afe58edf42877b486912a67f6, type: 3}
+    Volume: 0.3
+    MinimumInterval: 0.7
+  - Cue: 9
+    Clip: {fileID: 8300000, guid: 5ca8e9bc866df42428e71d45dc0fc48e, type: 3}
+    Volume: 0.3
+    MinimumInterval: 0.7
+  - Cue: 10
+    Clip: {fileID: 8300000, guid: 37db2c13a7a07f74a97e8fc2cbbb8d39, type: 3}
+    Volume: 0.3
+    MinimumInterval: 0.15
+  - Cue: 11
+    Clip: {fileID: 8300000, guid: 6ecffe9faeb5ce944a8a47924a548f29, type: 3}
+    Volume: 0.5
+    MinimumInterval: 0.2
+  - Cue: 12
+    Clip: {fileID: 8300000, guid: f051427698456594e9a0e909df117cb2, type: 3}
+    Volume: 0.7
+    MinimumInterval: 0.15
+  - Cue: 13
+    Clip: {fileID: 8300000, guid: 70eb4fd85b74a824fa3d34604dc6b273, type: 3}
+    Volume: 0.65
+    MinimumInterval: 0.2
+  - Cue: 14
+    Clip: {fileID: 8300000, guid: 2c309399d3328e64a8d1d17460c9dcc9, type: 3}
+    Volume: 0.7
+    MinimumInterval: 0.2
+  - Cue: 15
+    Clip: {fileID: 8300000, guid: 70eb4fd85b74a824fa3d34604dc6b273, type: 3}
+    Volume: 0.65
+    MinimumInterval: 0.2
+  - Cue: 16
+    Clip: {fileID: 8300000, guid: bbdeb5a3879c74f4f815f62ef243c68a, type: 3}
+    Volume: 0.35
+    MinimumInterval: 0.2
+  - Cue: 17
+    Clip: {fileID: 8300000, guid: fcee4bc14ff3f714f99734176331f7dd, type: 3}
+    Volume: 0.6
+    MinimumInterval: 0.2
+  - Cue: 18
+    Clip: {fileID: 8300000, guid: 5ca8e9bc866df42428e71d45dc0fc48e, type: 3}
+    Volume: 0.5
+    MinimumInterval: 0.2
+  - Cue: 19
+    Clip: {fileID: 8300000, guid: 8f5971b5e545d704fa079b8c1477d829, type: 3}
+    Volume: 0.6
+    MinimumInterval: 0.2
+  - Cue: 20
+    Clip: {fileID: 8300000, guid: 398f8cfcaddb7c545b14770a391bef01, type: 3}
+    Volume: 0.6
+    MinimumInterval: 0.2
+  - Cue: 21
+    Clip: {fileID: 8300000, guid: 68aaadd7f8016994587b3cd16494f2f8, type: 3}
+    Volume: 0.35
+    MinimumInterval: 0.15
+    MaximumDuration: 0.75
+  _maximumConcurrent: 6
+  _recipeBackground: {fileID: 8300000, guid: fbc95f0d7d782464ab51023ca2e421c2, type: 3}
+  _recipeTransitionSeconds: 0.5

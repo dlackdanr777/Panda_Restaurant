@@ -244,7 +244,14 @@ public sealed class PopupStoreScore : MonoBehaviour
         return true;
     }
 
-    private void OnSucceeded(PopupStorePackingReceipt receipt) => TryRecordReceipt(receipt);
+    private void OnSucceeded(PopupStorePackingReceipt receipt)
+    {
+        TryRecordReceipt(receipt);
+        // A phase observer may have recorded this same commit first. History refresh is silent.
+        if (receipt != null && _owner != null && _owner.IsCommittedReceipt(receipt)
+            && _byReceipt.ContainsKey(receipt.ReceiptId))
+            PopupStoreSound.Play(this, PopupStoreSoundCue.ScoreAdded, receipt);
+    }
     private void Unsubscribe()
     {
         if (_subscribed != null) _subscribed.SucceededCommitted -= OnSucceeded;

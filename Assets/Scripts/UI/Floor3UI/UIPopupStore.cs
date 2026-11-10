@@ -28,6 +28,7 @@ public sealed class UIPopupStore : MobileUIView
         {
             _closeButton.onClick.RemoveListener(Close);
             _closeButton.onClick.AddListener(Close);
+            PopupStoreSound.BindButton(_closeButton, SoundEffectType.ButtonExitSound);
         }
         if (_displayOnlyButtons != null)
             foreach (var button in _displayOnlyButtons)

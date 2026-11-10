@@ -125,6 +125,8 @@ public sealed class PopupStorePacking : MonoBehaviour
         _boundOrders.Refreshed += UpdateButtonState;
         _boundClock.StateChanged += UpdateButtonState;
         _boundPackButton.onClick.AddListener(OnPackClicked);
+        // This button uses the authored bell on its accepted click, not two input sounds.
+        GachaButtonInputSound.Bind(_boundPackButton, canPlay: () => false);
         UpdateButtonState();
         return true;
     }
@@ -160,6 +162,7 @@ public sealed class PopupStorePacking : MonoBehaviour
             SuccessfulPackCount++;
             LastResult = new PopupStorePackingResult(PopupStorePackingStatus.Succeeded, matches, receipt);
             _committedReceipts.Add(receipt);
+            PopupStoreSound.Play(this, PopupStoreSoundCue.PackingAccepted, receipt);
             PublishSucceeded(receipt);
             try { _counter.PublishPackingConsumed(); }
             catch (Exception exception) { Debug.LogException(exception, this); }
@@ -239,10 +242,15 @@ public sealed class PopupStorePacking : MonoBehaviour
 
     private void OnPackClicked()
     {
+        bool acceptedInput = _boundPackButton != null && _boundPackButton.IsActive() && _boundPackButton.IsInteractable();
+        if (acceptedInput) PopupStoreSound.Play(this, PopupStoreSoundCue.PackingButton);
 #if UNITY_EDITOR
         int before = _counter != null ? _counter.Count : 0;
 #endif
         var result = TryPack();
+        if (acceptedInput && (result.Status == PopupStorePackingStatus.None || result.Status == PopupStorePackingStatus.Multiple
+            || result.Status == PopupStorePackingStatus.Stale))
+            PopupStoreSound.Play(this, PopupStoreSoundCue.PackingRejected);
 #if UNITY_EDITOR
         var completed = new List<string>();
         if (_orders != null)

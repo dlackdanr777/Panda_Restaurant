@@ -101,6 +101,10 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
         _nextButton.onClick.AddListener(OnNext);
         _playButton.onClick.AddListener(OnPlay);
         _closeButton.onClick.AddListener(OnClose);
+        PopupStoreSound.BindButton(_previousButton);
+        PopupStoreSound.BindButton(_nextButton);
+        PopupStoreSound.BindButton(_playButton);
+        PopupStoreSound.BindButton(_closeButton, SoundEffectType.ButtonExitSound);
         HideAll();
     }
 
@@ -121,6 +125,7 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
         if (!wasVisible && !_invoking) _closeRequested = false;
         _ticketStatusText.text = ticketStatus ?? string.Empty;
         RenderPage();
+        PopupStoreSound.BeginRecipeBackground(this);
     }
 
     /// <summary>Account requests are asynchronous. Only release the local click latch once the host allows a retry.</summary>
@@ -216,7 +221,8 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
             case "GameOver": sprite = _gameOver; break;
             default: throw new ArgumentException("Unknown preview cue: " + cue, nameof(cue));
         }
-        if (!IsCueVisible || LastCue != cue || CurrentStage != stage) CueShowCount++;
+        if (!IsCueVisible || LastCue != cue || CurrentStage != stage)
+            CueShowCount++;
         LastCue = cue; CurrentStage = stage;
         _tutorialGroup.SetActive(false); _presentationGroup.SetActive(true);
         _inputGroup.interactable = true; _inputGroup.blocksRaycasts = true;
@@ -230,6 +236,19 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
         float scale = Mathf.Lerp(_cueStartScale, 1f, t * t * (3f - 2f * t));
         _cueImage.rectTransform.localScale = Vector3.one * scale;
         _stageText.rectTransform.localScale = Vector3.one * scale;
+        // The first Stage render occurs before the clock commits Running. Repeated
+        // renders may retry that unavailable context; the sound owner dispatches this
+        // stable stage/cue identity at most once and never advances the presentation.
+        string marker = stage + ":" + cue;
+        switch (cue)
+        {
+            case "Stage": PopupStoreSound.Play(this, PopupStoreSoundCue.StageNotice, this, marker); break;
+            case "3": case "2": case "1":
+                PopupStoreSound.Play(this, PopupStoreSoundCue.Countdown, this, marker); break;
+            case "GameStart": PopupStoreSound.Play(this, PopupStoreSoundCue.GameStart, this, marker); break;
+            case "Success": PopupStoreSound.Play(this, PopupStoreSoundCue.StageSuccess, this, marker); break;
+            case "GameOver": PopupStoreSound.Play(this, PopupStoreSoundCue.GameOver, this, marker); break;
+        }
     }
 
     public void HideAll()

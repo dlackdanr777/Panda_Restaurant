@@ -91,7 +91,10 @@ public sealed class PopupStoreRewardBox : MonoBehaviour
         IsAnimating = _animate && _duration > 0 && !ReferenceEquals(_animatedResult, result);
         // A result is presented once even if animation is disabled or its first appearance is interrupted.
         if (!ReferenceEquals(_animatedResult, result))
-        { _animatedResult = result; if (IsAnimating) AnimationCount++; }
+        {
+            _animatedResult = result; if (IsAnimating) AnimationCount++;
+            PopupStoreSound.Play(this, PopupStoreSoundCue.RewardAppeared, result);
+        }
 #if UNITY_EDITOR
         if (Application.isPlaying)
             Debug.Log("POPUP_STORE_REWARD_SHOWN session=" + result.SessionId + " grade=" + result.Grade

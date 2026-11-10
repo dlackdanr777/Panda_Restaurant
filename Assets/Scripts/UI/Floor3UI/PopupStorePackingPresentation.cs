@@ -299,6 +299,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
                 _sessionBoom.Update(0);
             }
             CurrentPhase = Phase.Boom;
+            PopupStoreSound.Play(this, PopupStoreSoundCue.PackingBoom, CurrentReceipt);
             _elapsed = 0;
             return true;
         }
@@ -342,6 +343,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
                 HideBoom();
                 _sessionResult.gameObject.SetActive(true);
                 CurrentPhase = Phase.Grow;
+                PopupStoreSound.Play(this, PopupStoreSoundCue.BoxAppeared, CurrentReceipt);
                 break;
             case Phase.Grow:
                 _sessionResult.rectTransform.localScale = _baseScale * _maxScale;
@@ -350,6 +352,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
             case Phase.Settle:
                 _sessionResult.rectTransform.localScale = _baseScale;
                 CurrentPhase = Phase.Move;
+                PopupStoreSound.Play(this, PopupStoreSoundCue.DeliveryStarted, CurrentReceipt);
                 break;
             case Phase.Move:
                 // Visual arrival only. The packing transaction has already committed.

@@ -959,7 +959,8 @@ public static partial class PopupStoreVerificationRunner
             if (request != "run" && request != "run-server" && request != "run-server-economy"
                 && request != "run-server-fairy" && request != "run-server-all" && request != "run-server01b"
                 && request != "run-server01c" && request != "run-server01c-all"
-                && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b")
+                && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b"
+                && request != "run-sound")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1022,7 +1023,20 @@ public static partial class PopupStoreVerificationRunner
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        var selected = request == "run-final01b" ? new[] { "EditorAccountSafetyTests" }
+        var selected = request == "run-sound" ? new[] {
+                "PopupStoreSoundTests", "PresentationSoundTests",
+                "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
+                "PopupStorePackingTests", "PopupStoreUnorderedPackingTests", "PopupStorePackingPresentationTests",
+                "PopupStoreDeliveryTests", "PopupStoreCustomerEntranceTests", "PopupStoreCustomerDepartureTests",
+                "PopupStoreCustomerPatienceTests", "PopupStoreScoreTests", "PopupStoreResultTests",
+                "PopupStoreRewardBoxTests", "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests",
+                "PopupStoreExitConfirmationTests", "PopupStoreAdmissionTests", "PopupStoreSessionLifetimeTests",
+                "PopupStorePhasePreviewIntegrationTests", "PopupStorePhasePreviewClockTests",
+                "PopupStorePhasePresentationTests", "PopupStorePhaseTutorialTests", "PopupStorePhaseTutorialNavigationTests",
+                "PopupStorePhaseRewardPresentationTests", "PopupStorePhaseRewardIntegrationTests",
+                "PopupStoreAccountPhaseConnectionTests"
+            }
+            : request == "run-final01b" ? new[] { "EditorAccountSafetyTests" }
             : request == "run-server" ? ServerFixtures
             : request == "run-server-economy" ? ServerEconomyRegressionFixtures
             : request == "run-server-fairy" ? new[] { "StaffStageMigrationCollectionTests" }

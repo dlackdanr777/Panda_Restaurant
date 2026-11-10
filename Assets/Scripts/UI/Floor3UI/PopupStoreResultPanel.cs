@@ -76,6 +76,7 @@ public sealed partial class PopupStoreResultPanel : MonoBehaviour
             Unbind();
             _boundButton = _confirmButton;
             _boundButton.onClick.AddListener(OnConfirmClicked);
+            PopupStoreSound.BindButton(_boundButton);
         }
         if (_sizedPanel != _panel)
         {
@@ -169,7 +170,11 @@ public sealed partial class PopupStoreResultPanel : MonoBehaviour
         _shown = true;
         PresentationCount++;
         _appearing = !_hasAppeared && _showDuration > 0f;
-        if (!_hasAppeared) { _hasAppeared = true; AppearanceCount++; }
+        if (!_hasAppeared)
+        {
+            _hasAppeared = true; AppearanceCount++;
+            PopupStoreSound.Play(this, PopupStoreSoundCue.ResultShown, result);
+        }
         _confirmButton.interactable = false;
         var eventSystem = EventSystem.current;
         _previousSelection = eventSystem != null ? eventSystem.currentSelectedGameObject : null;

@@ -54,6 +54,8 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
             _boundContinue.onClick.AddListener(OnContinueClicked);
             _boundAbandon = _abandonButton;
             _boundAbandon.onClick.AddListener(OnAbandonClicked);
+            PopupStoreSound.BindButton(_boundContinue);
+            PopupStoreSound.BindButton(_boundAbandon, SoundEffectType.ButtonExitSound);
         }
         if (_reviewHint != null) _reviewHint.SetActive(false);
         UpdateButtons();

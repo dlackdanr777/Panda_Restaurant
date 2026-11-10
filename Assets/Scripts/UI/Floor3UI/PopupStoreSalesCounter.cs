@@ -112,6 +112,7 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
 
         _materials.Add(material);
         Render();
+        PopupStoreSound.Play(this, PopupStoreSoundCue.MaterialAdded);
         NotifyChanged(ChangeReason.Added);
         return true;
     }
@@ -120,8 +121,10 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
     {
         if (!CanAcceptInput) return;
         if (_packingLocked || !isActiveAndEnabled || !IsReady) return;
+        bool removedMaterials = _materials.Count > 0;
         _materials.Clear();
         Render();
+        if (removedMaterials) PopupStoreSound.Play(this, PopupStoreSoundCue.CounterCleared);
         NotifyChanged(ChangeReason.Cleared);
     }
 

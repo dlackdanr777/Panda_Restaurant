@@ -58,6 +58,7 @@ public sealed class PopupStoreRewardRevealPreview : MonoBehaviour
         {
             Unbind(); _boundButton = _openButton;
             _boundButton.onClick.AddListener(OnClicked);
+            PopupStoreSound.BindButton(_boundButton);
         }
         LastError = null;
         IsReady = !IsRevealed && !IsAnimating;
@@ -79,6 +80,7 @@ public sealed class PopupStoreRewardRevealPreview : MonoBehaviour
         _animatedImage = _box.BoxImage;
         _shownScale = _animatedImage.rectTransform.localScale;
         _shownColor = _animatedImage.color;
+        PopupStoreSound.Play(this, PopupStoreSoundCue.RewardOpen, OpenedResult);
         Log("STARTED");
         return true;
     }
@@ -100,6 +102,8 @@ public sealed class PopupStoreRewardRevealPreview : MonoBehaviour
         if (t < 1f) return;
         RestoreAnimatedImage(); IsAnimating = false;
         ShowText(); Log("COMPLETED");
+        if (ShownDecision.Diamonds > 0)
+            PopupStoreSound.Play(this, PopupStoreSoundCue.DiamondsShown, OpenedResult);
     }
 
     private bool Validate(out string error)

@@ -72,7 +72,11 @@ public sealed partial class PopupStoreResultPanel
             _overlay.blocksRaycasts = true; _overlay.interactable = true;
             _shown = true; _elapsed = 0; PresentationCount++;
             _appearing = !_hasAppeared && _showDuration > 0;
-            if (!_hasAppeared) { _hasAppeared = true; AppearanceCount++; }
+            if (!_hasAppeared)
+            {
+                _hasAppeared = true; AppearanceCount++;
+                PopupStoreSound.Play(this, PopupStoreSoundCue.ResultShown, result);
+            }
             _confirmButton.interactable = !_appearing;
             _previousSelection = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
             if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);

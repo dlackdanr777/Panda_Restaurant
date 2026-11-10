@@ -47,6 +47,8 @@ public sealed class PopupStoreStartPanel : MonoBehaviour
             _boundClose = _closeButton;
             _boundStart.onClick.AddListener(OnStartClicked);
             _boundClose.onClick.AddListener(OnCloseClicked);
+            PopupStoreSound.BindButton(_boundStart);
+            PopupStoreSound.BindButton(_boundClose, SoundEffectType.ButtonExitSound);
         }
         LastError = null;
         return true;
