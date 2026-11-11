@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: PopupStoreAccountPhaseConfiguration
   m_EditorClassIdentifier: 
   _enableAccountMode: 1
+  _dailyBusinessLimit: 200
   _tutorialPrefab: {fileID: 1835415097359430429, guid: 968ae38d8cbb4572b6e7ada117d1634b,
     type: 3}
   _rewardPrefab: {fileID: 5721431612438584291, guid: 5385a40c601f484eb2a0a2fce398c651,

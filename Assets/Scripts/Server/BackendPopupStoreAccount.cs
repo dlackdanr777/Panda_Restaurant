@@ -30,7 +30,7 @@ namespace Muks.BackEnd
                 if (configuration == null || !configuration.EnableAccountMode
                     || !configuration.TryFreeze(catalog, out var profile, out _, out _)
                     || !configuration.RewardTable.TryCreateSnapshot(out var policy, out _)) return null;
-                return _instance.CreatePopupStoreAccountBridge(profile, policy);
+                return _instance.CreatePopupStoreAccountBridge(profile, policy, configuration.DailyBusinessLimit);
             };
         }
 
@@ -45,13 +45,14 @@ namespace Muks.BackEnd
 #endif
 
         public PopupStoreGameDataAccountBridge CreatePopupStoreAccountBridge(PopupStorePhaseProfileSnapshot profile,
-            PopupStoreRewardPolicySnapshot policy)
+            PopupStoreRewardPolicySnapshot policy, int dailyLimit = 1)
         {
+            if (dailyLimit < 1 || dailyLimit > PopupStoreGameDataRecord.MaximumDailyLimit) return null;
             if (profile == null || policy == null || policy.PolicyId != PopupStoreRewardTable.R1PolicyId
                 || !GameDataTransport.GameplaySaveAllowed || !EnsurePopupStoreAccountState(out var state)) return null;
             if (_popupAccountBridge != null && _popupAccountBridge.IsReady) return _popupAccountBridge;
             _popupAccountBridge = new PopupStoreGameDataAccountBridge(state, profile, policy,
-                _popupAccountClock ?? (_popupAccountClock = new BackendPopupClock(this)), GetGameDataSaveCoordinator);
+                _popupAccountClock ?? (_popupAccountClock = new BackendPopupClock(this)), GetGameDataSaveCoordinator, dailyLimit);
             return _popupAccountBridge;
         }
 
@@ -263,6 +264,8 @@ namespace Muks.BackEnd
         private readonly PopupStorePhaseProfileSnapshot _profile;
         private readonly PopupStoreRewardPolicySnapshot _policy;
         private readonly IPopupStoreAccountClock _clock;
+        // Frozen per authenticated bridge. Inspector policy edits take effect on a new Play/login.
+        private readonly int _dailyBusinessLimit;
         private readonly Func<GameDataSaveCoordinator> _coordinator;
         private readonly PopupStoreRewardAccountSession _account;
         private PopupStoreGameDataRecord _frozenFinal;
@@ -290,11 +293,16 @@ namespace Muks.BackEnd
         }
 
         internal PopupStoreGameDataAccountBridge(PopupStoreAccountBoundState state, PopupStorePhaseProfileSnapshot profile,
-            PopupStoreRewardPolicySnapshot policy, IPopupStoreAccountClock clock, Func<GameDataSaveCoordinator> coordinator)
+            PopupStoreRewardPolicySnapshot policy, IPopupStoreAccountClock clock, Func<GameDataSaveCoordinator> coordinator,
+            int dailyLimit = 1)
         {
+            if (dailyLimit < 1 || dailyLimit > PopupStoreGameDataRecord.MaximumDailyLimit)
+                throw new ArgumentOutOfRangeException(nameof(dailyLimit));
+            _dailyBusinessLimit = dailyLimit;
             _state = state; _profile = profile; _policy = policy; _clock = clock; _coordinator = coordinator;
             _account = new PopupStoreRewardAccountSession(state.Target.AccountInDate);
-            AdmissionHost = new PopupStoreAdmissionHost(this, this, () => IsReady ? _account : null);
+            AdmissionHost = new PopupStoreAdmissionHost(this, this, () => IsReady ? _account : null,
+                maximumDailyLimit: dailyLimit);
         }
         public void QueryAccess(PopupStoreRewardAccountSession session, Action<PopupStoreBusinessAccessSnapshot> completed)
         {
@@ -302,9 +310,19 @@ namespace Muks.BackEnd
             { completed(PopupStoreBusinessAccessSnapshot.Failure(session, Status ?? "계정 영업 기록을 확인할 수 없습니다.")); return; }
             ReadClock(utc => {
                 string day = AttendanceProgress.GameDay(utc.AddHours(9)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                int used = CurrentRecord.UsedCount != 0 && string.CompareOrdinal(day, CurrentRecord.DayKey) <= 0 ? 1 : 0;
-                if (CurrentRecord.IsRewardPending || CurrentRecord.State == PopupStoreGameDataState.Started || _state.Intent != null) used = 1;
-                completed(new PopupStoreBusinessAccessSnapshot(session, day, AccessVersion, 1, used, new DateTimeOffset(utc)));
+                int dayOrder = string.CompareOrdinal(day, CurrentRecord.DayKey);
+                if (_dailyBusinessLimit > 1 && CurrentRecord.UsedCount != 0 && dayOrder < 0)
+                { completed(PopupStoreBusinessAccessSnapshot.Failure(session, "서버 영업일이 저장 기록보다 이전입니다. 기록을 초기화하지 않습니다.")); return; }
+                int used = CurrentRecord.UsedCount != 0 && dayOrder <= 0 ? CurrentRecord.UsedCount : 0;
+                if (CurrentRecord.IsRewardPending || CurrentRecord.State == PopupStoreGameDataState.Started || _state.Intent != null)
+                {
+                    // More tickets never authorize abandoning an unresolved business.
+                    // Do not misreport a pending run as 200 consumed tickets.
+                    if (_dailyBusinessLimit > 1)
+                    { completed(PopupStoreBusinessAccessSnapshot.Failure(session, "진행 중 영업 또는 미확정 보상을 먼저 완료해 주세요.")); return; }
+                    used = Math.Max(1, used);
+                }
+                completed(new PopupStoreBusinessAccessSnapshot(session, day, AccessVersion, _dailyBusinessLimit, used, new DateTimeOffset(utc)));
             }, error => completed(PopupStoreBusinessAccessSnapshot.Failure(session, error)));
         }
         public void Submit(PopupStoreRewardAccountSession session, PopupStoreBusinessStartRequest request, Action<PopupStoreBusinessStartResponse> completed)
@@ -329,7 +347,8 @@ namespace Muks.BackEnd
                 if (prior != null && prior.DefinitelyNotSent && prior.Source.Matches(CurrentRecord)
                     && prior.Candidate.State == PopupStoreGameDataState.Started && prior.Candidate.StartRequestId == request.StartRequestId)
                     next = prior.Candidate;
-                else if (!CurrentRecord.TryStart(utc, request.StartRequestId, localSessionId, _profile.ProfileId, _profile.Version, out next, out error))
+                else if (!CurrentRecord.TryStart(utc, request.StartRequestId, localSessionId, _profile.ProfileId, _profile.Version,
+                    _dailyBusinessLimit, out next, out error))
                 { completed(new PopupStoreBusinessStartResponse(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, error: error)); return; }
                 Execute(next, response => completed(response.State == PopupStoreAccountClaimState.Confirmed ? StartResponse(request)
                     : new PopupStoreBusinessStartResponse(request, response.State == PopupStoreAccountClaimState.Retryable
@@ -347,7 +366,7 @@ namespace Muks.BackEnd
                 return new PopupStoreBusinessStartResponse(request, PopupStoreBusinessStartResponseKind.Indeterminate, error: "시작 저장 결과를 확인 중입니다.");
             var startUtc = new DateTimeOffset(CurrentRecord.StartedAtUtc);
             return new PopupStoreBusinessStartResponse(request, PopupStoreBusinessStartResponseKind.Started,
-                new PopupStoreBusinessStartRecord(request, CurrentRecord.SessionId, CurrentRecord.DayKey, startUtc, 1));
+                new PopupStoreBusinessStartRecord(request, CurrentRecord.SessionId, CurrentRecord.DayKey, startUtc, CurrentRecord.UsedCount));
         }
         public void PrepareResult(PopupStorePhaseSession session, PopupStorePhaseResult result, Action<PopupStoreAccountClaimResult> completed)
         {

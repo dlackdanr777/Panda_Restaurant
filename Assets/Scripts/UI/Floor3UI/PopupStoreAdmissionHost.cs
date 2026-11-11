@@ -10,6 +10,7 @@ public sealed class PopupStoreAdmissionHost : IDisposable
     private readonly IPopupStoreBusinessAccessInformation _information;
     private readonly Func<PopupStoreRewardAccountSession> _sessionReader;
     private readonly PopupStoreBusinessStartContext _context;
+    private readonly int _maximumDailyLimit;
     private readonly Dictionary<string, string> _bindings = new Dictionary<string, string>(StringComparer.Ordinal);
     private PopupStoreStartController _target;
     private PopupStoreRewardAccountSession _capturedSession;
@@ -31,8 +32,11 @@ public sealed class PopupStoreAdmissionHost : IDisposable
 
     public PopupStoreAdmissionHost(IPopupStoreBusinessStartPersistence persistence,
         IPopupStoreBusinessAccessInformation information, Func<PopupStoreRewardAccountSession> sessionReader,
-        PopupStoreBusinessStartContext context = null, bool editorReview = false)
+        PopupStoreBusinessStartContext context = null, bool editorReview = false, int maximumDailyLimit = 3)
     {
+        if (maximumDailyLimit < 1 || maximumDailyLimit > Muks.BackEnd.PopupStoreGameDataRecord.MaximumDailyLimit)
+            throw new ArgumentOutOfRangeException(nameof(maximumDailyLimit));
+        _maximumDailyLimit = maximumDailyLimit;
         _persistence = persistence ?? throw new ArgumentNullException(nameof(persistence));
         _information = information ?? throw new ArgumentNullException(nameof(information));
         _sessionReader = sessionReader ?? throw new ArgumentNullException(nameof(sessionReader));
@@ -84,7 +88,7 @@ public sealed class PopupStoreAdmissionHost : IDisposable
                 _querying = false;
                 ++_querySerial; // One terminal information response; duplicate/late callbacks cannot replace it.
                 if (snapshot == null || !ReferenceEquals(snapshot.Session, session) || !snapshot.Success
-                    || snapshot.DailyLimit < 1 || snapshot.DailyLimit > 3 || snapshot.Used < 0
+                    || snapshot.DailyLimit < 1 || snapshot.DailyLimit > _maximumDailyLimit || snapshot.Used < 0
                     || snapshot.Remaining != Math.Max(0, snapshot.DailyLimit - snapshot.Used)
                     || string.IsNullOrWhiteSpace(snapshot.PolicyVersion) || string.IsNullOrEmpty(snapshot.GameDay))
                 { Access = null; LastError = snapshot?.Error ?? "영업권 조회 응답을 확인할 수 없습니다."; }

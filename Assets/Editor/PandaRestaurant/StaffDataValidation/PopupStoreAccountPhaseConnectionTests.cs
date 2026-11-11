@@ -18,16 +18,30 @@ public sealed class PopupStoreAccountPhaseConnectionTests
     [SetUp] public void Before() { _factory = PopupStoreAccountPhaseBootstrap.BridgeFactory; }
     [TearDown] public void After() { PopupStoreAccountPhaseBootstrap.BridgeFactory = _factory; }
 
-    [Test] public void AuthoredAccountModeIsDisabledAndCannotCallFactory()
+    [Test] public void DisabledAccountConfigurationCannotCallFactory()
     {
-        int calls = 0; PopupStoreAccountPhaseBootstrap.BridgeFactory = _ => { calls++; return null; };
-        using (var h = new Harness(false))
+        var authored = Configuration();
+        Assert.That(authored, Is.Not.Null);
+        bool authoredMode = authored.EnableAccountMode;
+        var disabled = Object.Instantiate(authored);
+        try
         {
-            Assert.That(Configuration().EnableAccountMode, Is.False);
-            Assert.That(PopupStoreAccountPhaseBootstrap.TryPrepare(h.View, out _), Is.False);
-            Assert.That(calls, Is.Zero); Assert.That(h.Controller.Host, Is.Null);
-            Assert.That(Read<double>(h.Clock, "_initialSeconds"), Is.EqualTo(90));
+            // Test the disabled guard on a detached configuration. Do not require
+            // the project's intentionally enabled QA asset to be turned off.
+            Write(disabled, "_enableAccountMode", false);
+            PopupStoreAccountPhaseBootstrap.BridgeFactory = null;
+            using (var h = new Harness(false))
+            {
+                int calls = 0;
+                PopupStoreAccountPhaseBootstrap.BridgeFactory = _ => { calls++; return null; };
+                Assert.That(disabled.EnableAccountMode, Is.False);
+                Assert.That(PopupStoreAccountPhaseBootstrap.TryPrepare(h.View, disabled, out _), Is.False);
+                Assert.That(calls, Is.Zero); Assert.That(h.Controller.Host, Is.Null);
+                Assert.That(Read<double>(h.Clock, "_initialSeconds"), Is.EqualTo(90));
+            }
+            Assert.That(authored.EnableAccountMode, Is.EqualTo(authoredMode), "The authored account setting must be preserved.");
         }
+        finally { Object.DestroyImmediate(disabled); }
     }
 
     [TestCase(1, 22, 200, 5, 22)] [TestCase(2, 27, 650, 8, 20)]

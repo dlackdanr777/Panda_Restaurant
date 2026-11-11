@@ -8,6 +8,10 @@ public sealed class PopupStoreAccountPhaseConfiguration : ScriptableObject
 {
     [SerializeField, Tooltip("Actual account mode remains disabled until test-account server validation is approved.")]
     private bool _enableAccountMode;
+    [Header("Account daily admission limit")]
+    [SerializeField, Range(1, Muks.BackEnd.PopupStoreGameDataRecord.MaximumDailyLimit)]
+    [Tooltip("Per account, per server KST-noon day. Internal QA: 200. Before release: choose 1 or 3. Change in Edit Mode and restart Play. This does not disable real rewards.")]
+    private int _dailyBusinessLimit = 1;
     [SerializeField] private GameObject _tutorialPrefab;
     [SerializeField] private GameObject _rewardPrefab;
     [SerializeField] private PopupStoreRewardTable _rewardTable;
@@ -28,6 +32,7 @@ public sealed class PopupStoreAccountPhaseConfiguration : ScriptableObject
         public double EntryIntervalSeconds;
     }
     public bool EnableAccountMode => _enableAccountMode;
+    public int DailyBusinessLimit => _dailyBusinessLimit;
     public GameObject TutorialPrefab => _tutorialPrefab;
     public GameObject RewardPrefab => _rewardPrefab;
     public PopupStoreRewardTable RewardTable => _rewardTable;
@@ -36,6 +41,8 @@ public sealed class PopupStoreAccountPhaseConfiguration : ScriptableObject
         out PopupStoreScorePolicySnapshot scoring, out string error)
     {
         profile = null; scoring = null; error = null;
+        if (_dailyBusinessLimit < 1 || _dailyBusinessLimit > Muks.BackEnd.PopupStoreGameDataRecord.MaximumDailyLimit)
+        { error = "일일 이용 한도는 1~200 범위여야 합니다."; return false; }
         if (_tutorialPrefab == null || _tutorialPrefab.GetComponent<PopupStorePhasePreviewView>() == null
             || _rewardPrefab == null || _rewardPrefab.GetComponent<PopupStorePhaseRewardPresentation>() == null
             || _rewardTable == null || !_rewardTable.TryCreateSnapshot(out var rewards, out error)

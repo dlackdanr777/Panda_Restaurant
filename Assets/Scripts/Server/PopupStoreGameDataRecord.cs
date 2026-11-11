@@ -15,6 +15,9 @@ namespace Muks.BackEnd
     {
         public const string FieldName = "PopupStoreAccountV1";
         public const int SchemaVersion = 1;
+        // Storage compatibility ceiling, NOT the selected daily policy. Keep this
+        // ceiling when reducing the Inspector limit so older QA records still load.
+        public const int MaximumDailyLimit = 200;
         private const int MaximumJsonLength = 12000;
         private readonly JObject _data;
         private readonly string _json;
@@ -83,20 +86,31 @@ namespace Muks.BackEnd
             { error = "팝업스토어 저장 기록을 확인할 수 없습니다. 사용 횟수나 보상을 초기화하지 않습니다."; return false; }
         }
 
+        // Preserve the established one-use contract for existing callers/tests.
         public bool TryStart(DateTime serverUtc, string requestId, string sessionId, string profileId, int profileVersion,
             out PopupStoreGameDataRecord next, out string error)
+            => TryStart(serverUtc, requestId, sessionId, profileId, profileVersion, 1, out next, out error);
+
+        public bool TryStart(DateTime serverUtc, string requestId, string sessionId, string profileId, int profileVersion,
+            int dailyLimit, out PopupStoreGameDataRecord next, out string error)
         {
             next = null; error = null;
+            if (dailyLimit < 1 || dailyLimit > MaximumDailyLimit)
+                return Fail("일일 이용 한도는 1~200 범위여야 합니다.", out error);
             if (serverUtc.Kind != DateTimeKind.Utc || !Id(requestId) || !Id(sessionId) || !Id(profileId) || profileVersion < 1)
                 return Fail("확인된 서버 UTC 시각과 새 영업 식별자가 필요합니다.", out error);
             string day;
             try { day = AttendanceProgress.GameDay(serverUtc.AddHours(9)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture); }
             catch (ArgumentOutOfRangeException) { return Fail("서버 시각 범위가 올바르지 않습니다.", out error); }
-            if (State == PopupStoreGameDataState.Started || IsRewardPending || (UsedCount != 0 && string.CompareOrdinal(day, DayKey) <= 0)
+            int dayOrder = string.CompareOrdinal(day, DayKey);
+            if (State == PopupStoreGameDataState.Started || IsRewardPending || (UsedCount != 0 && dayOrder < 0)
                 || requestId == LastRequestId || requestId == StartRequestId || sessionId == SessionId)
                 return Fail("진행 중 영업·미수령 보상 또는 오늘 사용한 영업권을 먼저 확인해 주세요.", out error);
+            int usedToday = dayOrder == 0 ? UsedCount : 0;
+            if (usedToday >= dailyLimit)
+                return Fail("오늘의 영업권을 모두 사용했습니다.", out error);
             var values = Empty._data;
-            values["DayKey"] = day; values["UsedCount"] = 1; values["StartRequestId"] = requestId;
+            values["DayKey"] = day; values["UsedCount"] = usedToday + 1; values["StartRequestId"] = requestId;
             values["StartedAtUtc"] = serverUtc.ToString("O", CultureInfo.InvariantCulture);
             values["SessionId"] = sessionId; values["ProfileId"] = profileId; values["ProfileVersion"] = profileVersion;
             values["State"] = (int)PopupStoreGameDataState.Started;
@@ -161,7 +175,10 @@ namespace Muks.BackEnd
                 || next.LastRequestId == LastRequestId || next.LastRequestId == StartRequestId) return false;
             if (next.State == PopupStoreGameDataState.Started)
                 return !IsRewardPending && State != PopupStoreGameDataState.Started && next.StartRequestId == next.LastRequestId
-                    && next.SessionId != SessionId && (UsedCount == 0 || string.CompareOrdinal(next.DayKey, DayKey) > 0);
+                    && next.SessionId != SessionId
+                    && ((string.CompareOrdinal(next.DayKey, DayKey) > 0 && next.UsedCount == 1)
+                        || (string.Equals(next.DayKey, DayKey, StringComparison.Ordinal)
+                            && UsedCount > 0 && UsedCount < MaximumDailyLimit && next.UsedCount == UsedCount + 1));
             if (SessionId != next.SessionId || StartRequestId != next.StartRequestId || DayKey != next.DayKey || StartedAtUtc != next.StartedAtUtc
                 || UsedCount != next.UsedCount || ProfileId != next.ProfileId || ProfileVersion != next.ProfileVersion) return false;
             if (State == PopupStoreGameDataState.Started)
@@ -189,7 +206,7 @@ namespace Muks.BackEnd
                 || !Enum.IsDefined(typeof(PopupStorePhaseEndReason), EndReason)
                 || !Enum.IsDefined(typeof(PopupStoreRewardKind), RewardKind)) return false;
             if (State == PopupStoreGameDataState.Empty) return Matches(Empty);
-            if (Revision < 1 || UsedCount != 1 || !Id(StartRequestId) || !Id(SessionId) || !Id(ProfileId)
+            if (Revision < 1 || UsedCount < 1 || UsedCount > MaximumDailyLimit || !Id(StartRequestId) || !Id(SessionId) || !Id(ProfileId)
                 || !Id(LastRequestId) || ProfileVersion < 1
                 || !DateTime.TryParseExact(DayKey, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)
                 || !DateTime.TryParseExact((string)_data["StartedAtUtc"], "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var started)
