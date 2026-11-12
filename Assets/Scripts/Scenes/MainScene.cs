@@ -85,6 +85,9 @@ public class MainScene : MonoBehaviour
 
     private void Awake()
     {
+#if UNITY_EDITOR
+        if (!EditorAccountSafety.RequireReady()) { enabled = false; return; }
+#endif
         UserInfo.ChangeStage(_stage);
         SoundManager.Instance.ChangePlayEffectType(EffectType.Restaurant);
         SetBackground();
@@ -97,7 +100,10 @@ public class MainScene : MonoBehaviour
             PlayMainMusic();
         });
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
+#if UNITY_EDITOR
+        DataBind.SetUnityActionValue("ShowMeTheMoney", () => EditorAccountSafety.RunDebugAction(() => UserInfo.AddMoney(1000000)));
+        DataBind.SetUnityActionValue("ShowMeTheDia", () => EditorAccountSafety.RunDebugAction(() => UserInfo.AddDia(1000)));
+#elif DEVELOPMENT_BUILD
         DataBind.SetUnityActionValue("ShowMeTheMoney", () => UserInfo.AddMoney(1000000));
         DataBind.SetUnityActionValue("ShowMeTheDia", () => UserInfo.AddDia(1000));
 #endif
@@ -109,6 +115,10 @@ public class MainScene : MonoBehaviour
 
     void Start()
     {
+#if UNITY_EDITOR
+        if (!EditorAccountSafety.RequireReady()) { enabled = false; return; }
+        if (EditorAccountCloseReview.Active) EditorAccountCloseReview.ObserveMainSceneStart();
+#endif
         PlayMainMusic();
         OnUIEvent();
         
@@ -118,7 +128,7 @@ public class MainScene : MonoBehaviour
         GameManager.Instance.SetMiniGameStart(false);
 
 #if UNITY_EDITOR
-        if (!SuppressEditorDebugGrantsForTesting)
+        if (!EditorAccountSafety.DebugActionsBlocked)
         {
         UserInfo.AddDia(1000);
         UserInfo.AddMoney(10000000);
@@ -248,6 +258,10 @@ public class MainScene : MonoBehaviour
 
     void Update()
     {
+#if UNITY_EDITOR
+        if (!EditorAccountSafety.DebugActionsBlocked)
+        {
+#endif
         if(Input.GetKeyDown(KeyCode.K))
         {
             UserInfo.SaveStageData(UserInfo.CurrentStage);
@@ -262,6 +276,9 @@ public class MainScene : MonoBehaviour
         {
             UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, CurrentFloor);
         }
+#if UNITY_EDITOR
+        }
+#endif
 
         _updateTimer += Time.deltaTime;
 

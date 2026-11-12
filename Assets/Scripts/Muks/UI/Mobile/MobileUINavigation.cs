@@ -30,6 +30,57 @@ namespace Muks.MobileUI
 
 
 
+        private bool _replacingInactiveView;
+
+        /// <summary>Atomically replaces one inactive registered view. Does not show, pop or publish navigation events.</summary>
+        public bool TryReplaceInactiveView(string key, MobileUIView expected, MobileUIView replacement)
+        {
+            if (_replacingInactiveView || !CanReplaceInactiveView(key, expected, replacement, out int index))
+                return false;
+            _replacingInactiveView = true;
+            try
+            {
+                // Prepare before touching either registry. A failed Init leaves the old registration intact.
+                replacement.ViewInit(this);
+                if (!CanReplaceInactiveView(key, expected, replacement, out int verifiedIndex) || verifiedIndex != index)
+                    return false;
+                _viewDic[key] = replacement;
+                _uiViews[index] = new MobileViewDicStruct { Name = key, UIView = replacement };
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            finally { _replacingInactiveView = false; }
+        }
+
+        private bool CanReplaceInactiveView(string key, MobileUIView expected, MobileUIView replacement, out int index)
+        {
+            index = -1;
+            if (string.IsNullOrEmpty(key) || expected == null || replacement == null || expected == replacement
+                || _uiViews == null || _isViewsInactive || !expected.gameObject.scene.IsValid() || !replacement.gameObject.scene.IsValid()
+                || expected.gameObject.activeSelf || replacement.gameObject.activeSelf
+                || expected.gameObject.activeInHierarchy || replacement.gameObject.activeInHierarchy
+                || expected.VisibleState != VisibleState.Disappeared || replacement.VisibleState != VisibleState.Disappeared
+                || expected.transform.parent != replacement.transform.parent
+                || _rootUiView.UIView == expected || _rootUiView.UIView == replacement
+                || _activeViewList.Contains(expected) || _activeViewList.Contains(replacement)
+                || !_viewDic.TryGetValue(key, out MobileUIView current) || !ReferenceEquals(current, expected))
+                return false;
+            foreach (var pair in _viewDic)
+                if (pair.Value == null || pair.Value == replacement || (pair.Value == expected && pair.Key != key)) return false;
+            for (int i = 0; i < _uiViews.Length; i++)
+            {
+                var entry = _uiViews[i];
+                if (entry.UIView == replacement || (entry.UIView == expected && entry.Name != key)) return false;
+                if (entry.Name != key) continue;
+                if (index >= 0 || !ReferenceEquals(entry.UIView, expected)) return false;
+                index = i;
+            }
+            return index >= 0 && ViewsVisibleStateCheck();
+        }
+
         private void Start()
         {
             Init();

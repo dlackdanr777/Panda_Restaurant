@@ -1,0 +1,633 @@
+{
+  "schema": "popup-cleanparts-v4",
+  "source_sha256": "7e4b8ee0a2d44b44211f0977fc87e64fea6525fd82b7fc8efcd5f379869f1cb1",
+  "source_size": [
+    1808,
+    870
+  ],
+  "status": "SOURCE_BASED_EMPTY_PARTS__UNITY_NOT_APPLIED",
+  "parts": [
+    {
+      "id": "V4_HUD_ScoreFrame_EMPTY",
+      "file": "01_Replacement_Sprites/V4_HUD_ScoreFrame_EMPTY.png",
+      "source_rect_xywh": [
+        918,
+        56,
+        884,
+        188
+      ],
+      "native_content_size": [
+        884,
+        188
+      ],
+      "png_size": [
+        896,
+        200
+      ],
+      "padding_px": 6,
+      "method": "source_border_interior_restored",
+      "note_ko": "별·메달·등급·숫자·구분선·게이지 모두 없음. 기존 HUD 폭을 늘리지 말고 9-slice로 기존 외곽에 맞춤.",
+      "nine_slice_lbrt_native": [
+        68,
+        43,
+        68,
+        43
+      ],
+      "sha256": "dfed1faa0acd7b7221cbe06bdcfa2a176828d75f59711efa7b2dbd1f1865de4e"
+    },
+    {
+      "id": "V4_HUD_TimerFrame_EMPTY",
+      "file": "01_Replacement_Sprites/V4_HUD_TimerFrame_EMPTY.png",
+      "source_rect_xywh": [
+        1330,
+        274,
+        438,
+        167
+      ],
+      "native_content_size": [
+        438,
+        167
+      ],
+      "png_size": [
+        450,
+        179
+      ],
+      "padding_px": 6,
+      "method": "source_shape_trace_empty_surface_restoration",
+      "note_ko": "원본의 모서리·꼬리·팔레트에 맞춘 빈틀 윤곽 복원. 내용물·글자·시계 없음. 가려진 픽셀의 직접 추출본은 아님.",
+      "nine_slice_lbrt_native": [
+        67,
+        34,
+        67,
+        34
+      ],
+      "sha256": "19c01b35e0206b9c3c3ecd0365e1a11bb0688cd2496726c8d4ca3876b34cb0ee"
+    },
+    {
+      "id": "V4_Grade_Track",
+      "file": "01_Replacement_Sprites/V4_Grade_Track.png",
+      "source_rect_xywh": [
+        1300,
+        149,
+        447,
+        50
+      ],
+      "native_content_size": [
+        447,
+        50
+      ],
+      "png_size": [
+        459,
+        62
+      ],
+      "padding_px": 6,
+      "method": "direct_contour_mask",
+      "note_ko": "값이 없는 트랙. 원본 슬롯은 UI 조립 위치가 아님.",
+      "nine_slice_lbrt_native": [
+        28,
+        20,
+        28,
+        20
+      ],
+      "sha256": "c68c0fc358a12a0bde12285e1f1c61155a6869d5e8abb7390bb6d1a78cc65752"
+    },
+    {
+      "id": "V4_OrderBubble_EMPTY",
+      "file": "01_Replacement_Sprites/V4_OrderBubble_EMPTY.png",
+      "source_rect_xywh": [
+        352,
+        59,
+        549,
+        241
+      ],
+      "native_content_size": [
+        549,
+        241
+      ],
+      "png_size": [
+        561,
+        253
+      ],
+      "padding_px": 6,
+      "method": "source_shape_trace_empty_surface_restoration",
+      "note_ko": "원본의 모서리·꼬리·팔레트에 맞춘 빈틀 윤곽 복원. 내용물·글자·시계 없음. 가려진 픽셀의 직접 추출본은 아님.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "e0ed1d39171bd432cd9e7f41412b870368a87bae61aa6ec1971672d5f1de2938"
+    },
+    {
+      "id": "V4_OrderBubble_Wide_EMPTY",
+      "file": "01_Replacement_Sprites/V4_OrderBubble_Wide_EMPTY.png",
+      "source_rect_xywh": [
+        605,
+        653,
+        655,
+        214
+      ],
+      "native_content_size": [
+        655,
+        214
+      ],
+      "png_size": [
+        667,
+        226
+      ],
+      "padding_px": 6,
+      "method": "source_shape_trace_empty_surface_restoration",
+      "note_ko": "원본의 모서리·꼬리·팔레트에 맞춘 빈틀 윤곽 복원. 내용물·글자·시계 없음. 가려진 픽셀의 직접 추출본은 아님.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "e750263f0373758ba6f2276317aab5aa3880cc1d6c11c8bacc50e3c9528a4e92"
+    },
+    {
+      "id": "V4_OrderAlert",
+      "file": "01_Replacement_Sprites/V4_OrderAlert.png",
+      "source_rect_xywh": [
+        331,
+        9,
+        131,
+        112
+      ],
+      "native_content_size": [
+        131,
+        112
+      ],
+      "png_size": [
+        143,
+        124
+      ],
+      "padding_px": 6,
+      "method": "source_red_shapes_isolated_outline_restored",
+      "note_ko": "원본 빨간 강조선의 세 실루엣을 분리하고 외곽 고리만 연속 보완. 말풍선 조각 없음.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "d99a9f9c0198b169eb8b70ed95bf20b91f760d57c1d4d9e83404430e48b3a21d"
+    },
+    {
+      "id": "V4_Panel_Box_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Panel_Box_EMPTY.png",
+      "source_rect_xywh": [
+        27,
+        359,
+        541,
+        250
+      ],
+      "native_content_size": [
+        541,
+        250
+      ],
+      "png_size": [
+        553,
+        262
+      ],
+      "padding_px": 6,
+      "method": "source_shape_and_palette_trace_surface_restoration",
+      "note_ko": "원본 형태·팔레트 기준의 빈 패널 복원. 재료·탭·화살표·도트 없음. 안쪽 연속 실선 1개 유지. 코너·선 누락 방지용 윤곽 재정리.",
+      "nine_slice_lbrt_native": [
+        70,
+        58,
+        70,
+        67
+      ],
+      "sha256": "ffe0476c575268411d07c68bd90f6e790296798bae27cb848d405aaf8508bfbc"
+    },
+    {
+      "id": "V4_Panel_Plush_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Panel_Plush_EMPTY.png",
+      "source_rect_xywh": [
+        579,
+        359,
+        676,
+        250
+      ],
+      "native_content_size": [
+        676,
+        250
+      ],
+      "png_size": [
+        688,
+        262
+      ],
+      "padding_px": 6,
+      "method": "source_shape_and_palette_trace_surface_restoration",
+      "note_ko": "원본 형태·팔레트 기준의 빈 패널 복원. 재료·탭·화살표·도트 없음. 안쪽 연속 실선 1개 유지. 코너·선 누락 방지용 윤곽 재정리.",
+      "nine_slice_lbrt_native": [
+        70,
+        58,
+        70,
+        67
+      ],
+      "sha256": "4d8a0ded22a0bc963ee744fbd2f9c32cc9a34258b931e2be468f639cbc77883f"
+    },
+    {
+      "id": "V4_Panel_Ribbon_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Panel_Ribbon_EMPTY.png",
+      "source_rect_xywh": [
+        23,
+        627,
+        549,
+        232
+      ],
+      "native_content_size": [
+        549,
+        232
+      ],
+      "png_size": [
+        561,
+        244
+      ],
+      "padding_px": 6,
+      "method": "source_shape_and_palette_trace_surface_restoration",
+      "note_ko": "원본 형태·팔레트 기준의 빈 패널 복원. 재료·탭·화살표·도트 없음. 안쪽 연속 실선 1개 유지. 코너·선 누락 방지용 윤곽 재정리.",
+      "nine_slice_lbrt_native": [
+        70,
+        58,
+        70,
+        67
+      ],
+      "sha256": "2d11b109f46d03c7eba3086f1adb67db87ef2aa3aee0a9cc4aafecc0dbfa1956"
+    },
+    {
+      "id": "V4_Tab_Box_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Tab_Box_EMPTY.png",
+      "source_rect_xywh": [
+        73,
+        349,
+        226,
+        69
+      ],
+      "native_content_size": [
+        226,
+        69
+      ],
+      "png_size": [
+        238,
+        81
+      ],
+      "padding_px": 6,
+      "method": "source_pill_shape_and_palette_empty_restoration",
+      "note_ko": "제목·아이콘 완전 분리. 원본 탭 외형 기준 복원.",
+      "nine_slice_lbrt_native": [
+        40,
+        20,
+        40,
+        20
+      ],
+      "sha256": "ca696ee8919bd54c8ae2d5bf9267db32dfd4fd91a59cc8eab23459c7aab6b635"
+    },
+    {
+      "id": "V4_Tab_Plush_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Tab_Plush_EMPTY.png",
+      "source_rect_xywh": [
+        627,
+        350,
+        273,
+        69
+      ],
+      "native_content_size": [
+        273,
+        69
+      ],
+      "png_size": [
+        285,
+        81
+      ],
+      "padding_px": 6,
+      "method": "source_pill_shape_and_palette_empty_restoration",
+      "note_ko": "제목·아이콘 완전 분리. 원본 탭 외형 기준 복원.",
+      "nine_slice_lbrt_native": [
+        40,
+        20,
+        40,
+        20
+      ],
+      "sha256": "b269e984ec68201cc9d3eb56558adde98bd39d50ca5fa0b3b72fabc805e600a7"
+    },
+    {
+      "id": "V4_Tab_Ribbon_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Tab_Ribbon_EMPTY.png",
+      "source_rect_xywh": [
+        75,
+        618,
+        230,
+        67
+      ],
+      "native_content_size": [
+        230,
+        67
+      ],
+      "png_size": [
+        242,
+        79
+      ],
+      "padding_px": 6,
+      "method": "source_pill_shape_and_palette_empty_restoration",
+      "note_ko": "제목·아이콘 완전 분리. 원본 탭 외형 기준 복원.",
+      "nine_slice_lbrt_native": [
+        40,
+        20,
+        40,
+        20
+      ],
+      "sha256": "2c4ffa4f546971f75915244694f2328f207528ba74956b9105e432e0975196c5"
+    },
+    {
+      "id": "V4_Clock_Pink",
+      "file": "01_Replacement_Sprites/V4_Clock_Pink.png",
+      "source_rect_xywh": [
+        1266,
+        255,
+        180,
+        195
+      ],
+      "native_content_size": [
+        180,
+        195
+      ],
+      "png_size": [
+        192,
+        207
+      ],
+      "padding_px": 6,
+      "method": "source_watch_mask_refined_continuous_outline",
+      "note_ko": "원본 시계 면을 보존하고 배경 프레임 조각 제거 및 끊기지 않는 외곽 보완. 독립 Sprite.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "e5f84ac310e9125a1d1f1c323ab89ad750df3f41f5a4d9bfefb9ea1726151cd7"
+    },
+    {
+      "id": "V4_Clock_Blue",
+      "file": "01_Replacement_Sprites/V4_Clock_Blue.png",
+      "source_rect_xywh": [
+        1331,
+        661,
+        122,
+        136
+      ],
+      "native_content_size": [
+        122,
+        136
+      ],
+      "png_size": [
+        134,
+        148
+      ],
+      "padding_px": 6,
+      "method": "source_silhouette_isolation",
+      "note_ko": "손님 인내심용 단독 시계. 바와 분리.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "a018aed4e83fa89b4382f8cc9c7b813eacf5dae94c2a6a11a604e597ce86492c"
+    },
+    {
+      "id": "V4_Patience_Track",
+      "file": "01_Replacement_Sprites/V4_Patience_Track.png",
+      "source_rect_xywh": [
+        1408,
+        683,
+        373,
+        109
+      ],
+      "native_content_size": [
+        373,
+        109
+      ],
+      "png_size": [
+        385,
+        121
+      ],
+      "padding_px": 6,
+      "method": "source_right_cap_mirror_empty_channel",
+      "note_ko": "시계·녹색 채움·17s 없이 빈 타임바. 텍스트와 Fill 별도.",
+      "nine_slice_lbrt_native": [
+        63,
+        38,
+        63,
+        38
+      ],
+      "sha256": "e39c0e3f58b4d683254d1f691ec3e92bb2ca397fed8ff447dbd08ba51bf8fe45"
+    },
+    {
+      "id": "V4_Patience_Fill_Green",
+      "file": "01_Replacement_Sprites/V4_Patience_Fill_Green.png",
+      "source_rect_xywh": [
+        1419,
+        710,
+        332,
+        57
+      ],
+      "native_content_size": [
+        332,
+        57
+      ],
+      "png_size": [
+        344,
+        69
+      ],
+      "padding_px": 6,
+      "method": "source_fill_shape_trace_and_required_state_palette",
+      "note_ko": "시트 녹색 바 실루엣 기준의 독립 Fill 복원. 숫자·트랙 테두리 없음. 노랑·빨강·금색은 기존 상태용 색상 파생본.",
+      "nine_slice_lbrt_native": [
+        32,
+        20,
+        32,
+        20
+      ],
+      "sha256": "fd5ff22212a54d0ad41b86310c68cf6c6ac0b69a3971e457e74507160f6052a7"
+    },
+    {
+      "id": "V4_Patience_Fill_Yellow",
+      "file": "01_Replacement_Sprites/V4_Patience_Fill_Yellow.png",
+      "source_rect_xywh": [
+        1419,
+        710,
+        332,
+        57
+      ],
+      "native_content_size": [
+        332,
+        57
+      ],
+      "png_size": [
+        344,
+        69
+      ],
+      "padding_px": 6,
+      "method": "source_fill_shape_trace_and_required_state_palette",
+      "note_ko": "시트 녹색 바 실루엣 기준의 독립 Fill 복원. 숫자·트랙 테두리 없음. 노랑·빨강·금색은 기존 상태용 색상 파생본.",
+      "nine_slice_lbrt_native": [
+        32,
+        20,
+        32,
+        20
+      ],
+      "sha256": "e3cf4c807410abc6300b6f625a79ad2190c88dd34f931d80123f5b763bfefe53"
+    },
+    {
+      "id": "V4_Patience_Fill_Red",
+      "file": "01_Replacement_Sprites/V4_Patience_Fill_Red.png",
+      "source_rect_xywh": [
+        1419,
+        710,
+        332,
+        57
+      ],
+      "native_content_size": [
+        332,
+        57
+      ],
+      "png_size": [
+        344,
+        69
+      ],
+      "padding_px": 6,
+      "method": "source_fill_shape_trace_and_required_state_palette",
+      "note_ko": "시트 녹색 바 실루엣 기준의 독립 Fill 복원. 숫자·트랙 테두리 없음. 노랑·빨강·금색은 기존 상태용 색상 파생본.",
+      "nine_slice_lbrt_native": [
+        32,
+        20,
+        32,
+        20
+      ],
+      "sha256": "84dbee8293404baf1e6a523d7ee7757f1207955d34fd7586369666daffdae53e"
+    },
+    {
+      "id": "V4_Grade_Fill_Gold",
+      "file": "01_Replacement_Sprites/V4_Grade_Fill_Gold.png",
+      "source_rect_xywh": [
+        1419,
+        710,
+        332,
+        57
+      ],
+      "native_content_size": [
+        332,
+        57
+      ],
+      "png_size": [
+        344,
+        69
+      ],
+      "padding_px": 6,
+      "method": "source_fill_shape_trace_and_required_state_palette",
+      "note_ko": "시트 녹색 바 실루엣 기준의 독립 Fill 복원. 숫자·트랙 테두리 없음. 노랑·빨강·금색은 기존 상태용 색상 파생본.",
+      "nine_slice_lbrt_native": [
+        32,
+        20,
+        32,
+        20
+      ],
+      "sha256": "e3cf4c807410abc6300b6f625a79ad2190c88dd34f931d80123f5b763bfefe53"
+    },
+    {
+      "id": "V4_Arrow_Left",
+      "file": "01_Replacement_Sprites/V4_Arrow_Left.png",
+      "source_rect_xywh": [
+        50,
+        467,
+        38,
+        57
+      ],
+      "native_content_size": [
+        38,
+        57
+      ],
+      "png_size": [
+        50,
+        69
+      ],
+      "padding_px": 6,
+      "method": "source_outline_trace",
+      "note_ko": "원본 삼각 화살표 윤곽 정리. 그림만 제공하며 Button의 터치 영역은 별도.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "70650a475a3312c30806c9a4441878a7d80fa305bdc89e50b76926b881f968a0"
+    },
+    {
+      "id": "V4_Arrow_Right",
+      "file": "01_Replacement_Sprites/V4_Arrow_Right.png",
+      "source_rect_xywh": [
+        509,
+        467,
+        38,
+        57
+      ],
+      "native_content_size": [
+        38,
+        57
+      ],
+      "png_size": [
+        50,
+        69
+      ],
+      "padding_px": 6,
+      "method": "source_outline_trace",
+      "note_ko": "원본 삼각 화살표 윤곽 정리. 그림만 제공하며 Button의 터치 영역은 별도.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "dba6427bc5db9c06ae6ab2500555b868d0d61f56a6807f04612041cc98e2cde4"
+    },
+    {
+      "id": "V4_Dot_Pink_Active",
+      "file": "01_Replacement_Sprites/V4_Dot_Pink_Active.png",
+      "source_rect_xywh": [
+        794,
+        554,
+        38,
+        38
+      ],
+      "native_content_size": [
+        38,
+        38
+      ],
+      "png_size": [
+        50,
+        50
+      ],
+      "padding_px": 6,
+      "method": "source_circular_outline_cutout",
+      "note_ko": "표시용 도트. 개수는 기존 스크롤 상태로 결정.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "3fbb714e284da00dc280da3623c414a5070d2938c52f688b53ebf0aabfbe7075"
+    },
+    {
+      "id": "V4_Dot_Inactive",
+      "file": "01_Replacement_Sprites/V4_Dot_Inactive.png",
+      "source_rect_xywh": [
+        845,
+        558,
+        32,
+        32
+      ],
+      "native_content_size": [
+        32,
+        32
+      ],
+      "png_size": [
+        44,
+        44
+      ],
+      "padding_px": 6,
+      "method": "source_circular_outline_cutout",
+      "note_ko": "표시용 도트. 개수는 기존 스크롤 상태로 결정.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "1b15826d126338747b4c5a21de2b4ecdd10f0d075531460d5806098eed18425e"
+    },
+    {
+      "id": "V4_Sign_RopesLeaves_EMPTY",
+      "file": "01_Replacement_Sprites/V4_Sign_RopesLeaves_EMPTY.png",
+      "source_rect_xywh": [
+        0,
+        0,
+        336,
+        341
+      ],
+      "native_content_size": [
+        336,
+        341
+      ],
+      "png_size": [
+        348,
+        353
+      ],
+      "padding_px": 6,
+      "method": "native_alpha_connected_component_cleanup",
+      "note_ko": "시트의 밧줄이 잎 앞에 보이는 구조를 유지. 간판 글자 없음. 기존 배경 내 간판을 먼저 제거한 파생 배경과 짝으로 사용.",
+      "nine_slice_lbrt_native": null,
+      "sha256": "d96d2ada4b643ce776d7c69f95f6a58d62a6928a8bcdfb45902fabc5323f83f6"
+    }
+  ]
+}

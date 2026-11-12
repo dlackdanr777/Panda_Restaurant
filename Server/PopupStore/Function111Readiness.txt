@@ -1,0 +1,135 @@
+DEV-SERVER-01C / Function 1.1.1 실제 환경 및 빌드 준비
+조사 기준일: 2026-11-09 KST
+
+판정
+로컬 소스 연결 명세: 작성 완료.
+실제 Function SDK 프로젝트/컴파일: BLOCKED / NOT RUN.
+개발 서버 통합검증 및 실제 지급: BLOCKED / NOT RUN.
+이 문서는 실제 개발 서버가 마련되지 않은 상태의 준비 자료다.
+Unity 컴파일, 도메인 Fake 검사, 공식 문서 검토는 Function 빌드의 대체 증거가 아니다.
+
+1. 이 PC에서 확인한 사실
+- backend 및 backendCLI: PATH에서 발견되지 않았다.
+- 신규 기본 설치 위치 %LOCALAPPDATA%\AFI\Function: 없음.
+- 구형 기본 설치 위치 C:\Program Files\AFI\BackendFunction: 없음.
+- 설치된 .NET SDK: 7.0.400. .NET 8 SDK 미발견.
+- Unity Assets/TheBackend/Plugins/Backend.dll: Assembly/File Version 5.15.0.0.
+- Server/PopupStore에는 기존 Function.cs/DatabaseAccountStore.cs 후보가 있으나,
+  실제 BackendFunction.csproj, backend-function.json, backend-sdk.json, 서버 DLL 묶음은 없다.
+- Downloads 검색에서는 Unity 자동 생성 csproj들만 확인했다. 모든 로컬 디스크를
+  조사했다는 뜻은 아니며, 별도 Function 프로젝트가 제공되면 다시 확인한다.
+- 설치/업데이트/프로필 변경/인증/서버 호출은 실행하지 않았다.
+- 인증키·토큰·비밀번호 파일을 열거나 출력하지 않았다. 따라서 기존 Unity 프로젝트의
+  서버가 개발 환경이라는 증거도 없으며, 이를 개발 서버 대신 사용하지 않는다.
+
+2. 공식 환경과 현재 소스 호환 범위
+Function 1.1.1은 2026-11-03 공개됐고 서버 Base 5.18.17을 사용한다.
+Unity 5.15 DLL과 별개의 산출물이므로 Unity DLL로 서버 참조를 대신하지 않는다.
+공식 빌드 규칙은 net8.0 단일 TargetFramework, BackendFunction AssemblyName 및
+RootNamespace이다. 최신 프로젝트의 실제 PackageReference 버전과 DLL SHA-256은
+공식 생성 결과를 확보한 뒤 검증한다. 누락된 NuGet 패키지명/패치 버전을 추정하지 않았다.
+https://docs.backnd.com/update-note-function/Function-1-1-1/
+https://docs.backnd.com/sdk-docs/function/cli/build/
+
+현재 후보의 BackEnd namespace, Backend.Initialize(ref stream), Stream 반환,
+Amazon.Lambda.Core ILambdaContext 및 LambdaSerializer 사용은 공식 템플릿 형태와 같다.
+인증 사용자는 요청의 계정 문자열이 아니라 GetUserInfoV2의 row.gamerId를 사용한다.
+실제 서버 SDK를 통한 컴파일·호출은 아직 검증하지 못했다. Unity 5.15에 이 서버 API가
+없어도 두 SDK를 혼용해 수정하지 않는다.
+멀티 캐릭터 프로젝트의 gamerId는 선택한 캐릭터 ID이다. 계정당 하루 1회를 보장하려면
+단일 캐릭터 프로젝트인지, 또는 서버가 검증하는 계정 고정 식별자 매핑이 있는지 먼저
+확인해야 한다. 이를 확인하지 않은 상태에서 캐릭터별 기록을 계정별 기록이라고 부르지 않는다.
+Function 호스트의 AuthenticatedAccountIdentityVerified는 기본 false이며 이 증거 없이는
+시작/지급 경로를 열지 않는다. 요청값이나 이름만으로 계정 매핑을 만들지 않았다.
+https://docs.backnd.com/sdk-docs/function/template/
+https://docs.backnd.com/sdk-docs/function/request-response/caller/
+
+Database API는 Task 기반이다. 기존 동기 도메인 인터페이스를 보존하는 SDK 어댑터의
+await 경로와 동기 경계는 Lambda 환경에서 별도 검증해야 한다. SDK에 없는 API를
+임시 스텁으로 만들어 빌드를 통과시키거나, 미검증 동기 경계를 운영 가능하다고 보지 않는다.
+https://docs.backnd.com/sdk-docs/function/backnd-features/database/
+
+3. 이번에 준비한 독립 소스 연결
+PopupStoreSources.props는 기존 함수 후보와 실제 도메인 소스를 원본 경로에서 링크한다.
+소스를 복제하지 않으며 Unity/UI/클라이언트 SDK 코드를 Function에 포함하지 않는다.
+공식 생성 프로젝트를 확보한 후 프로젝트 내부에서 이 props를 한 번 Import한다.
+EnableDefaultCompileItems=false로 템플릿 Function과 기존 Function의 중복 컴파일을 막는다.
+공식 프로젝트의 net8.0/패키지/DLL/빌드 항목은 그대로 두고 검증 후 Import 위치를 정한다.
+이 props 자체는 csproj도, CLI 프로젝트도, 배포 가능한 함수도 아니다.
+
+Test-FunctionBuildReadiness.ps1은 다음만 읽는다.
+- PATH와 .NET SDK 목록
+- 공식 프로젝트/매니페스트/SDK DLL의 존재, 버전 및 파일 해시
+- 명시된 6개 서버 소스의 존재와 해시
+인증 프로필은 읽지 않으며 파일 쓰기·설치·복원·빌드·로그인·원격 요청이 없다.
+차단 사유가 있으면 JSON Status=BLOCKED, 종료 코드 2를 반환한다.
+모든 사전 조건이 보이더라도 FunctionBuild=NOT_RUN을 유지한다.
+
+4. 승인 후 진행할 로컬 빌드 순서 (이번에는 실행하지 않음)
+1) 사용자가 Function 1.1.1 CLI 및 .NET 8 설치를 승인한 뒤 공식 절차를 적용한다.
+   backend --version, backend doctor로 실제 실행 파일/버전을 재확인한다.
+   CLI가 전용 .NET을 내려받을 수 있으므로 doctor의 다운로드 가능성도 먼저 확인한다.
+   https://docs.backnd.com/sdk-docs/function/work-in-windows/install/
+2) 원본 프로젝트의 Server 영역에 공식 Function 프로젝트를 준비한다.
+   기존 Function.cs와 사용자 작업을 덮지 않는 생성 경로/동작을 먼저 검토한다.
+   인증키 없이 공식 DLL 및 의존성 매니페스트를 검증하고 소스 링크를 연결한다.
+   기존 SDK 업데이트·마이그레이션은 별도 승인 없이 실행하지 않는다.
+3) 공식 생성 csproj의 System.Text.Json 9.x 정확한 패치 참조와
+   CopyLocalLockFileAssemblies=true를 확인한다. 추정한 버전은 넣지 않는다.
+   https://docs.backnd.com/sdk-docs/function/upgrade/
+4) Test-FunctionBuildReadiness.ps1을 실행하고 차단 사유를 모두 해결한다.
+5) 승인된 도구와 실제 프로젝트에서 backend build --debug로 로컬 컴파일한다.
+   이 명령은 배포 ZIP을 만들지 않는다. 일반 backend build는 ZIP을 생성하므로
+   현재 프로젝트의 ZIP 금지 규칙 아래에서는 사용하지 않는다.
+   결과 JSON과 compiler diagnostics, 모든 참조 DLL 해시를 기록한다.
+6) 인증 없는 실행과 실제 쓰기 검증을 구분한다. debug --user는 서버 계정에
+   접근할 수 있으므로 이번 범위에서 실행하지 않는다. 실제 개발 배포도 별도 승인 대상이다.
+
+5. Database 계약: 공식 보장과 실제 검증 구분
+공식 문서상 한 거래는 최대 10개 쓰기이고 SELECT는 거래 밖에서 수행한다.
+PK ==로 대상 한 행을 지정하며 추가 조건은 실행 시 검사된다. 조건 불일치,
+대상 없음, 중복 PK Insert는 전체 거래를 취소한다. 같은 행을 두 번 다룰 수 없다.
+Commit의 Success/OperationCount/TotalAffectedRows를 확인하며 모호한 결과를 새 요청으로
+재실행하지 않는다. 이 보장은 신규 Database 안의 작업이며 legacy GameData까지 포함하지 않는다.
+https://docs.backnd.com/sdk-docs/database/transaction/
+https://docs.backnd.com/sdk-docs/function/backnd-features/database/
+
+배포된 Function은 클라이언트 쓰기 권한과 독립적으로 동작하지만 UserTable은 호출자 본인만
+OfCurrentUser()로 접근한다. 로컬 debug --user는 클라이언트 권한을 그대로 적용하므로
+서버 전용 쓰기의 최종 검증을 대신할 수 없다. 모델의 권한 속성을 수정해도 기존 콘솔
+테이블의 권한은 바뀌지 않는다. 실제 개발 서버에서 소유권/경쟁/전체 취소를 검증해야 한다.
+
+6. 기획자가 준비할 콘솔 항목 (이번에는 조회/변경하지 않음)
+1) 운영과 다른 개발용 프로젝트를 준비하고 프로젝트 선택 상태를 확인한다.
+   프로젝트 설정 > 프로젝트의 오프라인 표시는 SDK 호출 차단 장치가 아니다.
+   프로젝트 이름의 dev 접두사만으로 계정/DB/인증정보 분리가 증명되지 않는다.
+   https://docs.backnd.com/guide/console-guide/server-setting/project/
+2) 개발 프로젝트 > 뒤끝펑션 > 뒤끝펑션 활성화. 상단 인증키는 사용자 로컬의
+   승인된 CLI 프로필에 입력한다. 채팅이나 소스에 복사하지 않는다.
+   https://docs.backnd.com/guide/console-guide/backnd-function/
+3) 개발 프로젝트 > 데이터베이스 > 활성화 후 설정에서 DB UUID를 확인한다.
+   개발용 테이블 에디터에 현재 코드의 정확한 테이블/열/타입/PK를 적용한다.
+   클라이언트 쓰기 권한은 모두 해제하고 읽기도 필요한 본인 조회만 허용한다.
+   코드 작성만으로 테이블을 만들거나 운영 데이터를 옮기지 않는다.
+   https://docs.backnd.com/guide/console-guide/database/table-editor/
+   https://docs.backnd.com/guide/console-guide/database/settings/
+4) 개발 프로젝트 안에 실제 사용자와 다른 테스트 계정 A/B를 준비한다.
+   공식 문서는 커스텀 회원가입 또는 콘솔 생성 계정을 허용한다. 현재 접속 가능한 콘솔을
+   확인하지 않았으므로 계정 생성의 세부 버튼 경로는 검증하지 못했다.
+5) 설치와 환경 분리가 승인된 다음 사용자가 backend config --profile popup_dev로
+   개발 프로젝트 값과 테스트 계정을 등록한다. config use로 이 프로필을 명시한다.
+   등록은 실제 로그인/세션 갱신을 일으킬 수 있으므로 이번에는 실행하지 않았다.
+   https://docs.backnd.com/sdk-docs/function/cli/setting/
+6) 개발 서버 준비 후 다음 차수에서만 함수 배포 승인, SDK 계약/쓰기 권한/원자성/
+   동일 요청 경쟁/응답 유실/정오/계정 전환/지갑 이행 검증을 수행한다.
+
+7. 실제 지급을 계속 막는 조건
+- 서버 SDK/Function 빌드와 개발 서버 거래가 아직 검증되지 않았다.
+- 멀티 캐릭터 여부와 계정당 1회에 맞는 서버 인증 식별자 범위가 확인되지 않았다.
+- 기존 GameData.Dia 쓰기 전체의 이행/차단과 신규 지갑 권한 전환이 완료되지 않았다.
+- 실제 서버 gameplay clock/lifecycle 증명과 Runtime 단계 호스트 연결이 필요하다.
+- 독립 테스트 PASS나 설정 bool만으로 위 조건이 충족됐다고 간주하지 않는다.
+- 신규 Database 지갑을 채택해도 AddDia/자동 저장으로 이중 동기화하지 않는다.
+
+결론: 로컬 소스와 연결 준비를 진행했으며 SDK 설치/실제 Function 빌드/개발 서버 통합을
+완료했다고 보고하지 않는다. 운영 지급 및 서버 적용 PASS는 아직 불가능하다.

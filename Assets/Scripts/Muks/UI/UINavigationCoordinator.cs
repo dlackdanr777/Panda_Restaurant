@@ -89,6 +89,8 @@ namespace Muks.UI
                         return false;
 
                     firstView = uiNav.FirstView;
+                    // Only the popup store intercepts user Back before Navigation removes a view.
+                    if (firstView is UIPopupStore fallbackPopupStore) return fallbackPopupStore.TryRequestExit();
                     if(!firstView.PopEnabled)
                     {
                         Debug.Log("마지막에 열려있는 UI가 Pop을 허용하지 않습니다: " + firstView.name);
@@ -106,6 +108,8 @@ namespace Muks.UI
                 return false;
 
             firstView = uiNav.FirstView;
+                    // Only the popup store intercepts user Back before Navigation removes a view.
+                    if (firstView is UIPopupStore popupStore) return popupStore.TryRequestExit();
             if (!firstView.PopEnabled)
             {
                 Debug.Log("마지막에 열려있는 UI가 Pop을 허용하지 않습니다: " + firstView.name);

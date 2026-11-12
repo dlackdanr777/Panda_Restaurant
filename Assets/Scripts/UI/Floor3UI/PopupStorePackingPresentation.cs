@@ -1,0 +1,705 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using UnityEngine;
+using UnityEngine.UI;
+
+[Serializable]
+public sealed class PopupStoreFinishedBox
+{
+    [SerializeField] private string _boxId;
+    [SerializeField] private string _ribbonId;
+    [SerializeField] private Sprite _sprite;
+
+    public string BoxId => _boxId;
+    public string RibbonId => _ribbonId;
+    public Sprite Sprite => _sprite;
+}
+
+public enum PopupStoreVisualOutcomeKind { VisualCompleted, Cancelled }
+
+/// <summary>One terminal presentation outcome. The committed transaction and original target are retained.</summary>
+public sealed class PopupStoreVisualOutcome
+{
+    public PopupStorePackingReceipt Receipt { get; }
+    public RectTransform Target { get; }
+    public PopupStoreVisualOutcomeKind Kind { get; }
+    public string Reason { get; }
+
+    internal PopupStoreVisualOutcome(PopupStorePackingReceipt receipt, RectTransform target,
+        PopupStoreVisualOutcomeKind kind, string reason)
+    {
+        Receipt = receipt;
+        Target = target;
+        Kind = kind;
+        Reason = reason;
+    }
+}
+
+/// <summary>One local receipt consumer. Presentation cancellation never changes a committed order.</summary>
+[DisallowMultipleComponent]
+public sealed class PopupStorePackingPresentation : MonoBehaviour
+{
+    public enum Phase { Idle, Boom, Grow, Settle, Move, Arrive, Fade }
+
+    [SerializeField] private PopupStorePacking _packing;
+    [SerializeField] private PopupStoreOrderDisplay _orders;
+    [SerializeField] private Animator _boomAnimator;
+    [SerializeField] private Image _resultImage;
+    [SerializeField] private PopupStoreFinishedBox[] _finishedBoxes = Array.Empty<PopupStoreFinishedBox>();
+    [SerializeField, Min(0)] private float _boomDuration = .53333336f;
+    [SerializeField, Min(0)] private float _growDuration = .12f;
+    [SerializeField, Min(0)] private float _settleDuration = .12f;
+    [SerializeField, Min(0)] private float _moveDuration = .75f;
+    [SerializeField, Min(0)] private float _arrivalDuration = .12f;
+    [SerializeField, Min(0)] private float _fadeDuration = .18f;
+    [SerializeField, Range(.01f, 2)] private float _arrivalScale = .65f;
+    [Tooltip("Offset from the customer's rectangle centre, in that rectangle's local UI units.")]
+    [SerializeField] private Vector2 _targetOffset;
+    [Tooltip("Draw order within each visual's own parent; clamped to its child count.")]
+    [SerializeField, Min(0)] private int _boomSiblingIndex = 99;
+    [SerializeField, Min(0)] private int _resultSiblingIndex = 100;
+    [SerializeField, Range(.01f, 1)] private float _startScale = .35f;
+    [SerializeField, Min(1)] private float _maxScale = 1.12f;
+    [SerializeField] private AnimationCurve _growCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [SerializeField] private AnimationCurve _settleCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [SerializeField] private AnimationCurve _moveCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+
+    private static readonly string[] BoxIds = { "BOX_PINK", "BOX_BLUE", "BOX_MINT" };
+    private static readonly string[] RibbonIds = { "RIBBON_PINK", "RIBBON_YELLOW", "RIBBON_MINT" };
+    private readonly List<PopupStorePackingReceipt> _receivedReceipts = new List<PopupStorePackingReceipt>();
+    private readonly HashSet<string> _receivedIds = new HashSet<string>(StringComparer.Ordinal);
+    private readonly HashSet<string> _deliveredIds = new HashSet<string>(StringComparer.Ordinal);
+    private readonly List<PopupStoreVisualOutcome> _visualOutcomes = new List<PopupStoreVisualOutcome>();
+    private readonly HashSet<string> _terminalIds = new HashSet<string>(StringComparer.Ordinal);
+    private ReadOnlyCollection<PopupStorePackingReceipt> _readOnlyReceipts;
+    private ReadOnlyCollection<PopupStoreVisualOutcome> _readOnlyOutcomes;
+    private PopupStorePacking _sessionPacking;
+    private PopupStoreOrderDisplay _sessionOrders;
+    private PopupStoreBusinessClock _sessionClock;
+    private Animator _sessionBoom;
+    private Animator _pausedBoom;
+    private float _boomSpeedBeforePause;
+    private int _nativeResumeFrame = -1;
+    // Supplying a frame source lets EditMode checks exercise the native Animator resume boundary.
+    private Func<int> _nativeFrameSource;
+    private uint _visualResumeVersion;
+    private Image _sessionBoomImage;
+    private Image _sessionResult;
+    private Vector3 _baseScale;
+    private Vector3 _basePosition;
+    private Transform _boomParent, _resultParent;
+    private Color _resultColor;
+    private int _originalBoomSibling, _originalResultSibling;
+    private Transform _pendingBoomRestore, _pendingBoomParent, _pendingResultRestore, _pendingResultParent;
+    private int _pendingBoomIndex, _pendingResultIndex;
+    private Color _boomColor;
+    private float _elapsed;
+    private bool _sessionActive;
+    private bool _endingSession;
+    private bool _publishingOutcome;
+    private bool _beginSessionPending;
+    private string _lastError;
+
+    public bool IsReady { get; private set; }
+    public Phase CurrentPhase { get; private set; }
+    public PopupStorePackingReceipt CurrentReceipt { get; private set; }
+    public int StartedPresentationCount { get; private set; }
+    public int CompletedDeliveryCount => _deliveredIds.Count;
+    public PopupStorePackingReceipt LastDeliveredReceipt { get; private set; }
+    public RectTransform CurrentTarget { get; private set; }
+    public string LastCancellationReason { get; private set; }
+    public bool IsDeliveryCompleted(string receiptId) => receiptId != null && _deliveredIds.Contains(receiptId);
+    // Kept after completion/cancellation for the future delivery stage; entries are immutable receipt objects.
+    public IReadOnlyList<PopupStorePackingReceipt> ReceivedReceipts
+        => _readOnlyReceipts ?? (_readOnlyReceipts = _receivedReceipts.AsReadOnly());
+    public IReadOnlyList<PopupStoreVisualOutcome> VisualOutcomes
+        => _readOnlyOutcomes ?? (_readOnlyOutcomes = _visualOutcomes.AsReadOnly());
+    public event Action<PopupStoreVisualOutcome> VisualEnded;
+
+    /// <summary>Reads unfinished visual work without consuming receipts or advancing presentation.</summary>
+    public bool HasPendingVisualWork
+    {
+        get
+        {
+            // A terminal observer may not yet have started the original customer's departure.
+            if (_publishingOutcome || _endingSession) return true;
+            if (!isActiveAndEnabled || !IsReady || !_sessionActive || !Owned(_sessionPacking)) return false;
+            if (CurrentReceipt != null || CurrentPhase != Phase.Idle) return true;
+            if (!_sessionPacking.IsReady) return false;
+
+            // A committed receipt can still be queued before the first presentation tick.
+            // Compare retained identities; the delivery consumer remains the queue's only reader.
+            foreach (var receipt in _sessionPacking.CommittedReceipts)
+            {
+                bool terminal = false;
+                foreach (var outcome in _visualOutcomes)
+                    if (ReferenceEquals(outcome.Receipt, receipt)) { terminal = true; break; }
+                if (!terminal) return true;
+            }
+            return false;
+        }
+    }
+
+    public bool BeginVisibleSession()
+    {
+        if (_endingSession) return false;
+        _beginSessionPending = false;
+        if (_sessionActive) return IsReady;
+        EndVisibleSession();
+        if (!isActiveAndEnabled) return false;
+        if (!Validate(out string error))
+        {
+            Report(error);
+            return false;
+        }
+
+        _sessionPacking = _packing;
+        _sessionOrders = _orders;
+        _sessionBoom = _boomAnimator;
+        _sessionBoomImage = _boomAnimator.GetComponent<Image>();
+        _sessionResult = _resultImage;
+        _baseScale = _resultImage.rectTransform.localScale;
+        _basePosition = _resultImage.rectTransform.anchoredPosition3D;
+        _boomParent = _boomAnimator.transform.parent;
+        _resultParent = _resultImage.transform.parent;
+        _resultColor = _resultImage.color;
+        _originalBoomSibling = _boomAnimator.transform.GetSiblingIndex();
+        _originalResultSibling = _resultImage.transform.GetSiblingIndex();
+        _boomAnimator.transform.SetSiblingIndex(_boomSiblingIndex);
+        _resultImage.transform.SetSiblingIndex(_resultSiblingIndex);
+        _boomColor = _sessionBoomImage.color;
+        HideVisuals();
+        _sessionActive = true;
+        IsReady = true;
+        _sessionClock = GetComponent<PopupStoreBusinessClock>();
+        if (_sessionClock != null)
+        {
+            _sessionClock.StateChanged += SynchronizeAnimatorPause;
+            _sessionClock.ContextChanged += SynchronizeAnimatorPause;
+        }
+        SynchronizeAnimatorPause();
+        _lastError = null;
+        LastCancellationReason = null;
+        ArchiveOutstanding(_sessionPacking, _sessionOrders, "Receipt was pending before this visible presentation session.");
+        return IsReady;
+    }
+
+    public void EndVisibleSession()
+    {
+        if (_endingSession) return;
+        _beginSessionPending = false;
+        _endingSession = true;
+        try
+        {
+            if (_sessionClock != null)
+            {
+                _sessionClock.StateChanged -= SynchronizeAnimatorPause;
+                _sessionClock.ContextChanged -= SynchronizeAnimatorPause;
+            }
+            RestorePausedAnimator();
+            _sessionClock = null;
+            // Capture identities before OnDisable ordering or observers can change display availability.
+            var source = Owned(_sessionPacking) ? _sessionPacking : Owned(_packing) ? _packing : null;
+            var orders = Owned(_sessionOrders) ? _sessionOrders : Owned(_orders) ? _orders : null;
+            var receipt = CurrentReceipt;
+            var target = CurrentTarget != null ? CurrentTarget : CommittedTarget(orders, receipt);
+            const string reason = "Popup presentation closed or disabled.";
+            if (receipt != null) RecordCancellation(reason);
+            HideVisuals();
+            // Unity rejects sibling changes inside a parent's SetActive(false) callback.
+            // Receipt cleanup remains immediate; only the original draw order waits for
+            // the next safe visible-session start, before its indices are captured again.
+            if (Owned(_sessionBoom))
+            {
+                _pendingBoomRestore = _sessionBoom.transform;
+                _pendingBoomParent = _boomParent;
+                _pendingBoomIndex = _originalBoomSibling;
+            }
+            if (Owned(_sessionResult))
+            {
+                _pendingResultRestore = _sessionResult.transform;
+                _pendingResultParent = _resultParent;
+                _pendingResultIndex = _originalResultSibling;
+            }
+            RestoreSiblingOrderWhenActive();
+            CurrentReceipt = null;
+            CurrentTarget = null;
+            CurrentPhase = Phase.Idle;
+            _elapsed = 0;
+            IsReady = false;
+            _sessionActive = false;
+            _sessionPacking = null;
+            _sessionOrders = null;
+            _sessionBoom = null;
+            _sessionBoomImage = null;
+            _sessionResult = null;
+            _boomParent = null;
+            _resultParent = null;
+            if (receipt != null) RecordOutcome(receipt, target, PopupStoreVisualOutcomeKind.Cancelled, reason);
+            // Only drain our own popup's queue, including receipts committed just before a close.
+            ArchiveOutstanding(source, orders, reason);
+        }
+        finally { _endingSession = false; }
+    }
+
+    private void RestoreSiblingOrderWhenActive()
+    {
+        if (!gameObject.activeInHierarchy) return;
+        // Restore lower indices first when the two authored visuals share a parent.
+        bool resultFirst = _pendingBoomParent == _pendingResultParent && _pendingResultIndex < _pendingBoomIndex;
+        if (resultFirst) RestoreSibling(_pendingResultRestore, _pendingResultParent, _pendingResultIndex);
+        RestoreSibling(_pendingBoomRestore, _pendingBoomParent, _pendingBoomIndex);
+        if (!resultFirst) RestoreSibling(_pendingResultRestore, _pendingResultParent, _pendingResultIndex);
+        _pendingBoomRestore = _pendingBoomParent = _pendingResultRestore = _pendingResultParent = null;
+    }
+
+    private void RestoreSibling(Transform target, Transform parent, int index)
+    {
+        if (Owned(target) && target.parent == parent && target.GetSiblingIndex() != index)
+            target.SetSiblingIndex(index);
+    }
+
+    public void TickPresentation(float unscaledDelta)
+    {
+        if (!_sessionActive || _publishingOutcome) return;
+        if (!isActiveAndEnabled || !Owned(_sessionPacking) || !_sessionPacking.isActiveAndEnabled
+            || !Owned(_sessionBoom) || !Owned(_sessionResult) || !Owned(_sessionOrders))
+        { EndVisibleSession(); return; }
+        if (!NonNegative(unscaledDelta))
+        { Fail("Presentation delta must be finite and non-negative."); return; }
+        SynchronizeAnimatorPause();
+        // Pause before dequeuing a receipt or touching a phase. Ended remains eligible when
+        // its popup context is visible and focused, so already committed work can settle.
+        if (_sessionClock == null || !_sessionClock.CanAdvanceVisuals) return;
+        if (CurrentPhase == Phase.Idle && (!_sessionPacking.IsReady || !TryStartNext())) return;
+        if (!ValidateCurrentTarget(out string targetError))
+        { CancelCurrent(targetError); return; }
+
+        float remaining = unscaledDelta;
+        // At most this receipt's six phases; another receipt always starts on a later tick.
+        for (int transitions = 0; transitions < 6 && CurrentPhase != Phase.Idle; transitions++)
+        {
+            if (_sessionClock == null || !_sessionClock.CanAdvanceVisuals) { SynchronizeAnimatorPause(); return; }
+            float duration = PhaseDuration();
+            if (!NonNegative(duration)) { Fail("Presentation duration must be finite and non-negative."); return; }
+            float step = Mathf.Min(remaining, Mathf.Max(0, duration - _elapsed));
+            _elapsed += step;
+            remaining -= step;
+            float progress = duration > 0 ? Mathf.Clamp01(_elapsed / duration) : 1;
+            if (!ApplyScale(progress) || !ApplyDelivery(progress)) return;
+            if (_elapsed < duration) return;
+            AdvancePhase();
+        }
+    }
+
+    public bool TryResolveSprite(string boxId, string ribbonId, out Sprite sprite)
+    {
+        sprite = null;
+        if (!ValidateMappings(out _)) return false;
+        foreach (var entry in _finishedBoxes)
+            if (string.Equals(entry.BoxId, boxId, StringComparison.Ordinal)
+                && string.Equals(entry.RibbonId, ribbonId, StringComparison.Ordinal))
+            { sprite = entry.Sprite; return true; }
+        return false;
+    }
+
+    private bool TryStartNext()
+    {
+        while (_sessionPacking.TryTakeReceipt(out var receipt))
+        {
+            if (!Archive(receipt)) continue;
+            CurrentReceipt = receipt;
+            if (!receipt.Success || !TryResolveSprite(receipt.BoxId, receipt.RibbonId, out var sprite))
+            { Fail("A successful receipt requires a registered finished-box combination."); return false; }
+            if (!_sessionOrders.TryGetPackedDeliveryTarget(receipt, out var target, out string reason))
+            { CancelCurrent(reason); return false; }
+            CurrentTarget = target;
+            if (!ValidateCurrentTarget(out reason)) { CancelCurrent(reason); return false; }
+            StartedPresentationCount++;
+            _sessionResult.rectTransform.anchoredPosition3D = _basePosition;
+            _sessionResult.color = _resultColor;
+            _sessionResult.sprite = sprite;
+            _sessionResult.preserveAspect = true;
+            _sessionResult.raycastTarget = false;
+            _sessionResult.rectTransform.localScale = _baseScale * _startScale;
+            _sessionResult.gameObject.SetActive(false);
+            _sessionBoomImage.raycastTarget = false;
+            _sessionBoomImage.color = _boomColor;
+            _sessionBoom.gameObject.SetActive(true);
+            _sessionBoom.enabled = Application.isPlaying;
+            if (Application.isPlaying)
+            {
+                _sessionBoom.updateMode = AnimatorUpdateMode.UnscaledTime;
+                _sessionBoom.Rebind();
+                _sessionBoom.Play("Boom_Play", 0, 0);
+                _sessionBoom.Update(0);
+            }
+            CurrentPhase = Phase.Boom;
+            PopupStoreSound.Play(this, PopupStoreSoundCue.PackingBoom, CurrentReceipt);
+            _elapsed = 0;
+            return true;
+        }
+        return false;
+    }
+
+    private float PhaseDuration()
+    {
+        switch (CurrentPhase)
+        {
+            case Phase.Boom: return _boomDuration;
+            case Phase.Grow: return _growDuration;
+            case Phase.Settle: return _settleDuration;
+            case Phase.Move: return _moveDuration;
+            case Phase.Arrive: return _arrivalDuration;
+            case Phase.Fade: return _fadeDuration;
+            default: return 0;
+        }
+    }
+
+    private bool ApplyScale(float progress)
+    {
+        if (CurrentPhase != Phase.Grow && CurrentPhase != Phase.Settle) return true;
+        var curve = CurrentPhase == Phase.Grow ? _growCurve : _settleCurve;
+        if (curve == null || curve.length == 0) { Fail("Presentation curves are required."); return false; }
+        float value = curve.Evaluate(progress);
+        if (!Finite(value)) { Fail("Presentation curves must produce finite values."); return false; }
+        float scale = CurrentPhase == Phase.Grow
+            ? Mathf.Lerp(_startScale, _maxScale, Mathf.Clamp01(value))
+            : Mathf.Lerp(_maxScale, 1, Mathf.Clamp01(value));
+        _sessionResult.rectTransform.localScale = _baseScale * scale;
+        return true;
+    }
+
+    private void AdvancePhase()
+    {
+        _elapsed = 0;
+        switch (CurrentPhase)
+        {
+            case Phase.Boom:
+                HideBoom();
+                _sessionResult.gameObject.SetActive(true);
+                CurrentPhase = Phase.Grow;
+                PopupStoreSound.Play(this, PopupStoreSoundCue.BoxAppeared, CurrentReceipt);
+                break;
+            case Phase.Grow:
+                _sessionResult.rectTransform.localScale = _baseScale * _maxScale;
+                CurrentPhase = Phase.Settle;
+                break;
+            case Phase.Settle:
+                _sessionResult.rectTransform.localScale = _baseScale;
+                CurrentPhase = Phase.Move;
+                PopupStoreSound.Play(this, PopupStoreSoundCue.DeliveryStarted, CurrentReceipt);
+                break;
+            case Phase.Move:
+                // Visual arrival only. The packing transaction has already committed.
+                if (_deliveredIds.Add(CurrentReceipt.ReceiptId))
+                {
+                    LastDeliveredReceipt = CurrentReceipt;
+#if UNITY_EDITOR
+                    if (Application.isPlaying)
+                        Debug.Log("POPUP_STORE_DELIVERED receipt=" + CurrentReceipt.ReceiptId
+                            + "; slot=" + CurrentReceipt.SlotIndex + "; customer=" + CurrentReceipt.CustomerId, this);
+#endif
+                }
+                CurrentPhase = Phase.Arrive;
+                break;
+            case Phase.Arrive:
+                CurrentPhase = Phase.Fade;
+                break;
+            case Phase.Fade:
+                var completedReceipt = CurrentReceipt;
+                var completedTarget = CurrentTarget;
+                HideVisuals();
+                CurrentReceipt = null;
+                CurrentTarget = null;
+                CurrentPhase = Phase.Idle;
+                RecordOutcome(completedReceipt, completedTarget, PopupStoreVisualOutcomeKind.VisualCompleted, null);
+                break;
+        }
+    }
+
+    private bool Validate(out string error)
+    {
+        error = null;
+        if (!Owned(_packing) || !Owned(_orders) || !Owned(_boomAnimator) || !Owned(_resultImage)
+            || !(_resultImage.transform.parent is RectTransform)
+            || _boomAnimator.gameObject == gameObject || _resultImage.gameObject == gameObject
+            || _boomAnimator.GetComponent<Image>() == null || _boomAnimator.runtimeAnimatorController == null
+            || _boomAnimator.transform.IsChildOf(_resultImage.transform)
+            || _resultImage.transform.IsChildOf(_boomAnimator.transform))
+            error = "Packing, orders, an independent boom Image/Animator and result Image must belong to this popup.";
+        else if (!NonNegative(_boomDuration) || !NonNegative(_growDuration)
+            || !NonNegative(_settleDuration) || !NonNegative(_moveDuration)
+            || !NonNegative(_arrivalDuration) || !NonNegative(_fadeDuration)
+            || !Finite(_arrivalScale) || _arrivalScale <= 0 || !Finite(_targetOffset.x) || !Finite(_targetOffset.y)
+            || !Finite(_startScale) || _startScale <= 0 || _startScale > 1
+            || !Finite(_maxScale) || _maxScale < 1 || !ValidCurve(_growCurve) || !ValidCurve(_settleCurve)
+            || !ValidCurve(_moveCurve)
+            || !PositiveScale(_resultImage.rectTransform.localScale))
+            error = "Presentation durations, scales and curves must be finite and valid.";
+        else if (!ValidateMappings(out error)) return false;
+        return error == null;
+    }
+
+    private bool ValidateMappings(out string error)
+    {
+        error = null;
+        if (_finishedBoxes == null || _finishedBoxes.Length != 9)
+        { error = "Exactly nine finished-box combinations are required."; return false; }
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var sprites = new HashSet<Sprite>();
+        foreach (var entry in _finishedBoxes)
+        {
+            if (entry == null || Array.IndexOf(BoxIds, entry.BoxId) < 0 || Array.IndexOf(RibbonIds, entry.RibbonId) < 0
+                || entry.Sprite == null || !keys.Add(entry.BoxId + "/" + entry.RibbonId) || !sprites.Add(entry.Sprite))
+            { error = "Finished-box combinations require unique supported pairs and nine distinct sprites."; return false; }
+        }
+        return true;
+    }
+
+    private void ArchiveOutstanding(PopupStorePacking source, PopupStoreOrderDisplay orders, string reason)
+    {
+        if (source == null) return;
+        while (source.TryTakeReceipt(out var receipt))
+        {
+            if (!Archive(receipt)) continue;
+            RecordOutcome(receipt, CommittedTarget(orders, receipt), PopupStoreVisualOutcomeKind.Cancelled, reason);
+        }
+    }
+
+    private static RectTransform CommittedTarget(PopupStoreOrderDisplay orders, PopupStorePackingReceipt receipt)
+        => orders != null && orders.TryGetCommittedCustomerBinding(receipt, out var target, out _) ? target : null;
+
+    private void RecordOutcome(PopupStorePackingReceipt receipt, RectTransform target,
+        PopupStoreVisualOutcomeKind kind, string reason)
+    {
+        if (receipt == null || string.IsNullOrEmpty(receipt.ReceiptId) || !_terminalIds.Add(receipt.ReceiptId)) return;
+        var outcome = new PopupStoreVisualOutcome(receipt, target, kind, reason);
+        _visualOutcomes.Add(outcome);
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            Debug.Log("POPUP_STORE_VISUAL_ENDED receipt=" + receipt.ReceiptId + "; slot=" + receipt.SlotIndex
+                + "; customer=" + receipt.CustomerId + "; kind=" + kind, this);
+#endif
+        var handlers = VisualEnded;
+        if (handlers == null) return;
+        bool alreadyPublishing = _publishingOutcome;
+        _publishingOutcome = true;
+        try
+        {
+            foreach (Action<PopupStoreVisualOutcome> handler in handlers.GetInvocationList())
+                try { handler(outcome); }
+                catch (Exception exception) { Debug.LogException(exception, this); }
+        }
+        finally { _publishingOutcome = alreadyPublishing; }
+    }
+
+    private bool Archive(PopupStorePackingReceipt receipt)
+    {
+        if (receipt == null || string.IsNullOrEmpty(receipt.ReceiptId))
+        { Report("A receipt identity is required for presentation."); return false; }
+        if (!_receivedIds.Add(receipt.ReceiptId)) return false;
+        _receivedReceipts.Add(receipt);
+        return true;
+    }
+
+    private void HideBoom()
+    {
+        if (!Owned(_sessionBoom)) return;
+        _sessionBoom.enabled = false;
+        _sessionBoom.gameObject.SetActive(false);
+        if (Owned(_sessionBoomImage)) _sessionBoomImage.color = _boomColor;
+    }
+
+    private void SynchronizeAnimatorPause()
+    {
+        if (!_sessionActive || !Owned(_sessionBoom) || _sessionClock == null)
+        { RestorePausedAnimator(); return; }
+        if (_sessionClock.CanAdvanceVisuals)
+        {
+            if (_pausedBoom != null && (Application.isPlaying || _nativeFrameSource != null))
+            {
+                int frame;
+                try { frame = _nativeFrameSource != null ? _nativeFrameSource() : Time.frameCount; }
+                catch { return; }
+                if (frame < 0) return;
+                if (_nativeResumeFrame < 0) _nativeResumeFrame = frame;
+                // Native UnscaledTime animation also receives the first foreground frame's
+                // delta. Hold speed at zero through that frame, independently of custom ticks.
+                if (frame <= _nativeResumeFrame) return;
+            }
+            RestorePausedAnimator();
+            return;
+        }
+        _nativeResumeFrame = -1;
+        if (_pausedBoom != _sessionBoom)
+        {
+            RestorePausedAnimator();
+            _pausedBoom = _sessionBoom;
+            _boomSpeedBeforePause = _pausedBoom.speed;
+        }
+        // The original Boom Animator uses UnscaledTime and advances independently of our
+        // phase tick. Keep its exact state/frame; resuming must not Rebind or Play again.
+        _pausedBoom.speed = 0f;
+    }
+
+    private void RestorePausedAnimator()
+    {
+        if (_pausedBoom != null) _pausedBoom.speed = _boomSpeedBeforePause;
+        _pausedBoom = null;
+        _nativeResumeFrame = -1;
+    }
+
+    private void HideVisuals()
+    {
+        HideBoom();
+        if (!Owned(_sessionResult)) return;
+        _sessionResult.gameObject.SetActive(false);
+        _sessionResult.rectTransform.localScale = _baseScale;
+        if (_sessionResult.transform.parent == _resultParent)
+            _sessionResult.rectTransform.anchoredPosition3D = _basePosition;
+        _sessionResult.color = _resultColor;
+        _sessionResult.sprite = null;
+    }
+
+    private bool ValidateCurrentTarget(out string reason)
+    {
+        reason = null;
+        if (_sessionResult.transform.parent != _resultParent)
+        { reason = "Result image parent changed during presentation."; return false; }
+        if (!_sessionOrders.TryGetPackedDeliveryTarget(CurrentReceipt, out var current, out reason)) return false;
+        if (current != CurrentTarget)
+        { reason = "Customer image changed during presentation."; return false; }
+        return TryGetTargetLocalPosition(_sessionResult.rectTransform, current, _targetOffset, out _, out reason);
+    }
+
+    private bool ApplyDelivery(float progress)
+    {
+        if (CurrentPhase != Phase.Move && CurrentPhase != Phase.Arrive && CurrentPhase != Phase.Fade) return true;
+        var rect = _sessionResult.rectTransform;
+        if (CurrentPhase == Phase.Arrive)
+            rect.localScale = _baseScale * Mathf.Lerp(1, _arrivalScale, progress);
+        else if (CurrentPhase == Phase.Fade)
+        {
+            rect.localScale = _baseScale * _arrivalScale;
+            var color = _resultColor;
+            color.a *= 1 - progress;
+            _sessionResult.color = color;
+        }
+        if (!TryGetTargetLocalPosition(rect, CurrentTarget, _targetOffset, out var destination, out string reason))
+        { CancelCurrent(reason); return false; }
+        // Anchored home position is resolved again against the current layout/CanvasScaler each frame.
+        rect.anchoredPosition3D = _basePosition;
+        Vector3 origin = rect.localPosition;
+        if (_moveCurve == null || _moveCurve.length == 0)
+        { CancelCurrent("Movement curve is missing."); return false; }
+        float travel = CurrentPhase == Phase.Move && progress < 1 ? _moveCurve.Evaluate(progress) : 1;
+        if (!Finite(travel)) { CancelCurrent("Movement curve produced a non-finite value."); return false; }
+        rect.localPosition = Vector3.Lerp(origin, destination, Mathf.Clamp01(travel));
+        return true;
+    }
+
+    /// <summary>Position the result rectangle's centre at a customer-local centre/offset, including pivot differences.</summary>
+    public static bool TryGetTargetLocalPosition(RectTransform result, RectTransform target, Vector2 offset,
+        out Vector3 localPosition, out string reason)
+    {
+        localPosition = default;
+        reason = null;
+        if (result == null || target == null || !(result.parent is RectTransform parent)
+            || !Finite(offset.x) || !Finite(offset.y))
+        { reason = "Result, target, parent and a finite offset are required."; return false; }
+        var sourceCanvas = target.GetComponentInParent<Canvas>();
+        var resultCanvas = result.GetComponentInParent<Canvas>();
+        if (sourceCanvas == null || resultCanvas == null)
+        { reason = "Delivery images require Canvas coordinate spaces."; return false; }
+        sourceCanvas = sourceCanvas.rootCanvas;
+        resultCanvas = resultCanvas.rootCanvas;
+        Vector3 targetWorld = target.TransformPoint(target.rect.center + offset);
+        if (sourceCanvas == resultCanvas)
+            localPosition = parent.InverseTransformPoint(targetWorld);
+        else
+        {
+            if (sourceCanvas.targetDisplay != resultCanvas.targetDisplay)
+            { reason = "Delivery cannot cross different target displays."; return false; }
+            if (!TryCanvasCamera(sourceCanvas, out var sourceCamera)
+                || !TryCanvasCamera(resultCanvas, out var resultCamera))
+            { reason = "Camera/world-space Canvas requires an explicit world camera."; return false; }
+            if (sourceCamera != null && sourceCamera.WorldToScreenPoint(targetWorld).z <= 0)
+            { reason = "Delivery target is behind its Canvas camera."; return false; }
+            Vector2 screen = RectTransformUtility.WorldToScreenPoint(sourceCamera, targetWorld);
+            if (!RectTransformUtility.ScreenPointToWorldPointInRectangle(result, screen, resultCamera, out var point))
+            { reason = "Cannot project the delivery target onto the result Canvas."; return false; }
+            localPosition = parent.InverseTransformPoint(point);
+        }
+        localPosition -= parent.InverseTransformVector(result.TransformVector(result.rect.center));
+        if (!Finite(localPosition.x) || !Finite(localPosition.y) || !Finite(localPosition.z))
+        { reason = "Delivery coordinates must be finite."; return false; }
+        return true;
+    }
+
+    private static bool TryCanvasCamera(Canvas canvas, out Camera camera)
+    {
+        camera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        return canvas.renderMode == RenderMode.ScreenSpaceOverlay || camera != null;
+    }
+
+    private void CancelCurrent(string reason)
+    {
+        var receipt = CurrentReceipt;
+        var target = CurrentTarget != null ? CurrentTarget : CommittedTarget(_sessionOrders, receipt);
+        RecordCancellation(reason);
+        HideVisuals();
+        CurrentReceipt = null;
+        CurrentTarget = null;
+        CurrentPhase = Phase.Idle;
+        _elapsed = 0;
+        RecordOutcome(receipt, target, PopupStoreVisualOutcomeKind.Cancelled, reason);
+    }
+
+    private void RecordCancellation(string reason)
+    {
+        LastCancellationReason = reason;
+        if (CurrentReceipt != null)
+            Debug.LogWarning("POPUP_STORE_DELIVERY_CANCELLED receipt=" + CurrentReceipt.ReceiptId
+                + "; slot=" + CurrentReceipt.SlotIndex + "; reason=" + reason, this);
+    }
+
+    private bool Owned(Component component)
+    {
+        var popup = GetComponentInParent<UIPopupStore>(true);
+        return popup != null && component != null && component.GetComponentInParent<UIPopupStore>(true) == popup;
+    }
+
+    private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+    private static bool NonNegative(float value) => Finite(value) && value >= 0;
+    private static bool PositiveScale(Vector3 value)
+        => Finite(value.x) && value.x > 0 && Finite(value.y) && value.y > 0 && Finite(value.z) && value.z > 0;
+    private static bool ValidCurve(AnimationCurve curve)
+    {
+        if (curve == null || curve.length == 0) return false;
+        foreach (var key in curve.keys) if (!Finite(key.time) || !Finite(key.value)) return false;
+        return true;
+    }
+
+    private void Fail(string error) { Report(error); EndVisibleSession(); }
+    private void Report(string error)
+    {
+        if (_lastError == error) return;
+        _lastError = error;
+        Debug.LogError("PopupStorePackingPresentation: " + error, this);
+    }
+
+    // Draw-order changes must also happen after the parent's activation callback ends.
+    private void OnEnable() { _beginSessionPending = Application.isPlaying; }
+    private void Update()
+    {
+        if (!Application.isPlaying) return;
+        if (_beginSessionPending) BeginVisibleSession();
+        var clock = _sessionClock != null ? _sessionClock : GetComponent<PopupStoreBusinessClock>();
+        if (clock != null)
+            TickPresentation(clock.FilterAutomaticVisualDelta(Time.unscaledDeltaTime, ref _visualResumeVersion));
+    }
+    private void OnDisable() => EndVisibleSession();
+    private void OnDestroy() => EndVisibleSession();
+}

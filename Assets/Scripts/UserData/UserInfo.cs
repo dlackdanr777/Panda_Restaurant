@@ -391,6 +391,7 @@ public static partial class UserInfo
     public static Param GetSaveUserData()
     {
         Param param = new Param();
+        AddPopupStoreAccountSaveField(param);
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
         if (FirstTutorialStartRewardGranted.HasValue) param.Add("FirstTutorialStartRewardGranted", FirstTutorialStartRewardGranted.Value);
@@ -700,6 +701,7 @@ public static partial class UserInfo
         IsRecipeTutorialClear = loadData.IsRecipeTutorialClear;
 
         _diamondDataGeneration = checked(_diamondDataGeneration + 1);
+        LoadPopupStoreAccountField(json);
         _dia = loadData.Dia;
         _money = loadData.Money;
         _totalAddMoney = loadData.TotalAddMoney;

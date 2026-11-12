@@ -1,0 +1,94 @@
+{
+  "status": "USER_APPROVED_2026-11-02",
+  "purpose": "PopupStore DEV-04C-2 final grade reward-box sprites. Display only. No reward payout.",
+  "target_branch": "26/10/22_MiniGame_3rdFloor",
+  "last_verified_head": "a33bfa0962efb9de58040708e3fb9da22d199e53",
+  "grade_to_sprite": {
+    "C": "PopupRewardBox_C_APPROVED.png",
+    "B": "PopupRewardBox_B_APPROVED.png",
+    "A": "PopupRewardBox_A_APPROVED.png",
+    "S": "PopupRewardBox_S_APPROVED.png",
+    "SS": "PopupRewardBox_SS_APPROVED.png",
+    "SSS": "PopupRewardBox_SSS_APPROVED.png"
+  },
+  "assets": [
+    {
+      "grade": "C",
+      "filename": "PopupRewardBox_C_APPROVED.png",
+      "source_filename": "c등급_리본_보상_상자.png",
+      "png_dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "true_transparent_alpha": true,
+      "sha256": "cc9616ed1e83240d35f887318ac3929fc3c348375355a1a95fd5a529e3070e4f",
+      "bytes": 925238
+    },
+    {
+      "grade": "B",
+      "filename": "PopupRewardBox_B_APPROVED.png",
+      "source_filename": "민트색_b급_보상_상자_아이콘.png",
+      "png_dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "true_transparent_alpha": true,
+      "sha256": "c1eec03652e78d364ffd16bfb1f85bb44d88469d8242e47bdae286c70bd6f2c4",
+      "bytes": 935445
+    },
+    {
+      "grade": "A",
+      "filename": "PopupRewardBox_A_APPROVED.png",
+      "source_filename": "프리미엄_a등급_보상_상자.png",
+      "png_dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "true_transparent_alpha": true,
+      "sha256": "478fb0697068b66cd6200cabc9ae986acb1c39a0e5509955f3b66e7798bc075d",
+      "bytes": 1001363
+    },
+    {
+      "grade": "S",
+      "filename": "PopupRewardBox_S_APPROVED.png",
+      "source_filename": "특급_s등급_보상_상자.png",
+      "png_dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "true_transparent_alpha": true,
+      "sha256": "838682baef5be77959867c109e13c8dc2e3091b869456807616ff6b89ae13a35",
+      "bytes": 989039
+    },
+    {
+      "grade": "SS",
+      "filename": "PopupRewardBox_SS_APPROVED.png",
+      "source_filename": "ss등급_럭셔리_핑크_보상_상자.png",
+      "png_dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "true_transparent_alpha": true,
+      "sha256": "06504877e9d5187dcc6a2f6ae9b7ffe31489be6fe06642de993ec5229d1967db",
+      "bytes": 1116388
+    },
+    {
+      "grade": "SSS",
+      "filename": "PopupRewardBox_SSS_APPROVED.png",
+      "source_filename": "sss_무지개_보석_보상_상자.png",
+      "png_dimensions": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "true_transparent_alpha": true,
+      "sha256": "d0f0617049c18507ad0abe4c8084635addf009209422de6f77eb7e8a798b30f5",
+      "bytes": 1270045
+    }
+  ]
+}
