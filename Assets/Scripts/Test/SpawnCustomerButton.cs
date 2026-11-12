@@ -17,6 +17,9 @@ public class SpawnCustomerButton : MonoBehaviour
 
     private void OnButtonClickEvent()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         _customerController.SpawnCustomer(_testId);
     }
 }

@@ -1,0 +1,16 @@
+<Project>
+  <!-- Import only into the official Function 1.1.1 generated project after its SDK
+       and package pins have been verified. This is a source manifest, not an SDK
+       project or evidence of a successful Function build. No Unity/client SDK. -->
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Function.cs" Link="Function.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)DatabaseAccountStore.cs" Link="DatabaseAccountStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\Assets\Scripts\Server\PopupStoreServerAuthority.cs" Link="Domain\PopupStoreServerAuthority.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\Assets\Scripts\Server\PopupStoreServerCommandCodec.cs" Link="Domain\PopupStoreServerCommandCodec.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\Assets\Scripts\Server\PopupStoreServerPartitionStore.cs" Link="Domain\PopupStoreServerPartitionStore.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)..\..\Assets\Scripts\Server\PopupStoreWalletCutover.cs" Link="Domain\PopupStoreWalletCutover.cs" />
+  </ItemGroup>
+</Project>

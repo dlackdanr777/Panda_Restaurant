@@ -18,6 +18,9 @@ public class TestAdButton : MonoBehaviour
 
     private void Awake()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         // 안전장치
         if (_adButton == null)
         {
@@ -62,6 +65,9 @@ public class TestAdButton : MonoBehaviour
 
     private void Preload()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         if (_isLoading) return;
         if (rewardedAd.IsAdReady()) return;
 
@@ -72,6 +78,9 @@ public class TestAdButton : MonoBehaviour
 
     private void OnClickAd()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         _wantToShow = true;
 
         // 이미 준비되어 있으면 바로 보여주기
@@ -92,6 +101,9 @@ public class TestAdButton : MonoBehaviour
 
     private void OnLoaded(LevelPlayAdInfo adInfo)
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         _isLoading = false;
         Debug.Log("[RV] Loaded");
 
@@ -134,6 +146,9 @@ public class TestAdButton : MonoBehaviour
 
     private void OnRewarded(LevelPlayAdInfo adInfo, LevelPlayReward reward)
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         if (_rewardGranted) return; // ✅ 중복 지급 방지
         _rewardGranted = true;
 

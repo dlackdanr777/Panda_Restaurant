@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7827cc5c0c9b452abed875997346a3f7, type: 3}
+  m_Name: PopupStoreRewardTable_R1
+  m_EditorClassIdentifier:
+  _schema: 1
+  _policyId: PopupStoreDiamond-R1-20261103
+  _entries:
+  - _grade: 1
+    _basicDiamonds: 1
+    _bonusDiamonds: 3
+    _jackpotDiamonds: 5
+    _basicWeight: 900
+    _bonusWeight: 97
+    _jackpotWeight: 3
+  - _grade: 2
+    _basicDiamonds: 3
+    _bonusDiamonds: 8
+    _jackpotDiamonds: 15
+    _basicWeight: 900
+    _bonusWeight: 97
+    _jackpotWeight: 3
+  - _grade: 3
+    _basicDiamonds: 5
+    _bonusDiamonds: 15
+    _jackpotDiamonds: 30
+    _basicWeight: 900
+    _bonusWeight: 97
+    _jackpotWeight: 3
+  - _grade: 4
+    _basicDiamonds: 10
+    _bonusDiamonds: 20
+    _jackpotDiamonds: 100
+    _basicWeight: 900
+    _bonusWeight: 97
+    _jackpotWeight: 3
+  - _grade: 5
+    _basicDiamonds: 20
+    _bonusDiamonds: 30
+    _jackpotDiamonds: 200
+    _basicWeight: 900
+    _bonusWeight: 97
+    _jackpotWeight: 3
+  - _grade: 6
+    _basicDiamonds: 30
+    _bonusDiamonds: 50
+    _jackpotDiamonds: 300
+    _basicWeight: 900
+    _bonusWeight: 97
+    _jackpotWeight: 3

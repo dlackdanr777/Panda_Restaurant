@@ -1,0 +1,348 @@
+{
+  "coordinate_system": "final guide 1672x941, top-left xywh; source-native; parent/anchor conversion required in Unity",
+  "text_slots": [
+    {
+      "id": "ScoreLabel",
+      "rect": [
+        394,
+        23,
+        66,
+        31
+      ],
+      "example": "점수"
+    },
+    {
+      "id": "ScoreValue",
+      "rect": [
+        395,
+        55,
+        95,
+        46
+      ],
+      "example": "0",
+      "binding": "actual score"
+    },
+    {
+      "id": "RewardStatus",
+      "rect": [
+        718,
+        22,
+        160,
+        35
+      ],
+      "example": "보상 없음",
+      "binding": "current grade / next grade progression"
+    },
+    {
+      "id": "TimeLabel",
+      "rect": [
+        1274,
+        22,
+        151,
+        32
+      ],
+      "example": "남은 시간"
+    },
+    {
+      "id": "TimeValue",
+      "rect": [
+        1269,
+        58,
+        145,
+        43
+      ],
+      "example": "01:30",
+      "binding": "actual remaining time"
+    },
+    {
+      "id": "ClearButtonLabel",
+      "rect": [
+        160,
+        583,
+        180,
+        37
+      ],
+      "example": "판매대 비우기"
+    },
+    {
+      "id": "PackButtonLabel",
+      "rect": [
+        1433,
+        582,
+        151,
+        40
+      ],
+      "example": "포장하기"
+    },
+    {
+      "id": "CategoryBoxLabel",
+      "rect": [
+        145,
+        714,
+        65,
+        33
+      ],
+      "example": "상자"
+    },
+    {
+      "id": "CategoryPlushLabel",
+      "rect": [
+        597,
+        712,
+        130,
+        35
+      ],
+      "example": "봉제인형"
+    },
+    {
+      "id": "CategoryRibbonLabel",
+      "rect": [
+        1324,
+        714,
+        72,
+        33
+      ],
+      "example": "리본"
+    }
+  ],
+  "reuse_only": [
+    {
+      "id": "ExistingRewardChest",
+      "rect": [
+        275,
+        28,
+        73,
+        70
+      ],
+      "policy": "Use existing approved C/B/A/S/SS/SSS mapping. Hide/none for zero valid sales; do not use pink gift from guide."
+    },
+    {
+      "id": "ExistingXClose",
+      "rect": [
+        1549,
+        19,
+        88,
+        84
+      ],
+      "policy": "Use existing X Sprite and existing close/abandon handling. No new exit art."
+    },
+    {
+      "id": "ExistingCustomers",
+      "rects": [
+        [
+          315,
+          306,
+          215,
+          183
+        ],
+        [
+          722,
+          325,
+          223,
+          165
+        ],
+        [
+          1151,
+          295,
+          225,
+          192
+        ]
+      ],
+      "policy": "Existing original customer art/animations, preserve aspect and ground line."
+    },
+    {
+      "id": "ExistingMaterials",
+      "counts": [
+        32,
+        3,
+        3
+      ],
+      "policy": "No new plush/box/ribbon material sprites in this package. Keep source images, IDs, order and gameplay."
+    }
+  ],
+  "tray_slot_centres": [
+    [
+      512,
+      607
+    ],
+    [
+      671,
+      607
+    ],
+    [
+      835,
+      607
+    ],
+    [
+      995,
+      607
+    ],
+    [
+      1157,
+      607
+    ]
+  ],
+  "material_contents": {
+    "box": [
+      78,
+      772,
+      331,
+      88
+    ],
+    "plush": [
+      548,
+      760,
+      584,
+      113
+    ],
+    "ribbon": [
+      1258,
+      773,
+      351,
+      89
+    ]
+  },
+  "order_contents": [
+    [
+      261,
+      187,
+      316,
+      84
+    ],
+    [
+      684,
+      187,
+      327,
+      84
+    ],
+    [
+      1118,
+      187,
+      315,
+      84
+    ]
+  ],
+  "five_item_order_note": "Final guide shows 3 material items per order. 4/5 item sizes are not approved by this screenshot; must use existing order logic and separately inspect readability. Do not invent fixed 90px sizes.",
+  "note": "This replaces old-reference coordinates for artwork placement only; no changes to timers, reward table, input or backend.",
+  "schema": "popup-final-guide-layout-v3",
+  "basis": "Approved final guide, 1672x941. New approved background is authoritative for scenery and integrated counter/sign. No use of earlier reference layout.",
+  "target_reference_resolution": [
+    1920,
+    1080
+  ],
+  "transform": {
+    "mode": "uniform_contain",
+    "s": "min(W/1672,H/941)",
+    "offsetX": "(W-1672*s)/2",
+    "offsetY": "(H-941*s)/2",
+    "padded_png_rect": "x=offsetX+place_png_top_left_guide[0]*s; y=offsetY+place_png_top_left_guide[1]*s; w=png_size[0]*s; h=png_size[1]*s",
+    "unity_note": "Screen-space top-left coordinates only. Convert to actual parent RectTransform space. Do not paste as anchoredPosition without conversion."
+  },
+  "background": {
+    "file": "00_Background/FG_Background_CafeCounter_APPROVED.png",
+    "source_size": [
+      1672,
+      941
+    ],
+    "mode": "RGB_opaque_fullscreen",
+    "includes": [
+      "cafe interior",
+      "wood counter",
+      "hanging sign board"
+    ],
+    "duplicates_prohibited": [
+      "old separate wood counter",
+      "FG_Counter_Wood_CLEAN_RECONSTRUCTED",
+      "FG_Sign_Blank",
+      "old main background",
+      "previous wall/table layers"
+    ],
+    "customer_occlusion": "Integrated background does not automatically hide sprites rendered above it. Inspect current rendering type; mask only customer visuals at the back counter edge. Keep patience and speech UI outside that mask. Do not change clocks/orders/slot identities."
+  },
+  "latest_approved_lower_panels": {
+    "box_xywh": [
+      23,
+      708,
+      443,
+      214
+    ],
+    "plush_xywh": [
+      481,
+      708,
+      710,
+      214
+    ],
+    "ribbon_xywh": [
+      1209,
+      708,
+      441,
+      214
+    ],
+    "percentage_width": [
+      26.495,
+      42.464,
+      26.376
+    ],
+    "note": "Replaces older 24/48/24 approximate layout. No individual material-slot frame exists in the latest final guide; do not add old-reference slots."
+  },
+  "reuse_placements_for_common_sprites": [
+    {
+      "id": "FG_Patience_Track",
+      "guide_xy_proposal": [
+        [
+          330,
+          485
+        ],
+        [
+          747,
+          485
+        ],
+        [
+          1165,
+          485
+        ]
+      ],
+      "source_size": [
+        189,
+        37
+      ],
+      "measurement_status": "left=original extraction; middle/right=estimated shared-part placements matching existing fill positions. Final renderer check required."
+    },
+    {
+      "id": "FG_Icon_ClockBlue",
+      "guide_xy_proposal": [
+        [
+          303,
+          470
+        ],
+        [
+          720,
+          470
+        ],
+        [
+          1138,
+          470
+        ]
+      ],
+      "source_size": [
+        53,
+        56
+      ],
+      "measurement_status": "left=original extraction; middle/right=offset proposals. Preserve authored aspect."
+    }
+  ],
+  "review_only_example_fills": {
+    "green": 0.8,
+    "yellow": 0.5,
+    "red": 0.4,
+    "grade": 0.0,
+    "not_gameplay_configuration": true
+  },
+  "latest_approval_overrides": [
+    "UI parts accepted by user; EXTRACTED_REVIEW in historical manifest is obsolete approval state only.",
+    "Background has now been approved and uploaded; previous background-inpainting blocker is superseded.",
+    "Standalone sign and reconstructed counter are archived/excluded from this runtime set.",
+    "Grade fill uses existing approved derived file unchanged, not a newly painted image.",
+    "Game runtime integration and visual acceptance have NOT been performed here."
+  ]
+}

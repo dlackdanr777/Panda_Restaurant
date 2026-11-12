@@ -110,6 +110,7 @@ public class IAPManager : MonoBehaviour
     public void BuyProduct(string productId, Action<int> onSuccess)
     {
 #if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
         // ── 에디터 테스트 모드 ─────────────────────────────────
         // 실제 결제 없이 즉시 다이아 지급
         if (ProductDiaMap.TryGetValue(productId, out int testDia))
@@ -270,6 +271,7 @@ public class IAPManager : MonoBehaviour
     [ContextMenu("영수증 검증 테스트 실행")]
     private void EditorTestValidate()
     {
+        if (EditorAccountSafety.DebugActionsBlocked) return;
         if (string.IsNullOrEmpty(_testReceipt))
         {
             Debug.LogError("[IAPManager][에디터] _testReceipt가 비어있습니다. Inspector에 영수증 JSON을 붙여넣으세요.");

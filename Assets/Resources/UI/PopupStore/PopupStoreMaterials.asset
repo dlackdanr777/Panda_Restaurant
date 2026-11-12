@@ -1,0 +1,167 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3cb4736207a947b59adf7a2b97b31a48, type: 3}
+  m_Name: PopupStoreMaterials
+  m_EditorClassIdentifier:
+  _entries:
+  - _id: STAFF01
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: b3f5e17d17484a04b6897c0e9dde11ea, type: 3}
+    _displayOrder: 1
+  - _id: STAFF02
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 85f04e4a13054dd29a4493ccf114afd1, type: 3}
+    _displayOrder: 2
+  - _id: STAFF03
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 9acf37c8703249018e02965837bb71fc, type: 3}
+    _displayOrder: 3
+  - _id: STAFF04
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: a9d719e218ea49a69a66adf8d3b8183e, type: 3}
+    _displayOrder: 4
+  - _id: STAFF05
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 8bc069b1cd3c4979aee900f61af07ae0, type: 3}
+    _displayOrder: 5
+  - _id: STAFF06
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: ae32df398a70429796656ee4dad02192, type: 3}
+    _displayOrder: 6
+  - _id: STAFF07
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: a8cce66e8dba48698361ce8441ca9d50, type: 3}
+    _displayOrder: 7
+  - _id: STAFF08
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: ec0613ec8e0a4f18ad5a527ef23d1ae1, type: 3}
+    _displayOrder: 8
+  - _id: STAFF09
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 317a4429e12c464ca703b6ae16591853, type: 3}
+    _displayOrder: 9
+  - _id: STAFF10
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 1ee16d65e37d45c5879d451b321b5704, type: 3}
+    _displayOrder: 10
+  - _id: STAFF11
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 835668172b444fc7945641e5383b3d88, type: 3}
+    _displayOrder: 11
+  - _id: STAFF12
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: a305e7c1d71047b6bf7f7712f5a6e722, type: 3}
+    _displayOrder: 12
+  - _id: STAFF13
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: f404ced9f5924933bf27375b944a125d, type: 3}
+    _displayOrder: 13
+  - _id: STAFF14
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: cc8a45f1facb4bd5afb30e1eb43e7984, type: 3}
+    _displayOrder: 14
+  - _id: STAFF15
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: a1c697f78bee48b0a7642bae3a7d9bc7, type: 3}
+    _displayOrder: 15
+  - _id: STAFF16
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 8f6b4c6cffcc4a2ab6149723af1a1dd9, type: 3}
+    _displayOrder: 16
+  - _id: STAFF17
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 607193a5e4ae43dc9744fbe062c96e60, type: 3}
+    _displayOrder: 17
+  - _id: STAFF18
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: a7e53a4df5ed4035b273d65a39cb844f, type: 3}
+    _displayOrder: 18
+  - _id: STAFF19
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: c9c5e2a9407b4e50bf7d2f84775e86c3, type: 3}
+    _displayOrder: 19
+  - _id: STAFF20
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: d62ad0cae7704ca3a9435f58086d5732, type: 3}
+    _displayOrder: 20
+  - _id: STAFF21
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 31b51dde08c1419a8ef80a6843c065d7, type: 3}
+    _displayOrder: 21
+  - _id: STAFF22
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 4dfad6b3b9d947ee9a89cbccc63c9df2, type: 3}
+    _displayOrder: 22
+  - _id: STAFF23
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 010c244996794f01a38406487b9f354f, type: 3}
+    _displayOrder: 23
+  - _id: STAFF24
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 22be187e7241430da511fab04f0755e4, type: 3}
+    _displayOrder: 24
+  - _id: STAFF25
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: ef403db77e484b1692437fda33c92acd, type: 3}
+    _displayOrder: 25
+  - _id: STAFF26
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: c3ba0bc7568845409ca07cd2273ce380, type: 3}
+    _displayOrder: 26
+  - _id: STAFF27
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 3293061b0af64638998fe266e01a3d74, type: 3}
+    _displayOrder: 27
+  - _id: STAFF28
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 5ab4f031b5bc4086894845029401c020, type: 3}
+    _displayOrder: 28
+  - _id: STAFF29
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: ee055786489e4b6181a818caa6f17fae, type: 3}
+    _displayOrder: 29
+  - _id: STAFF30
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 5de2799243704978bbb5a081bb6b0bd4, type: 3}
+    _displayOrder: 30
+  - _id: STAFF31
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: e30caaff3d8041808b2bcce73881c837, type: 3}
+    _displayOrder: 31
+  - _id: STAFF32
+    _kind: 0
+    _sprite: {fileID: 21300000, guid: 8a2268fd8c80476186b3d2cc748ff3b5, type: 3}
+    _displayOrder: 32
+  - _id: BOX_PINK
+    _kind: 1
+    _sprite: {fileID: 21300000, guid: db7f293d8d324ad59fa69a475050790e, type: 3}
+    _displayOrder: 1
+  - _id: BOX_BLUE
+    _kind: 1
+    _sprite: {fileID: 21300000, guid: 3ed94a27a3ec4064acbdaddbab8d57e3, type: 3}
+    _displayOrder: 2
+  - _id: BOX_MINT
+    _kind: 1
+    _sprite: {fileID: 21300000, guid: ec7a272e767f4bdba5d60c716cc97864, type: 3}
+    _displayOrder: 3
+  - _id: RIBBON_PINK
+    _kind: 2
+    _sprite: {fileID: 21300000, guid: f971aaa7ce064769b69826d05fa3b52a, type: 3}
+    _displayOrder: 1
+  - _id: RIBBON_YELLOW
+    _kind: 2
+    _sprite: {fileID: 21300000, guid: 1d1772f8c0a144e4b52b941b925787bc, type: 3}
+    _displayOrder: 2
+  - _id: RIBBON_MINT
+    _kind: 2
+    _sprite: {fileID: 21300000, guid: 8beec6a87b8641e0ac8acd0095314b88, type: 3}
+    _displayOrder: 3

@@ -1,0 +1,69 @@
+DEV-SERVER-01C — Database partition structure and verification boundary
+Status: LOCAL IMPLEMENTATION + LOCAL FAKE CONTRACT TESTS. Actual Function SDK build and development Database execution NOT RUN.
+No table creation, data migration, remote invocation, deployment or account provisioning is performed by these sources.
+
+1. Single authority and physical storage
+- Choose the new BACKND Database as the eventual sole diamond authority, conditional on the separately specified all-writer cutover.
+- The legacy GameData.Dia record is NOT inside the following transaction. Do not activate while it can remain an independent writable balance.
+- One new UserTable: popup_store_records_v2. Read SELF, all client write permissions empty. Deployed Function writes require authenticated caller binding and OfCurrentUser().
+- This v2 table is separate from the unbuilt v1 single-document candidate. There is no automatic v1 conversion or console modification.
+- C# model PopupStoreRecordRow: Key STRING primary key; OwnerId STRING; Kind STRING; LogicalId STRING; ParentId STRING; Ordinal INT32; Revision INT64; Payload JSON.
+- Payload has Codec STRING, Data STRING, Sha256 STRING, DecodedBytes INT32 inside its JSON object.
+- Kind account: wallet identity, migration identity, balance/version plus total record count and SHA-256 manifest of all other logical records.
+- Kind day: one normalized account+KST-noon-day usage record.
+- Kind business: business ID, start request/day/time, frozen policy, phases, orders, score, final decision/grant view. Receipt list is externalized.
+- Kind request: immutable request ID/fingerprint/exact Response. Historical response is preserved, not recomputed from current wallet/business.
+- Kind receipt: immutable business+receipt ID/order ID/material fingerprint/exact historical Response.
+- Kind grant: immutable account+business+popup-reward purpose record. Its payload must match the grant copy in the business snapshot.
+- Multiple logical records share one table and one Database transaction. No composite PrimaryKey feature is assumed.
+
+2. Collision-free normalization and bounds
+- Primary key v2.<base64url UTF8 owner>.<kind>.<parent>.<logical ID>; each segment is independently encoded without padding, separated by a character outside the encoding alphabet.
+- Different delimiter placements, Unicode IDs, record kinds and business receipt parents cannot alias. Owner/parent/ID segments are limited to 1,024 UTF8 bytes; full ASCII key <=4,000 characters, below the documented 4KB STRING cap.
+- Exact JSON of each logical record is losslessly Deflate-compressed then base64url-encoded. No history truncation, material sorting or snapshot field removal is used.
+- Compression is needed because existing exact request/receipt Responses include historical order arrays. Splitting records alone does not guarantee each response is below a 12KB JSON column.
+- Data <=10,000 ASCII characters; metadata is small, so the JSON wrapper stays below the documented 12KB column cap. Codec version and decoded SHA-256 are checked. Decoded record <=1MiB; all decoded records combined <=16MiB; maximum account records 10,000.
+- UTF8 decoding is strict; deserialization rejects unknown fields, does not resolve polymorphic type metadata, and limits depth. Decompression stops as soon as the declared bounded size would be exceeded. Checksum verification is integrity validation, not proof of trusted gameplay.
+- Payload ceilings and total record ceilings are checked before committing. Oversized records/history fail closed and remain pending for support/recovery, never prune deduplication history.
+
+3. Stable reads and root revision
+- Read root, read records, read root again outside the transaction.
+- A changed root version retries read-only up to 3 times. A scan root that differs from the observed root, missing/extra/duplicate/foreign rows, mismatched manifest/count or future row revision is rejected.
+- SDK adapter uses Where(owner), OfCurrentUser(), Take(maximum+1), ToList(). An SDK page truncation cannot look like an empty/unused account because manifest and count must agree.
+- Re-encoding validates all payload keys, ordering, cross-business receipts, grant copies and unknown kinds. Returned AccountState is detached.
+- The current full-account IAtomicAccountStore contract is retained. Historical growth/latency remains an explicit deployment review item: 10,000 rows and 16MiB are safety ceilings, not a production retention strategy. Archival/indexed history requires a reviewed design retaining supported request recovery; no silent reset is implemented.
+
+4. Writes and atomicity
+- Existing PopupStoreServerAuthority remains the only game mutation implementation. Planner diffs its candidate aggregate into insert/update operations.
+- Every committing mutation adds exactly one request record. No history deletion/reordering, request rewrite, Receipt rewrite or grant rewrite is allowed.
+- First write is account/root compare-and-set by PrimaryKey+OwnerId+expected Revision. Other changed existing records also use PK+owner+revision. New records use Insert, never upsert.
+- A normal start writes 4 rows (root, day, business, request); issue usually 3; pack 4 (adds Receipt); claim 4 (root/wallet, business, request, unique grant). All current ordinary authority mutations remain <=6, below hard maximum10.
+- No row may appear twice in the same transaction. More than10 writes is rejected before SDK submission.
+- Wallet changes require exactly one new grant, an equal positive balance delta, one version increment, and matching balance/version inside the grant. No client AddDia or absolute legacy save is invoked.
+- Commit success is accepted only for Success=true and exact operation/affected-row counts. False, malformed/null reply, exception or lost acknowledgement is indeterminate. No write is automatically resent by this store.
+- Recovery reads the original request record. Existing authority replay returns the exact result; a new claim request still finds the unique persisted grant, so cannot pay/reroll twice.
+- All deployment, schema/permissions, atomic-predicate, round-trip and wallet-migration evidence gates remain false by default. Local fake success cannot turn them on.
+
+5. Official guarantees versus actual evidence
+Official Function Database section 5 explicitly states: <=10 Insert/Update/Delete writes; reads outside the transaction; Update/Delete include primary-key equality; extra predicates are execution conditions; failed predicate/missing target/duplicate PK Insert roll back all writes; one row cannot be handled twice; inspect Commit.Success.
+- https://docs.backnd.com/sdk-docs/function/backnd-features/database/
+- https://docs.backnd.com/sdk-docs/database/transaction/
+Official model sizes: STRING <=4KB, JSON <=12KB.
+- https://docs.backnd.com/sdk-docs/database/data-modeling/
+Official query API: Take/Skip, ToList, FirstOrDefault.
+- https://docs.backnd.com/sdk-docs/database/query/
+These references establish the intended contract only. No installed Database DLL, real Function compilation, console schema round-trip, deployed permission denial, two-user/two-device race or timeout commit has been measured in this project. Actual development tests must prove them before enabling the gates.
+
+6. Local verification coverage
+Production partition codec + store + unchanged authority execute against an isolated copy-on-write atomic port. Tests cover delimiter/identity separation, required deployment/migration gates, missing account, exact historical response round-trip, records beyond old11KB aggregate cap, malformed/truncated/foreign data, bounded decompression/snapshot, immutable history, missing grant wallet mutation, write-limit preflight, per-write Start/Claim rollback, duplicate Insert, stale root CAS, odd commit replies, lost Start/Claim response recovery, KST boundary and full C-through-SSS business with real authority packing/decision/claim and old Start replay.
+This does not replace actual Database integration testing or all-economy wallet migration.
+
+7. Required development-server verification before activation
+A. Separate development project and two test identities; verify authenticated account identity versus selected character identity.
+B. Create v2 UserTable with above types and client write rights NONE. Verify deployed Function can write only caller-owned rows; clients cannot write.
+C. Provision only through an approved one-time cutover/import after all legacy writers are fenced/drained. Baseline seed is not callable from the game adapter.
+D. Concurrent same-request and different-request Start; duplicate grant insert; stale revision on each row; mixed success/failure transaction rollback; two-device claim contention.
+E. Disconnect after server commit; query original request; confirm wallet/grant unchanged on replay.
+F. Policy/version/order/phase-clock/lifecycle validation with real authenticated server evidence.
+G. Maximum approved session and historical workload across tested SDK/Function limits; measure bytes, query latency, timeouts and full scan behavior.
+H. Keep real payout BLOCKED until wallet cutover, gameplay evidence and all deployment proofs are complete.

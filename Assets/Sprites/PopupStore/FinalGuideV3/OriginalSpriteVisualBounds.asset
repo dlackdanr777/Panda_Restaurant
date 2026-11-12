@@ -1,0 +1,302 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ebf688dcdaf348d5a1c7c40613032a15, type: 3}
+  m_Name: OriginalSpriteVisualBounds
+  m_EditorClassIdentifier: 
+  _entries:
+  - Sprite: {fileID: 21300000, guid: b3f5e17d17484a04b6897c0e9dde11ea, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.11722488
+      y: 0.013556619
+      width: 0.7751196
+      height: 0.95933014
+  - Sprite: {fileID: 21300000, guid: 85f04e4a13054dd29a4493ccf114afd1, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.22408293
+      y: 0.010366826
+      width: 0.5869219
+      height: 0.9736842
+  - Sprite: {fileID: 21300000, guid: 9acf37c8703249018e02965837bb71fc, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.16985646
+      y: 0.027910685
+      width: 0.7304625
+      height: 0.9433812
+  - Sprite: {fileID: 21300000, guid: a9d719e218ea49a69a66adf8d3b8183e, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.11164274
+      y: 0.030303031
+      width: 0.77591705
+      height: 0.9497608
+  - Sprite: {fileID: 21300000, guid: 8bc069b1cd3c4979aee900f61af07ae0, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.20175439
+      y: 0.022328548
+      width: 0.6467305
+      height: 0.96730465
+  - Sprite: {fileID: 21300000, guid: ae32df398a70429796656ee4dad02192, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.18181819
+      y: 0.031100478
+      width: 0.6363636
+      height: 0.95614034
+  - Sprite: {fileID: 21300000, guid: a8cce66e8dba48698361ce8441ca9d50, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.20574163
+      y: 0.0063795852
+      width: 0.6236045
+      height: 0.9880383
+  - Sprite: {fileID: 21300000, guid: ec0613ec8e0a4f18ad5a527ef23d1ae1, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.23604466
+      y: 0.031100478
+      width: 0.56060606
+      height: 0.96251994
+  - Sprite: {fileID: 21300000, guid: 317a4429e12c464ca703b6ae16591853, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.14832535
+      y: 0.018341308
+      width: 0.73923445
+      height: 0.95773524
+  - Sprite: {fileID: 21300000, guid: 1ee16d65e37d45c5879d451b321b5704, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.22328548
+      y: 0.023125997
+      width: 0.55422646
+      height: 0.96889955
+  - Sprite: {fileID: 21300000, guid: 835668172b444fc7945641e5383b3d88, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.23046252
+      y: 0.015948962
+      width: 0.53907496
+      height: 0.97448164
+  - Sprite: {fileID: 21300000, guid: a305e7c1d71047b6bf7f7712f5a6e722, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.086124405
+      y: 0.005582137
+      width: 0.8476874
+      height: 0.98405105
+  - Sprite: {fileID: 21300000, guid: f404ced9f5924933bf27375b944a125d, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.15789473
+      y: 0.015151516
+      width: 0.78548646
+      height: 0.96889955
+  - Sprite: {fileID: 21300000, guid: cc8a45f1facb4bd5afb30e1eb43e7984, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.16985646
+      y: 0.031100478
+      width: 0.66586924
+      height: 0.94417864
+  - Sprite: {fileID: 21300000, guid: a1c697f78bee48b0a7642bae3a7d9bc7, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.1491228
+      y: 0.013556619
+      width: 0.81100476
+      height: 0.9665072
+  - Sprite: {fileID: 21300000, guid: 8f6b4c6cffcc4a2ab6149723af1a1dd9, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.18102074
+      y: 0.018341308
+      width: 0.69138753
+      height: 0.9736842
+  - Sprite: {fileID: 21300000, guid: 607193a5e4ae43dc9744fbe062c96e60, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.16507177
+      y: 0.01754386
+      width: 0.69617224
+      height: 0.96730465
+  - Sprite: {fileID: 21300000, guid: a7e53a4df5ed4035b273d65a39cb844f, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.1108453
+      y: 0.028708134
+      width: 0.8452951
+      height: 0.9665072
+  - Sprite: {fileID: 21300000, guid: c9c5e2a9407b4e50bf7d2f84775e86c3, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.16586922
+      y: 0.0031897926
+      width: 0.68580544
+      height: 0.99441785
+  - Sprite: {fileID: 21300000, guid: d62ad0cae7704ca3a9435f58086d5732, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.20414673
+      y: 0.016746411
+      width: 0.59569377
+      height: 0.97607654
+  - Sprite: {fileID: 21300000, guid: 31b51dde08c1419a8ef80a6843c065d7, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.17145136
+      y: 0.03508772
+      width: 0.6666667
+      height: 0.9385965
+  - Sprite: {fileID: 21300000, guid: 4dfad6b3b9d947ee9a89cbccc63c9df2, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.14593302
+      y: 0.022328548
+      width: 0.7647528
+      height: 0.969697
+  - Sprite: {fileID: 21300000, guid: 010c244996794f01a38406487b9f354f, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.16985646
+      y: 0.014354067
+      width: 0.6866029
+      height: 0.98086125
+  - Sprite: {fileID: 21300000, guid: 22be187e7241430da511fab04f0755e4, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.1953748
+      y: 0.0127591705
+      width: 0.6515151
+      height: 0.9752791
+  - Sprite: {fileID: 21300000, guid: ef403db77e484b1692437fda33c92acd, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.033492822
+      y: 0.048644338
+      width: 0.9354067
+      height: 0.9154705
+  - Sprite: {fileID: 21300000, guid: c3ba0bc7568845409ca07cd2273ce380, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.18660288
+      y: 0.020733653
+      width: 0.66905904
+      height: 0.97288674
+  - Sprite: {fileID: 21300000, guid: 3293061b0af64638998fe266e01a3d74, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.23444976
+      y: 0.011164274
+      width: 0.55422646
+      height: 0.9800638
+  - Sprite: {fileID: 21300000, guid: 5ab4f031b5bc4086894845029401c020, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.2169059
+      y: 0.019138755
+      width: 0.569378
+      height: 0.95614034
+  - Sprite: {fileID: 21300000, guid: ee055786489e4b6181a818caa6f17fae, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.20893142
+      y: 0.023923445
+      width: 0.65789473
+      height: 0.953748
+  - Sprite: {fileID: 21300000, guid: 5de2799243704978bbb5a081bb6b0bd4, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.17623605
+      y: 0.0063795852
+      width: 0.761563
+      height: 0.9880383
+  - Sprite: {fileID: 21300000, guid: e30caaff3d8041808b2bcce73881c837, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.16188198
+      y: 0.04784689
+      width: 0.72089314
+      height: 0.93301433
+  - Sprite: {fileID: 21300000, guid: 8a2268fd8c80476186b3d2cc748ff3b5, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.027113238
+      y: 0.0039872406
+      width: 0.96251994
+      height: 0.99601275
+  - Sprite: {fileID: 21300000, guid: db7f293d8d324ad59fa69a475050790e, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.043062203
+      y: 0.079744816
+      width: 0.91467303
+      height: 0.79425836
+  - Sprite: {fileID: 21300000, guid: 3ed94a27a3ec4064acbdaddbab8d57e3, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.07814992
+      y: 0.09888357
+      width: 0.8437002
+      height: 0.7304625
+  - Sprite: {fileID: 21300000, guid: ec7a272e767f4bdba5d60c716cc97864, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.039872408
+      y: 0.079744816
+      width: 0.9202552
+      height: 0.81578946
+  - Sprite: {fileID: 21300000, guid: f971aaa7ce064769b69826d05fa3b52a, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.039872408
+      y: 0.114832535
+      width: 0.9202552
+      height: 0.7599681
+  - Sprite: {fileID: 21300000, guid: 1d1772f8c0a144e4b52b941b925787bc, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.020733653
+      y: 0.09968102
+      width: 0.95773524
+      height: 0.81419456
+  - Sprite: {fileID: 21300000, guid: 8beec6a87b8641e0ac8acd0095314b88, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.046251994
+      y: 0.114035085
+      width: 0.90430623
+      height: 0.7767145
+  - Sprite: {fileID: 21300000, guid: 4b1af371b2fc69242975dd994facbf74, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.187
+      y: 0.098
+      width: 0.592
+      height: 0.586
+  - Sprite: {fileID: 21300000, guid: ca733175a2cd3da45bcf10ecd1204549, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.144
+      y: 0.098
+      width: 0.661
+      height: 0.586
+  - Sprite: {fileID: 21300000, guid: e2cd3188fa0ca4a498dfd6b203b49a42, type: 3}
+    OpaqueRect:
+      serializedVersion: 2
+      x: 0.113
+      y: 0.051
+      width: 0.735
+      height: 0.723

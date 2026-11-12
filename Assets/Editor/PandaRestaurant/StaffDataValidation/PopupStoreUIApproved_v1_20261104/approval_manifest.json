@@ -1,0 +1,321 @@
+{
+  "package": "PopupStore_UI_Approved_v1_20261104",
+  "recorded_at_kst": "2026-11-04T13:21:28+09:00",
+  "approval_basis": "사용자: 스프라이트 최종 컨펌했다 아주좋다 다음 진행해 이제 적용하면 될것같은데?",
+  "art_approved": true,
+  "unity_applied": false,
+  "unity_verified": false,
+  "original_zip_sha256": "5d171116b3554a4eec874bba3c3b22205d8bdd54abbbcb1a395e118ccb855af4",
+  "sprite_count": 30,
+  "sprite_bytes_changed": false,
+  "drive_root": "https://drive.google.com/drive/folders/18P4lgQwN6LSnfYsaoDKU6Nw6RT0sSicW",
+  "overrides": [
+    "기존 보상 상자 6종과 X Sprite 재사용",
+    "일시정지 및 새 글자형 나가기 버튼 금지",
+    "기존 재료 32+3+3 이미지·데이터·동작 보존",
+    "예시 점수/게이지/배경/손님을 하드코딩하거나 교체하지 않음",
+    "manifest의 candidate 표기는 과거 추출 이력이며 UI 실화면 검수는 여전히 필요"
+  ],
+  "assets": [
+    {
+      "file": "sprites/UI_HUD_ScoreFrame.png",
+      "sha256": "02efab976e15cdb78f56d35522853961d11799f43ba65ff9fafae8cda0713b89",
+      "pixels_wh": [
+        991,
+        117
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_HUD_TimerFrame.png",
+      "sha256": "26e5761eecbeee1867d0fa4e34c5f01ff362407adb23a0bca51c875a9bef61e8",
+      "pixels_wh": [
+        316,
+        118
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Icon_ClockPink.png",
+      "sha256": "6b019f7ac6e512cfada9909fe055ec5bd0242197554caccaad873c4ead7f9288",
+      "pixels_wh": [
+        82,
+        86
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Icon_ClockBlue.png",
+      "sha256": "9479a543ab085ec870d115bdbe22719595dcf367b9a48a6ed7f9e19df744fad7",
+      "pixels_wh": [
+        79,
+        90
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_OrderBubble_01.png",
+      "sha256": "25f0affa9f9864ee6b111b9bca7c22eb80ae92cba1c4f3c3cab26b22a5c55c20",
+      "pixels_wh": [
+        383,
+        168
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_OrderBubble_02.png",
+      "sha256": "966b1de5fa51c7072c9493e039fbeb881d83cc1d29dcd494689a31e253a9c101",
+      "pixels_wh": [
+        389,
+        168
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_OrderBubble_03.png",
+      "sha256": "c4bad56d9ff4e3ce518449dcec6842b8276965049f8463fe4777dad25f275c1b",
+      "pixels_wh": [
+        390,
+        168
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Button_Clear_WithIcon.png",
+      "sha256": "36c139837f1f1d6822a655ccf05024d8e2b866e6983a62755d03453ae6f883ab",
+      "pixels_wh": [
+        285,
+        141
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Button_Clear_Blank.png",
+      "sha256": "76cbd85bcc7f92f83e0a13b2f51f283a5394e761d59212902fe630f4406960e0",
+      "pixels_wh": [
+        285,
+        141
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Button_Pack_WithIcon.png",
+      "sha256": "ffd2d4fcbcd46e1ca9b84dc997d962969b47256b40748915277718ee5236b53e",
+      "pixels_wh": [
+        298,
+        143
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Button_Pack_Blank.png",
+      "sha256": "69a5201afaf14483d0180079d8bf4d343bce79050a5b4019533a7aff83fbce12",
+      "pixels_wh": [
+        298,
+        143
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Tray_FiveEmptySlots.png",
+      "sha256": "de5763703785729c3acd810607317c2d46db30c3caaf35870d92dc60381f0a7e",
+      "pixels_wh": [
+        924,
+        195
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Panel_Materials_Box.png",
+      "sha256": "68fc318bc647623b76f3f809778c1d11b9dee4fd41558353c1b7ab2942e67e62",
+      "pixels_wh": [
+        461,
+        216
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Panel_Materials_Plush.png",
+      "sha256": "b9f6e546dbee122a11519e927e60fb4fa8563ef5a9b7ff8bf3cf85403add4da6",
+      "pixels_wh": [
+        538,
+        216
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Panel_Materials_Ribbon.png",
+      "sha256": "341f90b473b6c3f4c8222676aa3d278a19eed803c4f0628b787b243a4ea2f58e",
+      "pixels_wh": [
+        529,
+        216
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Arrow_Left.png",
+      "sha256": "a1e544a10e6aff602df982f704bd1a8910d3ae566977961a2e44ebd5800768cb",
+      "pixels_wh": [
+        51,
+        63
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Arrow_Right.png",
+      "sha256": "ccb5f9178e8aa2a965b107db12a7d236a8f756edc44fb3ad8533359ed8fbd9bf",
+      "pixels_wh": [
+        51,
+        63
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_PageDot_Pink.png",
+      "sha256": "22bbe7639a73995b372f7e43c7b2a8a2c5182875d59950a14feb16e915485aa5",
+      "pixels_wh": [
+        42,
+        43
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_PageDot_Blue.png",
+      "sha256": "1c46e4a80a41113b0781e8e6cc5841fea0223ef805bc42df5f4e3be9b3b26d41",
+      "pixels_wh": [
+        42,
+        43
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_PageDot_Orange.png",
+      "sha256": "c14e7d71f60c7bcdbeadf3e852eaa7bd4a05d677b32fa7a62db23b54d7556d6c",
+      "pixels_wh": [
+        41,
+        43
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_PageDot_Inactive.png",
+      "sha256": "8e09c22e899d4b00939ce929d36d5835e24d82935c5d340de6ed4b0240587420",
+      "pixels_wh": [
+        38,
+        41
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Bar_Grade_Track.png",
+      "sha256": "cad2dc54a2f8932bfac89bc4fcb09a59d219d8bfac5f41307dd688059ce3f469",
+      "pixels_wh": [
+        450,
+        46
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Bar_Grade_Fill.png",
+      "sha256": "40af6418e86836ae7ae7e551b072f3f41fa42f32e3c1d3e34c83dc9c8e891c63",
+      "pixels_wh": [
+        433,
+        33
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Bar_Patience_Track.png",
+      "sha256": "56e618b6269c32d72c921b4a4962b8c5b74d9a7b224e5e9adb4228aa43a021ca",
+      "pixels_wh": [
+        235,
+        55
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Bar_Patience_Fill_Green.png",
+      "sha256": "9bca86588ea5106b720ed49435c8df1492f387146d31e5c2889d745a44142345",
+      "pixels_wh": [
+        216,
+        33
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Bar_Patience_Fill_Yellow.png",
+      "sha256": "dabc7fc62f05b38e4c0f354d73f77e520594f799f28ddeb3281985c684637813",
+      "pixels_wh": [
+        216,
+        33
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Bar_Patience_Fill_Red.png",
+      "sha256": "4b9080e93be1a8179fd9a245320d257b4e67ac55811e1a4b1cf3ee29a3ae093b",
+      "pixels_wh": [
+        216,
+        32
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Sign_HangingBlank.png",
+      "sha256": "554ea40f8b3a4923bdebaa3ca3f5fa4787163fde7e9de3fcd09da1b5986852f1",
+      "pixels_wh": [
+        181,
+        188
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Panel_FloralBrown.png",
+      "sha256": "4e630ac1eeab2552c1e57953c8649a1fcfc831b10b35941e2ea5a7d7c0d77cd8",
+      "pixels_wh": [
+        429,
+        170
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    },
+    {
+      "file": "sprites/UI_Panel_FloralCream.png",
+      "sha256": "50c8e981754f1e35c4f1b1b3b49e3efb15718d69a89a117bb4913ba8c142f7d3",
+      "pixels_wh": [
+        207,
+        174
+      ],
+      "art_status": "USER_APPROVED",
+      "unity_integration_verified": false
+    }
+  ]
+}

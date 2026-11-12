@@ -19,12 +19,29 @@ public class UITest : MonoBehaviour
 
     private void Awake()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+#endif
         // #if !UNITY_EDITOR
         //             gameObject.SetActive(false);
         //             return;
         // #endif
 
         FoodMiniGameData data = FoodDataManager.Instance.GetFoodData("FOOD08").FoodMiniGameData;
+#if UNITY_EDITOR
+        _miniGameButton.onClick.AddListener(() => EditorAccountSafety.RunDebugAction(() => _miniGame.StartMiniGame(data)));
+
+        _addClearButton.onClick.AddListener(() => EditorAccountSafety.RunDebugAction(() => UserInfo.AddCleanCount(100)));
+        _addCookButton.onClick.AddListener(() => EditorAccountSafety.RunDebugAction(() => UserInfo.AddCookCount("COOK01", 100)));
+        _addCustomerButton.onClick.AddListener(() => EditorAccountSafety.RunDebugAction(() => UserInfo.AddCustomerCount(100)));
+
+        _satisfactionUpButton.onClick.AddListener(() => EditorAccountSafety.RunDebugAction(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, 10)));
+        _satisfactionDownButton.onClick.AddListener(() => EditorAccountSafety.RunDebugAction(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, -10)));
+#else
         _miniGameButton.onClick.AddListener(() => _miniGame.StartMiniGame(data));
 
         _addClearButton.onClick.AddListener(() => UserInfo.AddCleanCount(100));
@@ -33,12 +50,16 @@ public class UITest : MonoBehaviour
 
         _satisfactionUpButton.onClick.AddListener(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, 10));
         _satisfactionDownButton.onClick.AddListener(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, -10));
+#endif
 
         DataBind.SetUnityActionValue("SetActiveTestUI", SetActiveTestUI);
     }
 
     private void Start()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         _changeFloorButton.AddListener(OnChgangeFloorButtonClicked);
                 ERestaurantFloorType nextFloor = UserInfo.GetUnlockFloor(UserInfo.CurrentStage) == ERestaurantFloorType.Floor1 ? ERestaurantFloorType.Floor2 : ERestaurantFloorType.Floor1;
         _changeFloorButton.SetText(Utility.GetFloorStrKrByType(nextFloor)  + "변환");
@@ -46,6 +67,9 @@ public class UITest : MonoBehaviour
 
     private void OnChgangeFloorButtonClicked()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         ERestaurantFloorType currentFloor = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
         ERestaurantFloorType nextFloor = currentFloor == ERestaurantFloorType.Floor1 ? ERestaurantFloorType.Floor2 : ERestaurantFloorType.Floor1;
 
@@ -55,6 +79,9 @@ public class UITest : MonoBehaviour
 
     private void SetActiveTestUI()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         gameObject.SetActive(!gameObject.activeSelf);
     }
 }

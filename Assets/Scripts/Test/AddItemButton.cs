@@ -13,6 +13,9 @@ public class AddItemButton : MonoBehaviour
 
     private void OnButtonClicked()
     {
+#if UNITY_EDITOR
+        if (EditorAccountSafety.DebugActionsBlocked) return;
+#endif
         UserInfo.GiveGachaItem(_itemId);
     }
 }

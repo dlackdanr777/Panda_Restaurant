@@ -571,6 +571,7 @@ namespace Muks.BackEnd
         // 읽기/대기 세션은 무효화하되 이미 보낸 작업의 대상 소유권과 미해결 기록은 유지한다.
         public void InvalidateGameDataRestore()
         {
+            InvalidatePopupStoreAccount();
             InvalidateStageCollection();
             InvalidateGameDataSaveSession();
             GameDataRestore.InvalidateAccountSession();
@@ -589,6 +590,7 @@ namespace Muks.BackEnd
         }
         private GameDataRestoreQuery BeginGameDataQuery()
         {
+            InvalidatePopupStoreAccount();
             InvalidateStageCollection();
             InvalidateGameDataSaveSession();
             return GameDataRestore.BeginQuery();
@@ -1712,6 +1714,8 @@ namespace Muks.BackEnd
                 validateRequest: (identity, payload) =>
                 {
                     var owner = readOwner() ?? updater.Owner;
+                    string popupError = ValidatePopupStoreAccountSave(identity, payload, out bool popupOwned);
+                    if (popupError != null || popupOwned) return popupError;
                     if (IsGachaEconomyProtected) return _gachaEconomyStore.ValidateTransmission(identity, payload);
                     if (_attendanceClaim != null && !_attendanceClaim.Committed && _attendanceClaim.Identity.Matches(identity))
                         return _attendanceClaim.ValidateTransmission(identity, payload);
@@ -1728,6 +1732,8 @@ namespace Muks.BackEnd
                     if (!ValidateFirstTutorialSave(payload, out error)) return error;
                     if (!ValidateQuestStaffGrantSave(payload, out error)) return error;
                     error = ValidateAttendanceSave(payload);
+                    if (error != null) return error;
+                    error = ValidatePopupStoreOrdinaryBalance(payload);
                     if (error != null) return error;
                     // A previously queued explicit partial balance must not overwrite purchase/reward deltas.
                     if (ReferenceEquals(CurrentStaffPurchaseExecution?.Query, query))
@@ -1894,6 +1900,7 @@ namespace Muks.BackEnd
                 if (!IsCurrentGameDataSaveSession(query, target))
                     throw new InvalidOperationException("오래된 세션의 최신 자료를 생성할 수 없습니다.");
                 Param values = GameDataTransport.LatestValues();
+                AddCurrentPopupStoreSaveField(values);
                 if (!IsCurrentGameDataSaveSession(query, target))
                     throw new InvalidOperationException("자료 생성 중 저장 세션이 무효화되었습니다.");
                 if (!StaffRuntime.TryAddSaveField(values, out string error))
