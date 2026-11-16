@@ -960,7 +960,7 @@ public static partial class PopupStoreVerificationRunner
                 && request != "run-server-fairy" && request != "run-server-all" && request != "run-server01b"
                 && request != "run-server01c" && request != "run-server01c-all"
                 && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b"
-                && request != "run-sound" && request != "run-entry")
+                && request != "run-sound" && request != "run-entry" && request != "run-ui-performance")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1027,6 +1027,14 @@ public static partial class PopupStoreVerificationRunner
                 "PopupStoreSoundTests", "PresentationSoundTests", "PopupStoreAccountPhaseConnectionTests",
                 "PopupStorePhasePreviewEntryGuideTests", "PopupStoreLatestEntryTests"
             }).Distinct().ToArray()
+            : request == "run-ui-performance" ? new[] {
+                "PopupStoreCurrentGradeHudTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests",
+                "PopupStorePatienceSkinTests", "PopupStoreComplaintTests", "PopupStorePauseTests", "PopupStoreSessionLifetimeTests",
+                "PopupStorePhasePreviewClockTests", "PopupStorePhasePreviewIntegrationTests",
+                "PopupStorePhasePreviewTypographyTests", "PopupStorePhasePresentationTests", "PopupStorePhaseTutorialTests",
+                "PopupStorePhaseDeadlineTests", "PopupStorePhasePolishTests", "PopupStoreSoundTests",
+                "PopupStoreAccountPhaseConnectionTests", "PopupStorePhaseRewardIntegrationTests"
+            }
             : request == "run-sound" ? new[] {
                 "PopupStoreSoundTests", "PresentationSoundTests",
                 "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",

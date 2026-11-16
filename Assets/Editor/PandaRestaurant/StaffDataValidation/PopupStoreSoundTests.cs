@@ -758,6 +758,32 @@ public sealed class PopupStoreSoundTests
         }
     }
 
+    [Test]
+    public void MergedPresentationRetriesUnavailableAudioOnTheNextFrameWithoutReplaying()
+    {
+        using (var f = new AudioFixture()) using (var h = new GameHost(false, false)) using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var sound = f.Attach(h.Root); Set(sound, "AllowEditModeForTests", false);
+            var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PopupStorePhasePreviewViewBuilder.PrefabPath), h.Root.transform, false);
+            root.SetActive(false); fonts.BindBeforeActivation(root); root.SetActive(true);
+            var view = root.GetComponent<PopupStorePhasePreviewView>();
+            Assert.That(h.Preview.AttachView(view, (Button)Get(h.Root.GetComponent<UIPopupStore>(), "_closeButton")), Is.True);
+            while (view.TryNext()) { }
+            Assert.That(view.TryPlay(), Is.True);
+            int renders = h.Preview.PresentationRenderCount;
+            h.Preview.RenderPresentation(100);
+            Assert.That(f.Count(PopupStoreSoundCue.StageNotice), Is.Zero);
+            Set(sound, "AllowEditModeForTests", true);
+            for (int i = 0; i < 600; i++) h.Preview.RenderPresentation(100);
+            Assert.That(h.Preview.PresentationRenderCount - renders, Is.EqualTo(1));
+            Assert.That(f.Count(PopupStoreSoundCue.StageNotice), Is.Zero);
+            h.Preview.RenderPresentation(101); h.Preview.RenderPresentation(102);
+            Assert.That(f.Count(PopupStoreSoundCue.StageNotice), Is.EqualTo(1));
+            Assert.That(view.CueShowCount, Is.EqualTo(1));
+            h.AssertNoR1();
+        }
+    }
+
     [TestCase(0)] [TestCase(1)] [TestCase(300)]
     public void RewardOpeningAndDiamondRevealSoundOnceAndResumeDoesNotAcquireAgain(int amount)
     {

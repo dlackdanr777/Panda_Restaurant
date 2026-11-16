@@ -16,7 +16,42 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
     private PopupStoreSalesCounter _counter;
     private PopupStoreMaterialList[] _lists;
     private PopupStorePhasePreviewOrderSource _source;
-    private string _approvalId, _loggedState;
+    private string _approvalId;
+    private HudState _loggedState, _renderedHudState;
+    private bool _hasLoggedState, _hudDirty = true;
+    private PopupStoreGradeSession _gradeHud;
+    private PopupStoreCurrentGradeHud _currentGradeHud;
+    private PopupStoreExitConfirmation _exitConfirmation;
+    private int _presentationFrame = -1;
+    internal event Action HudChanged;
+#if UNITY_EDITOR
+    internal int HudRenderCount { get; private set; }
+    internal int PresentationRenderCount { get; private set; }
+#endif
+
+    private readonly struct HudState
+    {
+        private readonly PopupStorePhaseSession _session;
+        private readonly int _generation, _orders, _score, _countdown;
+        private readonly PopupStorePhaseState _state;
+        private readonly PopupStoreGradeTier _grade;
+        private readonly Gate _gate;
+        private readonly string _error;
+
+        internal HudState(PopupStorePhasePreview owner)
+        {
+            _session = owner.Session; _generation = _session.PhaseGeneration;
+            _orders = _session.PhaseSuccessfulOrders; _score = _session.TotalScore;
+            _countdown = _session.CountdownValue; _state = _session.State;
+            _grade = owner.SecuredGrade; _gate = owner._gate; _error = owner.LastError;
+        }
+
+        internal bool Matches(PopupStorePhasePreview owner) => ReferenceEquals(_session, owner.Session)
+            && _generation == owner.Session.PhaseGeneration && _orders == owner.Session.PhaseSuccessfulOrders
+            && _score == owner.Session.TotalScore && _countdown == owner.Session.CountdownValue
+            && _state == owner.Session.State && _grade == owner.SecuredGrade
+            && _gate == owner._gate && _error == owner.LastError;
+    }
     private bool _ready, _preparing, _cleaning, _confirming;
     private enum Gate { None, InitialStage, Three, Two, One, InitialStart, NextStage, NextStart, GameOver }
     private Gate _gate;
@@ -55,7 +90,9 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
         : _gate == Gate.InitialStart || _gate == Gate.NextStart ? "GameStart"
         : _gate == Gate.GameOver ? "GameOver"
         : Session?.State == PopupStorePhaseState.ClearNotice ? "Success"
-        : Session?.State == PopupStorePhaseState.Countdown ? Session.CountdownValue.ToString() : string.Empty;
+        : Session?.State == PopupStorePhaseState.Countdown ? CountdownText : string.Empty;
+    private string CountdownText => Session.CountdownValue == 3 ? "3" : Session.CountdownValue == 2 ? "2"
+        : Session.CountdownValue == 1 ? "1" : "0";
     public float PresentationProgress => _gate != Gate.None
         ? (float)(1d - _gateRemaining / _gateDuration)
         : Session?.State == PopupStorePhaseState.ClearNotice
@@ -100,7 +137,7 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
         : Session == null || Session.State == PopupStorePhaseState.Ready ? "6단계 검수 · 미지급"
         : Session.State == PopupStorePhaseState.Clearing ? "전달·퇴장 정리 중"
         : Session.State == PopupStorePhaseState.ClearNotice ? Session.CurrentPhase.Grade + " 통과!"
-        : Session.State == PopupStorePhaseState.Countdown ? Session.CountdownValue.ToString()
+        : Session.State == PopupStorePhaseState.Countdown ? CountdownText
         : Session.IsTerminal ? "프리뷰 종료 · 실제 미지급" : "6단계 검수 · 미지급";
 
     public bool Initialize(PopupStorePhaseProfileSnapshot profile, out string error)
@@ -127,6 +164,9 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
         _score = GetComponent<PopupStoreScore>();
         _entrance = GetComponent<PopupStoreCustomerEntrance>(); _orders = GetComponent<PopupStoreOrderDisplay>();
         _counter = GetComponentInChildren<PopupStoreSalesCounter>(true);
+        _gradeHud = GetComponent<PopupStoreGradeSession>();
+        _currentGradeHud = GetComponentInChildren<PopupStoreCurrentGradeHud>(true);
+        _exitConfirmation = GetComponent<PopupStoreExitConfirmation>();
         _lists = GetComponentsInChildren<PopupStoreMaterialList>(true);
         var catalog = Resources.Load<PopupStoreMaterialCatalog>("UI/PopupStore/PopupStoreMaterials");
         if (Popup == null || _clock == null || _clock.State != PopupStoreBusinessState.NotStarted
@@ -155,8 +195,8 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
             || !ApplyFilter(out error))
         { error = error ?? "Preview input ownership was rejected."; FailClosed(error); return false; }
         _packing.SucceededCommitted += OnCommitted;
-        GetComponent<PopupStoreGradeSession>()?.RefreshHud();
-        GetComponentInChildren<PopupStoreCurrentGradeHud>(true)?.RefreshDisplay();
+        _gradeHud?.RefreshHud();
+        _currentGradeHud?.RefreshDisplay();
         Observe();
         return true;
     }
@@ -544,16 +584,18 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
         if (Session == null) return;
         PrepareAccountResult();
         _polish?.TickWarning(0);
-        RenderPresentation();
+        if (!Application.isPlaying) RenderPresentation();
         string cue = PresentationCue;
         if (_lastCue != cue)
         {
             _lastCue = cue;
             if (!string.IsNullOrEmpty(cue)) Log("CUE name=" + cue + "; stage=" + PresentationStage);
         }
-        string stamp = Session.PhaseRunId + ":" + Session.State + ":" + Session.CountdownValue + ":" + Session.PhaseSuccessfulOrders;
-        if (_loggedState == stamp) return;
-        _loggedState = stamp;
+        if (_hasLoggedState && _loggedState.Matches(this)) return;
+        _hasLoggedState = true;
+        _loggedState = new HudState(this);
+        _hudDirty = true;
+        HudChanged?.Invoke();
         Log("STATE state=" + Session.State + "; stage=" + Session.CurrentPhase.Grade + "; goal="
             + Session.PhaseSuccessfulOrders + "/" + Session.CurrentPhase.TargetSuccessfulOrders
             + "; score=" + Session.TotalScore + "; targetScore=" + Session.CurrentPhase.TargetScore
@@ -585,9 +627,17 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
     {
         if (!_ready || Session == null) return;
         _polish?.TickWarning(0);
-        GetComponent<PopupStoreGradeSession>()?.EditorRenderPhaseHud(TransitionText,
-            GoalProgress);
-        GetComponentInChildren<PopupStoreCurrentGradeHud>(true)?.RefreshDisplay();
+        if (_hudDirty || !_renderedHudState.Matches(this))
+        {
+#if UNITY_EDITOR
+            HudRenderCount++;
+#endif
+            _hudDirty = false;
+            _renderedHudState = new HudState(this);
+            _gradeHud?.EditorRenderPhaseHud(TransitionText, GoalProgress);
+            HudChanged?.Invoke();
+        }
+        _currentGradeHud?.RefreshIfDirty();
         RenderPresentation();
     }
     private int PresentationStage => Session == null ? 1 : Session.CurrentPhase.PhaseNumber
@@ -620,16 +670,26 @@ public sealed class PopupStorePhasePreview : MonoBehaviour, IPopupStorePhasePrev
         if (IsAccountMode) _view.RenderAccountAdmission(requestPending, canStart && AccountAuthorityReady, status,
             confirmedTicketExhaustion && remaining == 0 && limit > 0 && AccountAuthorityReady);
         if (_originalClose != null) _originalClose.gameObject.SetActive(!show && _closeWasActive);
-        RenderPresentation();
+        if (!Application.isPlaying) RenderPresentation();
         return true;
     }
-    private void RenderPresentation()
+    private void RenderPresentation() => RenderPresentation(Application.isPlaying ? Time.frameCount : -1);
+    internal void RenderPresentation(int frame)
     {
         if (_view == null) return;
+        if (frame >= 0)
+        {
+            if (_presentationFrame == frame) return;
+            _presentationFrame = frame;
+        }
+#if UNITY_EDITOR
+        PresentationRenderCount++;
+#endif
         _view.RenderCue(PresentationCue, PresentationStage, PresentationProgress);
         // Exit confirmation must remain above the cue so cancel/abandon is always reachable.
-        if (GetComponent<PopupStoreExitConfirmation>()?.IsVisible != true) _view.transform.SetAsLastSibling();
+        if (_exitConfirmation?.IsVisible != true) _view.transform.SetAsLastSibling();
     }
+    private void OnEnable() { _hudDirty = true; _presentationFrame = -1; HudChanged?.Invoke(); }
     private void OnDestroy()
     {
         ++_accountRequestSerial;

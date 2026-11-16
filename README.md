@@ -1,5 +1,31 @@
 # Panda_Restaurant
 
+## Popup-store HUD refresh
+
+- The phase presenter merges HUD changes until its LateUpdate. Score, secured
+  grade, phase, goal and countdown changes invalidate the display; ordinary
+  time ticks only animate cues and gauges. Reopening invalidates the HUD again.
+- The current-grade HUD caches popup-local bindings and the six approved sprite
+  checks. Reference changes, Inspector edits and reactivation revalidate the
+  affected cache; the original business-session identity is still enforced.
+- Clock and patience labels format only when their displayed integer second,
+  format or text reference changes. Clock settlement and order expiration still
+  use the original fractional time. Gauge fill remains continuous; artwork and
+  color are applied only when their selected appearance changes.
+- Cue images, stage labels and sound markers are prepared on transitions.
+  Runtime cue renders merge to one per frame while progress continues to animate.
+  Sound dispatch still retries an unavailable initial context with the same
+  identity, leaving duplicate suppression with the existing sound owner.
+
+In the existing idle, SDK-free Editor, write `run-ui-performance` to
+`Temp/PopupStoreVerification/request.txt`. The existing memory-only NUnit bridge
+reports focused HUD, clock, patience, phase, pause/lifecycle and sound regressions
+in `Temp/PopupStoreVerification/result.json`. Allocation probes use Unity's
+current-thread `GC.Alloc` recorder around 600 warmed display calls, not actual
+device frames; recorder overhead is included. This does not start Play, save
+user scenes or use live tickets/rewards. PlayerLoop timing, device GC and visual
+acceptance still require separate manual profiling.
+
 ## Shared panda token wallet
 
 Gacha exchange, staff skin purchases and duplicate staff skin rewards use only

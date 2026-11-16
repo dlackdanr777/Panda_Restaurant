@@ -198,6 +198,33 @@ public sealed class PopupStoreCurrentGradeHudTests
     }
 
     [Test]
+    public void StableRefreshesReuseValidationButAChangedLabelRebindsAndSessionOwnershipStillRejects()
+    {
+        using (var h = new Host())
+        using (var other = new Host())
+        {
+            h.Start(); h.Call("SellUntil", PopupStoreGradeTier.C); h.Hud.RefreshDisplay();
+            int mappings = h.Hud.MappingValidationCount, bindings = h.Hud.BindingValidationCount;
+            for (int i = 0; i < 10; i++) h.Hud.RefreshDisplay();
+            Assert.That(h.Hud.MappingValidationCount, Is.EqualTo(mappings));
+            Assert.That(h.Hud.BindingValidationCount, Is.EqualTo(bindings));
+            var original = h.Hud.NextGradeText;
+            var replacement = Object.Instantiate(original, original.transform.parent);
+            Write(h.Hud, "_nextGradeText", replacement);
+            Invoke(h.Hud, "LateUpdate");
+            Assert.That(replacement.text, Is.EqualTo(original.text));
+            Assert.That(replacement.enabled, Is.True);
+            Assert.That(original.enabled, Is.False);
+            Assert.That(h.Hud.BindingValidationCount, Is.EqualTo(bindings + 1));
+            Assert.That(CountObservers(h.Score, "Changed", h.Hud), Is.EqualTo(1));
+            Write(h.Hud, "_ownerSessionId", other.Grade.SessionId);
+            ExpectHudError();
+            Assert.That(h.Hud.RefreshDisplay(), Is.False);
+            Assert.That(h.Hud.IsVisible, Is.False);
+        }
+    }
+
+    [Test]
     public void HiddenViewUnsubscribesAndReopensWithTheSameCachedGradeOnlyOnce()
     {
         using (var h = new Host())

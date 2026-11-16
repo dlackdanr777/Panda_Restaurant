@@ -74,6 +74,8 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
     private bool _bound, _canPlay, _playRequested, _closeRequested, _invoking;
     private int _currentPage;
     private int _lastLoggedPage = -1;
+    private string _soundCue, _soundMarker;
+    private int _soundStage;
     public int CurrentPage => _currentPage;
     public int PageCount => _pages?.Length ?? 0;
     public bool IsTutorialVisible => isActiveAndEnabled && _tutorialGroup != null && _tutorialGroup.activeInHierarchy;
@@ -203,51 +205,61 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
         if (!_bound) return;
         if (string.IsNullOrEmpty(cue))
         {
-            _presentationGroup.SetActive(false); LastCue = null;
-            _inputGroup.blocksRaycasts = IsTutorialVisible;
+            if (LastCue != null || _presentationGroup.activeSelf)
+            {
+                _presentationGroup.SetActive(false); LastCue = null;
+                _inputGroup.blocksRaycasts = IsTutorialVisible;
+            }
             return;
         }
         if (float.IsNaN(progress) || float.IsInfinity(progress) || stage < 1 || stage > 6)
             throw new ArgumentOutOfRangeException(nameof(progress), "A preview cue requires finite progress and stage 1–6.");
-        Sprite sprite;
-        switch (cue)
-        {
-            case "Stage": sprite = null; break;
-            case "3": sprite = _three; break;
-            case "2": sprite = _two; break;
-            case "1": sprite = _one; break;
-            case "GameStart": sprite = _gameStart; break;
-            case "Success": sprite = _success; break;
-            case "GameOver": sprite = _gameOver; break;
-            default: throw new ArgumentException("Unknown preview cue: " + cue, nameof(cue));
-        }
         if (!IsCueVisible || LastCue != cue || CurrentStage != stage)
+        {
+            Sprite sprite;
+            switch (cue)
+            {
+                case "Stage": sprite = null; break;
+                case "3": sprite = _three; break;
+                case "2": sprite = _two; break;
+                case "1": sprite = _one; break;
+                case "GameStart": sprite = _gameStart; break;
+                case "Success": sprite = _success; break;
+                case "GameOver": sprite = _gameOver; break;
+                default: throw new ArgumentException("Unknown preview cue: " + cue, nameof(cue));
+            }
             CueShowCount++;
-        LastCue = cue; CurrentStage = stage;
-        _tutorialGroup.SetActive(false); _presentationGroup.SetActive(true);
-        _inputGroup.interactable = true; _inputGroup.blocksRaycasts = true;
-        _cueImage.sprite = sprite; _cueImage.gameObject.SetActive(sprite != null);
-        _cueImage.preserveAspect = true;
-        bool digit = cue == "1" || cue == "2" || cue == "3";
-        _cueImage.rectTransform.sizeDelta = digit ? new Vector2(420, 430) : new Vector2(1250, 310);
-        _stageText.gameObject.SetActive(cue == "Stage");
-        _stageText.text = "STAGE " + stage;
+            LastCue = cue; CurrentStage = stage;
+            _tutorialGroup.SetActive(false); _presentationGroup.SetActive(true);
+            _inputGroup.interactable = true; _inputGroup.blocksRaycasts = true;
+            _cueImage.sprite = sprite; _cueImage.gameObject.SetActive(sprite != null);
+            _cueImage.preserveAspect = true;
+            bool digit = cue == "1" || cue == "2" || cue == "3";
+            _cueImage.rectTransform.sizeDelta = digit ? new Vector2(420, 430) : new Vector2(1250, 310);
+            _stageText.gameObject.SetActive(cue == "Stage");
+            if (cue == "Stage") _stageText.text = "STAGE " + stage;
+        }
+        if (_soundStage != stage || _soundCue != cue)
+        {
+            _soundStage = stage; _soundCue = cue;
+            _soundMarker = stage + ":" + cue;
+        }
         float t = Mathf.Clamp01(progress * 5f);
         float scale = Mathf.Lerp(_cueStartScale, 1f, t * t * (3f - 2f * t));
-        _cueImage.rectTransform.localScale = Vector3.one * scale;
-        _stageText.rectTransform.localScale = Vector3.one * scale;
+        var cueScale = Vector3.one * scale;
+        if (_cueImage.rectTransform.localScale != cueScale) _cueImage.rectTransform.localScale = cueScale;
+        if (_stageText.rectTransform.localScale != cueScale) _stageText.rectTransform.localScale = cueScale;
         // The first Stage render occurs before the clock commits Running. Repeated
         // renders may retry that unavailable context; the sound owner dispatches this
         // stable stage/cue identity at most once and never advances the presentation.
-        string marker = stage + ":" + cue;
         switch (cue)
         {
-            case "Stage": PopupStoreSound.Play(this, PopupStoreSoundCue.StageNotice, this, marker); break;
+            case "Stage": PopupStoreSound.Play(this, PopupStoreSoundCue.StageNotice, this, _soundMarker); break;
             case "3": case "2": case "1":
-                PopupStoreSound.Play(this, PopupStoreSoundCue.Countdown, this, marker); break;
-            case "GameStart": PopupStoreSound.Play(this, PopupStoreSoundCue.GameStart, this, marker); break;
-            case "Success": PopupStoreSound.Play(this, PopupStoreSoundCue.StageSuccess, this, marker); break;
-            case "GameOver": PopupStoreSound.Play(this, PopupStoreSoundCue.GameOver, this, marker); break;
+                PopupStoreSound.Play(this, PopupStoreSoundCue.Countdown, this, _soundMarker); break;
+            case "GameStart": PopupStoreSound.Play(this, PopupStoreSoundCue.GameStart, this, _soundMarker); break;
+            case "Success": PopupStoreSound.Play(this, PopupStoreSoundCue.StageSuccess, this, _soundMarker); break;
+            case "GameOver": PopupStoreSound.Play(this, PopupStoreSoundCue.GameOver, this, _soundMarker); break;
         }
     }
 

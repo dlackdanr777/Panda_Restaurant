@@ -17,6 +17,45 @@ public sealed class PopupStoreBusinessClockTests
     private const string PrefabPath = "Assets/Resources/UI/PopupStore/UIPopupStore.prefab";
 
     [Test]
+    public void UnchangedIntegerSecondAllocationProbe()
+    {
+        using (var host = new Host())
+        {
+            host.Start();
+            var render = (Action)Delegate.CreateDelegate(typeof(Action), host.Clock,
+                typeof(PopupStoreBusinessClock).GetMethod("UpdateHud", BindingFlags.Instance | BindingFlags.NonPublic));
+            for (int i = 0; i < 10; i++) render();
+            long allocated = PopupStorePhasePreviewIntegrationTests.MeasureUiAllocations(render);
+            Debug.Log("POPUP_STORE_UI_ALLOC business-clock samples=600 bytes=" + allocated);
+            Assert.That(allocated, Is.LessThan(1024), "Unchanged seconds must not allocate a formatted string per call.");
+        }
+    }
+
+    [Test]
+    public void FractionalTicksKeepTheLabelButFormatAndReferenceChangesRebindImmediately()
+    {
+        using (var host = new Host())
+        {
+            host.Start();
+            var text = (TMP_Text)Read(host.Clock, "_timeText");
+            string label = text.text;
+            host.Clock.AdvanceTime(.25);
+            Assert.That(host.Clock.RemainingSeconds, Is.EqualTo(89.75));
+            Assert.That(text.text, Is.SameAs(label));
+            Write(host.Clock, "_timeFormat", "{0:0}m {1:00}s");
+            host.Clock.AdvanceTime(.25);
+            Assert.That(text.text, Is.EqualTo("1m 30s"));
+            var replacement = Object.Instantiate(text, text.transform.parent);
+            replacement.text = "replacement";
+            Write(host.Clock, "_timeText", replacement);
+            host.Clock.AdvanceTime(.25);
+            Assert.That(replacement.text, Is.EqualTo("1m 30s"));
+            host.Clock.AdvanceTime(.5);
+            Assert.That(replacement.text, Is.EqualTo("1m 29s"));
+        }
+    }
+
+    [Test]
     public void AuthoredClockStartsAtNinetyAndUpdatesTheExistingTimeTextWithoutChangingItsFont()
     {
         using (var host = new Host())

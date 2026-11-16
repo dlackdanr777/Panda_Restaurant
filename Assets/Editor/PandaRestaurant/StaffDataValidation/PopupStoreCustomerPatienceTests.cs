@@ -18,6 +18,56 @@ public sealed class PopupStoreCustomerPatienceTests
     private const string PrefabPath = "Assets/Resources/UI/PopupStore/UIPopupStore.prefab";
 
     [Test]
+    public void UnchangedPatienceLabelsAllocationProbe()
+    {
+        using (var host = new Host())
+        {
+            host.StartThree();
+            var render = (Action)Delegate.CreateDelegate(typeof(Action), host.Patience,
+                typeof(PopupStoreCustomerPatience).GetMethod("UpdateViews", BindingFlags.Instance | BindingFlags.NonPublic));
+            for (int i = 0; i < 10; i++) render();
+            long allocated = PopupStorePhasePreviewIntegrationTests.MeasureUiAllocations(render);
+            Debug.Log("POPUP_STORE_UI_ALLOC patience-three-slots samples=600 bytes=" + allocated);
+            var slots = (PopupStorePatienceSlot[])Read(host.Patience, "_slots");
+            string format = (string)Read(host.Patience, "_timeFormat");
+            Action renderLabels = () =>
+            {
+                for (int i = 0; i < slots.Length; i++)
+                    slots[i].RenderLabel(Math.Ceiling(host.Patience.GetTimer(i).RemainingPatience), format);
+            };
+            for (int i = 0; i < 10; i++) renderLabels();
+            long labelAllocated = PopupStorePhasePreviewIntegrationTests.MeasureUiAllocations(renderLabels);
+            Debug.Log("POPUP_STORE_UI_ALLOC patience-labels-only samples=600 bytes=" + labelAllocated);
+            Assert.That(labelAllocated, Is.LessThan(1024), "Unchanged seconds must not allocate formatted labels.");
+        }
+    }
+
+    [Test]
+    public void FractionalPatienceTicksAnimateFillWithoutReformattingAndLiveFormatsInvalidateTheLabel()
+    {
+        using (var host = new Host())
+        {
+            host.StartThree();
+            string label = host.TimeText(0).text;
+            host.Clock.AdvanceTime(.25);
+            Assert.That(host.Timer(0).RemainingPatience, Is.EqualTo(17.75));
+            Assert.That(host.FillImage(0).fillAmount, Is.EqualTo(17.75f / 18).Within(.00001));
+            Assert.That(host.TimeText(0).text, Is.SameAs(label));
+            Write(host.Patience, "_timeFormat", "{0:0} remaining");
+            host.Clock.AdvanceTime(.25);
+            Assert.That(host.TimeText(0).text, Is.EqualTo("18 remaining"));
+            var slot = ((PopupStorePatienceSlot[])Read(host.Patience, "_slots"))[0];
+            var replacement = Object.Instantiate(host.TimeText(0), host.TimeText(0).transform.parent);
+            replacement.text = "replacement";
+            Write(slot, "_timeText", replacement);
+            Assert.That(host.Patience.Refresh(), Is.True);
+            Assert.That(replacement.text, Is.EqualTo("18 remaining"));
+            host.Clock.AdvanceTime(.75);
+            Assert.That(replacement.text, Is.EqualTo("17 remaining"));
+        }
+    }
+
+    [Test]
     public void AuthoredThreeGaugesUseIndependentNonRaycastingImagesAndTheExistingFont()
     {
         using (var host = new Host())

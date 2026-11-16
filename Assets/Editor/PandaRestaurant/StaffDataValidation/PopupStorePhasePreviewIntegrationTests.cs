@@ -353,6 +353,83 @@ public sealed class PopupStorePhasePreviewIntegrationTests
         }
     }
 
+    [Test]
+    public void SteadyPhaseHudAllocationProbe()
+    {
+        using (var h = new Host())
+        {
+            for (int i = 0; i < 10; i++) h.Preview.RenderHud();
+            var hud = h.Root.GetComponent<PopupStoreCurrentGradeHud>();
+            int hudRenders = h.Preview.HudRenderCount, refreshes = hud.DisplayRefreshCount;
+            int mappings = hud.MappingValidationCount, bindings = hud.BindingValidationCount;
+            long allocated = MeasureUiAllocations(h.Preview.RenderHud);
+            Debug.Log("POPUP_STORE_UI_ALLOC phase-hud samples=600 bytes=" + allocated);
+            Assert.That(allocated, Is.LessThan(1024), "Idle phase HUD calls must not rebuild labels or validate sprite names.");
+            Assert.That(h.Preview.HudRenderCount - hudRenders, Is.Zero);
+            Assert.That(hud.DisplayRefreshCount - refreshes, Is.Zero);
+            Assert.That(hud.MappingValidationCount, Is.EqualTo(mappings));
+            Assert.That(hud.BindingValidationCount, Is.EqualTo(bindings));
+            Debug.Log("POPUP_STORE_UI_CALLS idle samples=600 hud=0 grade-refresh=0 mapping=0 binding=0");
+            h.AssertNoR1();
+        }
+    }
+
+    [Test]
+    public void PhaseDirtyHudFlushesLatestScoreCountdownNextStageAndReentryWithoutPollingRenders()
+    {
+        using (var h = new Host())
+        {
+            var hud = h.Root.GetComponent<PopupStoreCurrentGradeHud>();
+            h.Preview.RenderHud();
+            h.Ready(); h.Pack();
+            int refreshes = hud.DisplayRefreshCount;
+            typeof(PopupStoreCurrentGradeHud).GetMethod("LateUpdate", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(hud, null);
+            Assert.That(hud.DisplayRefreshCount, Is.EqualTo(refreshes), "The phase owner flushes after every score observer.");
+            h.Preview.RenderHud();
+            Assert.That(hud.DisplayRefreshCount, Is.EqualTo(refreshes + 1));
+            Assert.That(hud.EditorPhaseProgressText.text, Is.EqualTo(h.Preview.GoalText));
+            Assert.That(hud.DisplayedGrade, Is.EqualTo(PopupStoreGradeTier.None));
+            h.Deliver(); h.Entrance.TickEntrance(2);
+            h.Clock.AdvanceTime(h.Clock.RemainingSeconds); h.Preview.TickCleanup(); h.Preview.RenderHud();
+            Assert.That(hud.DisplayedGrade, Is.EqualTo(PopupStoreGradeTier.C));
+            h.Clock.AdvanceTime(h.Preview.Session.CurrentPhase.StageClearNoticeSeconds);
+            h.Clock.AdvanceTime(h.Preview.StageNoticeSeconds);
+            foreach (int digit in new[] { 3, 2, 1 })
+            {
+                h.Preview.RenderHud();
+                Assert.That(hud.EditorPhaseProgressText.text, Is.EqualTo("다음 단계 · " + digit));
+                h.Clock.AdvanceTime(h.Preview.Session.CurrentPhase.CountdownStepSeconds);
+            }
+            h.Clock.AdvanceTime(h.Preview.GameStartSeconds); h.Preview.RenderHud();
+            Assert.That(hud.EditorPhaseProgressText.text, Is.EqualTo(h.Preview.GoalText));
+            Assert.That(hud.NextGradeText.text, Is.EqualTo("확보 C상자"));
+            h.Root.GetComponent<UIPopupStore>().Hide();
+            h.Root.GetComponent<UIPopupStore>().Show();
+            h.Preview.RenderHud();
+            Assert.That(hud.IsVisible, Is.True);
+            Assert.That(hud.EditorPhaseProgressText.enabled, Is.True);
+            Assert.That(hud.EditorPhaseProgressText.text, Is.EqualTo(h.Preview.GoalText));
+            h.AssertNoR1();
+        }
+    }
+
+    internal static long MeasureUiAllocations(Action render)
+    {
+        using (var recorder = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory,
+            "GC.Alloc", 65536, Unity.Profiling.ProfilerRecorderOptions.StartImmediately
+                | Unity.Profiling.ProfilerRecorderOptions.CollectOnlyOnCurrentThread))
+        {
+            for (int i = 0; i < 600; i++) render();
+            recorder.Stop();
+            Assert.That(recorder.Valid, Is.True, "GC.Alloc recorder must be available.");
+            Assert.That(recorder.WrappedAround, Is.False, "Allocation samples must not be truncated.");
+            long bytes = 0;
+            for (int i = 0; i < recorder.Count; i++) bytes += recorder.GetSample(i).Value;
+            return bytes;
+        }
+    }
+
     internal sealed class Host : IDisposable
     {
         internal const string Prefab = "Assets/Resources/UI/PopupStore/UIPopupStore.prefab";

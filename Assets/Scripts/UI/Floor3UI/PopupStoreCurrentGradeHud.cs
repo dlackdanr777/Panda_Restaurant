@@ -27,6 +27,20 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
     private TMP_Text _displayedText;
     private string _ownerSessionId;
     private bool _dirty;
+    private bool _viewValidated, _mappingChecked;
+    private Image _validatedImage;
+    private TMP_Text _validatedText;
+    private Transform _validatedParent;
+    private PopupStorePhasePreview _boundPreview;
+    private PopupStoreSessionLifetime _lifetime;
+    private UIPopupStore _validatedPopup;
+    private readonly Sprite[] _mappedSprites = new Sprite[6];
+    private string _mappingError;
+    private static readonly string[] ApprovedNames =
+    {
+        "PopupRewardBox_C_APPROVED", "PopupRewardBox_B_APPROVED", "PopupRewardBox_A_APPROVED",
+        "PopupRewardBox_S_APPROVED", "PopupRewardBox_SS_APPROVED", "PopupRewardBox_SSS_APPROVED"
+    };
     private PopupStorePreviewTextStyle _editorNextGradeStyle;
     private TMP_Text _editorPhaseProgressText;
     internal TMP_Text EditorPhaseProgressText => _editorPhaseProgressText;
@@ -38,32 +52,72 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
     public bool IsVisible => _displayedImage != null && _displayedImage.enabled
         && _displayedImage.gameObject.activeInHierarchy;
     public string LastError { get; private set; }
+#if UNITY_EDITOR
+    internal int DisplayRefreshCount { get; private set; }
+    internal int MappingValidationCount { get; private set; }
+    internal int BindingValidationCount { get; private set; }
+#endif
 
     public bool ValidateMapping(out string error)
     {
-        var sprites = new[] { _cSprite, _bSprite, _aSprite, _sSprite, _ssSprite, _sssSprite };
-        for (int i = 0; i < sprites.Length; i++)
+        if (!MappingChanged()) { error = _mappingError; return error == null; }
+#if UNITY_EDITOR
+        MappingValidationCount++;
+#endif
+        _mappingChecked = true;
+        for (int i = 0; i < _mappedSprites.Length; i++)
+            _mappedSprites[i] = SpriteFor((PopupStoreGradeTier)(i + 1));
+        _mappingError = null;
+        for (int i = 0; i < _mappedSprites.Length; i++)
         {
-            var sprite = sprites[i];
+            var sprite = _mappedSprites[i];
             var grade = (PopupStoreGradeTier)(i + 1);
             if (sprite == null || sprite.texture == null || sprite.rect.width <= 0 || sprite.rect.height <= 0
-                || !string.Equals(sprite.name, "PopupRewardBox_" + grade + "_APPROVED", StringComparison.Ordinal))
-            { error = "Missing or incorrect approved current-grade sprite for " + grade + "."; return false; }
+                || !string.Equals(sprite.name, ApprovedNames[i], StringComparison.Ordinal))
+            { _mappingError = "Missing or incorrect approved current-grade sprite for " + grade + "."; break; }
             for (int j = 0; j < i; j++)
-                if (sprites[j] == sprite || sprites[j].texture == sprite.texture)
-                { error = "Current-grade sprites must be six distinct approved images."; return false; }
+                if (_mappedSprites[j] == sprite || _mappedSprites[j].texture == sprite.texture)
+                { _mappingError = "Current-grade sprites must be six distinct approved images."; break; }
+            if (_mappingError != null) break;
         }
-        error = null;
-        return true;
+        error = _mappingError;
+        return error == null;
+    }
+
+    private bool MappingChanged()
+    {
+        if (!_mappingChecked) return true;
+        for (int i = 0; i < _mappedSprites.Length; i++)
+        {
+            var sprite = SpriteFor((PopupStoreGradeTier)(i + 1));
+            if (_mappedSprites[i] != sprite || (sprite == null && _mappingError == null)) return true;
+        }
+        return false;
+    }
+
+    private bool BindingChanged() => !_viewValidated || _boundGrade == null || _boundScore == null
+        || _boundClock == null || _rewardImage == null || _boundGrade != _gradeSession
+        || _boundScore != _score || _boundClock != _clock || _validatedImage != _rewardImage
+        || _validatedText != _nextGradeText || _validatedParent != transform.parent
+        || _boundPreview != (_clock.PhasePreviewAuthority as PopupStorePhasePreview)
+        || !string.Equals(_ownerSessionId, _gradeSession.SessionId, StringComparison.Ordinal);
+
+    internal void RefreshIfDirty()
+    {
+        if (_dirty || BindingChanged() || MappingChanged()) RefreshDisplay();
     }
 
     /// <summary>Reads Current only. Safe for view refreshes and Editor display diagnostics, never calls Grade.Refresh.</summary>
     public bool RefreshDisplay()
     {
+#if UNITY_EDITOR
+        DisplayRefreshCount++;
+#endif
         _dirty = false;
         if (!isActiveAndEnabled) { HideDisplay(); return false; }
-        if (!BindView(out string error) || !ValidateMapping(out error)) return Reject(error);
-        var preview = _clock.IsPhasePreview ? _clock.GetComponent<PopupStorePhasePreview>() : null;
+        if ((BindingChanged() || !BindingsOwned()) && !BindView(out string bindingError)) return Reject(bindingError);
+        if (!ValidateMapping(out string error)) return Reject(error);
+        var preview = _boundPreview;
         if (preview != null)
         {
             if (_displayedImage != _rewardImage || _displayedText != _nextGradeText) HideDisplay();
@@ -74,8 +128,11 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
             _displayedImage.preserveAspect = true; _displayedImage.raycastTarget = false;
             if (_displayedText != null)
             {
-                if (_editorNextGradeStyle == null) _editorNextGradeStyle = new PopupStorePreviewTextStyle(_displayedText);
-                PopupStorePreviewTextStyle.Apply(_displayedText, 24, 22);
+                if (_editorNextGradeStyle == null)
+                {
+                    _editorNextGradeStyle = new PopupStorePreviewTextStyle(_displayedText);
+                    PopupStorePreviewTextStyle.Apply(_displayedText, 24, 22);
+                }
                 _displayedText.enabled = _showNextGrade; _displayedText.raycastTarget = false;
                 _displayedText.text = "확보 " + (DisplayedGrade == PopupStoreGradeTier.None ? "없음" : DisplayedGrade + "상자");
                 RenderEditorPhaseProgress(preview);
@@ -89,7 +146,7 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
             && current.Grade >= PopupStoreGradeTier.C && current.Grade <= PopupStoreGradeTier.SSS
             && _clock.State != PopupStoreBusinessState.NotStarted
             && _clock.State != PopupStoreBusinessState.Abandoned
-            && GetComponentInParent<PopupStoreSessionLifetime>(true)?.IsRetired != true;
+            && _lifetime?.IsRetired != true;
         string nextLabel;
         try
         {
@@ -119,6 +176,9 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
 
     private bool BindView(out string error)
     {
+#if UNITY_EDITOR
+        BindingValidationCount++;
+#endif
         error = null;
         var popup = GetComponentInParent<UIPopupStore>(true);
         if (popup == null || _gradeSession == null || _score == null || _clock == null || _rewardImage == null
@@ -136,7 +196,6 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
             error = "The current-grade HUD cannot be rebound to another business session.";
         if (error != null) { Unbind(); return false; }
         if (_ownerSessionId == null) _ownerSessionId = _gradeSession.SessionId;
-        if (_boundGrade == _gradeSession && _boundScore == _score && _boundClock == _clock) return true;
         Unbind();
         _boundGrade = _gradeSession;
         _boundScore = _score;
@@ -144,8 +203,21 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
         _boundScore.Changed += MarkDirty;
         _boundClock.StateChanged += MarkDirty;
         _boundGrade.Finalized += OnFinalized;
+        _boundPreview = _clock.PhasePreviewAuthority as PopupStorePhasePreview;
+        if (_boundPreview != null) _boundPreview.HudChanged += MarkDirty;
+        _lifetime = GetComponentInParent<PopupStoreSessionLifetime>(true);
+        _validatedPopup = popup;
+        _validatedImage = _rewardImage; _validatedText = _nextGradeText;
+        _validatedParent = transform.parent;
+        _viewValidated = true;
         return true;
     }
+
+    private bool BindingsOwned() => _validatedPopup != null && transform.IsChildOf(_validatedPopup.transform)
+        && _gradeSession.gameObject == _validatedPopup.gameObject && _clock.gameObject == _validatedPopup.gameObject
+        && _score.transform.IsChildOf(_validatedPopup.transform)
+        && _rewardImage.transform.IsChildOf(_validatedPopup.transform)
+        && (_nextGradeText == null || _nextGradeText.transform.IsChildOf(_validatedPopup.transform));
 
     private static bool IsResultChild(UIPopupStore popup, Component graphic)
     {
@@ -232,17 +304,22 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
     private void OnFinalized(PopupStoreGradeResult _) => MarkDirty();
     private void Unbind()
     {
+        _viewValidated = false;
         if (_boundScore != null) _boundScore.Changed -= MarkDirty;
         if (_boundClock != null) _boundClock.StateChanged -= MarkDirty;
         if (_boundGrade != null) _boundGrade.Finalized -= OnFinalized;
+        if (_boundPreview != null) _boundPreview.HudChanged -= MarkDirty;
+        _boundPreview = null;
         _boundScore = null;
         _boundClock = null;
         _boundGrade = null;
     }
-    private void OnEnable() { _dirty = true; RefreshDisplay(); }
+    private void OnEnable() { _dirty = true; _mappingChecked = false; RefreshDisplay(); }
     // Score observers are synchronous; defer reading until every observer has completed the grade calculation.
     // Idle frames perform no refresh and this presenter never invokes accounting or reward APIs.
-    private void LateUpdate() { if (_dirty) RefreshDisplay(); }
+    private void LateUpdate() { if (_boundPreview == null || !_boundPreview.isActiveAndEnabled) RefreshIfDirty(); }
+    private void OnValidate() { _viewValidated = false; _mappingChecked = false; MarkDirty(); }
+    private void OnTransformParentChanged() { _viewValidated = false; MarkDirty(); }
     private void OnDisable() { Unbind(); HideDisplay(); _dirty = false; }
     private void OnDestroy() { Unbind(); HideDisplay(); }
 }

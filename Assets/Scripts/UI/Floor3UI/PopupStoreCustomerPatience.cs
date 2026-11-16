@@ -47,6 +47,31 @@ public sealed class PopupStorePatienceSlot
     public GameObject Root => _root;
     public Image Fill => _fill;
     public TMP_Text TimeText => _timeText;
+    private TMP_Text _displayedText;
+    private double _displayedSeconds;
+    private string _displayedFormat, _displayedLabel;
+    private Image _displayedFill;
+    private Sprite _displayedSprite;
+    private Color _displayedColor;
+
+    internal void RenderLabel(double seconds, string format)
+    {
+        if (_displayedText != _timeText || _displayedLabel == null
+            || _displayedSeconds != seconds || _displayedFormat != format)
+        {
+            _displayedLabel = string.Format(CultureInfo.InvariantCulture, format, seconds);
+            _displayedSeconds = seconds; _displayedFormat = format; _displayedText = _timeText;
+        }
+        if (_timeText.text != _displayedLabel) _timeText.text = _displayedLabel;
+    }
+
+    internal void RenderArtwork(Sprite sprite, Color color)
+    {
+        if (_displayedFill == _fill && _displayedSprite == sprite && _displayedColor == color) return;
+        _displayedFill = _fill; _displayedSprite = sprite; _displayedColor = color;
+        if (sprite != null) _fill.sprite = sprite;
+        _fill.color = color;
+    }
 }
 
 /// <summary>Consumes accepted business time and commits local expiration. No account or restaurant AI writes.</summary>
@@ -78,6 +103,8 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
     private PopupStoreOrderDisplay _boundOrders;
     private bool _refreshing, _refreshRequested;
     private string _lastError;
+    private bool _formatChecked;
+    private string _checkedFormat, _formatError;
 
     public bool IsReady { get; private set; }
     public int ExpiredCount { get; private set; }
@@ -290,6 +317,14 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
     private void UpdateViews()
     {
         if (!IsReady || !isActiveAndEnabled || _slots == null) { HideAll(); return; }
+        string formatError = ValidateTimeFormat();
+        if (formatError != null)
+        {
+            HideAll();
+            if (_lastError != formatError) Debug.LogError("PopupStoreCustomerPatience: " + formatError, this);
+            _lastError = formatError;
+            return;
+        }
         for (int i = 0; i < _slots.Length; i++)
         {
             var view = _slots[i];
@@ -304,14 +339,10 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
             view.Fill.fillAmount = Mathf.Clamp01(ratio);
             // Use the same established thresholds; choosing artwork never settles a timer.
             Sprite artwork = ratio <= _urgentThreshold ? _urgentSprite : ratio <= _cautionThreshold ? _cautionSprite : _normalSprite;
-            if (artwork != null)
-            {
-                view.Fill.sprite = artwork;
-                view.Fill.color = Color.white;
-            }
-            else view.Fill.color = ratio <= _urgentThreshold ? _urgentColor : ratio <= _cautionThreshold ? _cautionColor : _normalColor;
-            string text = string.Format(CultureInfo.InvariantCulture, _timeFormat, Math.Ceiling(timer.RemainingPatience));
-            if (view.TimeText.text != text) view.TimeText.text = text;
+            Color color = artwork != null ? Color.white
+                : ratio <= _urgentThreshold ? _urgentColor : ratio <= _cautionThreshold ? _cautionColor : _normalColor;
+            view.RenderArtwork(artwork, color);
+            view.RenderLabel(Math.Ceiling(timer.RemainingPatience), _timeFormat);
         }
     }
 
@@ -349,15 +380,20 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
                     || view.Fill.type != Image.Type.Filled || !roots.Add(view.Root) || !images.Add(view.Fill) || !texts.Add(view.TimeText))
                 { error = "Each order needs its own sibling gauge root, filled Image and child TMP label."; break; }
             }
-            if (error == null)
-                try
-                {
-                    if (string.IsNullOrEmpty(_timeFormat)) error = "A time format is required.";
-                    else string.Format(CultureInfo.InvariantCulture, _timeFormat, 0d);
-                }
-                catch (FormatException) { error = "The time format must accept remaining seconds as argument zero."; }
+            if (error == null) error = ValidateTimeFormat();
         }
         return error == null;
+    }
+
+    private string ValidateTimeFormat()
+    {
+        if (_formatChecked && string.Equals(_checkedFormat, _timeFormat, StringComparison.Ordinal)) return _formatError;
+        _formatChecked = true; _checkedFormat = _timeFormat; _formatError = null;
+        if (string.IsNullOrEmpty(_timeFormat)) _formatError = "A time format is required.";
+        else
+            try { string.Format(CultureInfo.InvariantCulture, _timeFormat, 0d); }
+            catch (FormatException) { _formatError = "The time format must accept remaining seconds as argument zero."; }
+        return _formatError;
     }
 
     private void Bind()

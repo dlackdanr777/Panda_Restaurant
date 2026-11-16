@@ -134,6 +134,37 @@ public sealed class PopupStorePhaseTutorialTests
         }
     }
     [Test]
+    public void RepeatedCueProgressAllocationProbe()
+    {
+        using (var h = new ViewHost())
+        {
+            for (int i = 0; i < 10; i++) h.View.RenderCue("Stage", 2, .5f);
+            long allocated = PopupStorePhasePreviewIntegrationTests.MeasureUiAllocations(
+                () => h.View.RenderCue("Stage", 2, .5f));
+            Debug.Log("POPUP_STORE_UI_ALLOC stage-cue samples=600 bytes=" + allocated);
+            Assert.That(allocated, Is.LessThan(1024), "Repeated cue progress must reuse its stage text and sound marker.");
+        }
+    }
+    [Test]
+    public void CueProgressKeepsTransitionIdentityButStillAnimatesItsScale()
+    {
+        using (var h = new ViewHost())
+        {
+            h.View.RenderCue("Stage", 2, 0);
+            var label = Field<TMP_Text>(h.View, "_stageText");
+            string text = label.text;
+            var scale = label.rectTransform.localScale;
+            h.View.RenderCue("Stage", 2, .1f);
+            Assert.That(label.rectTransform.localScale.x, Is.GreaterThan(scale.x));
+            Assert.That(label.text, Is.SameAs(text));
+            Assert.That(h.View.CueShowCount, Is.EqualTo(1));
+            h.View.RenderCue("Stage", 3, 0);
+            Assert.That(label.text, Is.EqualTo("STAGE 3"));
+            Assert.That(h.View.CueShowCount, Is.EqualTo(2));
+        }
+    }
+
+    [Test]
     public void HiddenViewCannotStartOrCloseAndStopsBlockingInput()
     {
         using (var h = new ViewHost())

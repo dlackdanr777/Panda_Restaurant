@@ -36,6 +36,11 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private bool _cutoffLogged;
     private IPopupStorePhasePreviewClock _phasePreview;
     private bool _previewAdvancing;
+    private bool _formatChecked, _hasDisplayedTime;
+    private string _checkedFormat, _formatError, _displayedFormat, _displayedPlaceholder, _displayedTimeLabel;
+    private TMP_Text _displayedTimeText;
+    private double _displayedSeconds;
+    private bool _displayedNotStarted;
     public bool IsPhasePreview => _phasePreview != null;
     public IPopupStorePhasePreviewClock PhasePreviewAuthority => _phasePreview;
 
@@ -497,26 +502,44 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         else if (!Finite(_initialSeconds) || _initialSeconds < 0d
             || !Finite(_entryCutoffSeconds) || _entryCutoffSeconds < 0d)
             error = "Business duration and entry cutoff must be finite and non-negative.";
-        else if (string.IsNullOrEmpty(_timeFormat)) error = "A time display format is required.";
+        else error = ValidateTimeFormat();
+        return error == null;
+    }
+
+    private string ValidateTimeFormat()
+    {
+        if (_formatChecked && string.Equals(_checkedFormat, _timeFormat, StringComparison.Ordinal)) return _formatError;
+        _formatChecked = true;
+        _checkedFormat = _timeFormat;
+        _formatError = null;
+        if (string.IsNullOrEmpty(_timeFormat)) _formatError = "A time display format is required.";
         else
         {
             try { string.Format(CultureInfo.InvariantCulture, _timeFormat, 0d, 0d); }
-            catch (FormatException) { error = "The time display format must accept minute and second arguments."; }
+            catch (FormatException) { _formatError = "The time display format must accept minute and second arguments."; }
         }
-        return error == null;
+        return _formatError;
     }
 
     private void UpdateHud()
     {
         if (!ValidateConfiguration(out _)) return;
-        string text;
-        if (_state == PopupStoreBusinessState.NotStarted) text = _notStartedText ?? string.Empty;
-        else
+        bool notStarted = _state == PopupStoreBusinessState.NotStarted;
+        double seconds = Math.Ceiling(_remainingSeconds);
+        if (!_hasDisplayedTime || _displayedTimeText != _timeText || _displayedSeconds != seconds
+            || _displayedNotStarted != notStarted || _displayedFormat != _timeFormat
+            || _displayedPlaceholder != _notStartedText)
         {
-            double seconds = Math.Ceiling(_remainingSeconds);
-            text = string.Format(CultureInfo.InvariantCulture, _timeFormat, Math.Floor(seconds / 60d), seconds % 60d);
+            _displayedTimeLabel = notStarted ? _notStartedText ?? string.Empty
+                : string.Format(CultureInfo.InvariantCulture, _timeFormat, Math.Floor(seconds / 60d), seconds % 60d);
+            _hasDisplayedTime = true;
+            _displayedTimeText = _timeText;
+            _displayedSeconds = seconds;
+            _displayedNotStarted = notStarted;
+            _displayedFormat = _timeFormat;
+            _displayedPlaceholder = _notStartedText;
         }
-        if (_timeText.text != text) _timeText.text = text;
+        if (_timeText.text != _displayedTimeLabel) _timeText.text = _displayedTimeLabel;
     }
 
     private void Publish(Action handlers)
