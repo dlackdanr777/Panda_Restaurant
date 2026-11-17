@@ -267,11 +267,10 @@ public sealed class PopupStoreAccountPhaseConnectionTests
         }
     }
 
-    [TestCase(false)] [TestCase(true)]
-    public void RestartRecoveryUsesStoredFactsWithoutCreatingPhaseOrNewReceipt(bool interrupted)
+    [Test]
+    public void RestartRecoveryUsesStoredFactsWithoutCreatingPhaseOrNewReceipt()
     {
-        var snapshot = new PopupStoreAccountRecoverySnapshot("restored-business", interrupted ? 100 : 200,
-            interrupted ? PopupStoreGradeTier.None : PopupStoreGradeTier.C, !interrupted, interrupted ? 0 : 3, interrupted);
+        var snapshot = new PopupStoreAccountRecoverySnapshot("restored-business", 200, PopupStoreGradeTier.C, true, 3, false);
         using (var h = new Harness(recovery: snapshot))
         {
             Assert.That(h.Phase, Is.Null); Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.NotStarted));
@@ -280,15 +279,24 @@ public sealed class PopupStoreAccountPhaseConnectionTests
             Assert.That(h.Panel.TryConfirm(), Is.True); Assert.That(h.Bridge.Claims, Is.EqualTo(1));
             h.Bridge.Complete(snapshot.Diamonds);
             var recovery = h.Root.GetComponent<PopupStoreAccountRecoveryPresentation>();
-            if (interrupted) Assert.That(h.Navigation.FirstView, Is.SameAs(h.Map));
-            else
-            {
-                Assert.That(recovery.Reward.Amount, Is.EqualTo(3)); Assert.That(recovery.Reward.BeginCount, Is.EqualTo(1));
-                recovery.Reward.Tick(recovery.Reward.RiseDuration, true); Assert.That(recovery.Reward.TryOpen(), Is.True);
-                recovery.Reward.Tick(recovery.Reward.OpeningDuration, true); Assert.That(recovery.Reward.TryConfirm(), Is.True);
-                Assert.That(h.Navigation.FirstView, Is.SameAs(h.Map));
-            }
+            Assert.That(recovery.Reward.Amount, Is.EqualTo(3)); Assert.That(recovery.Reward.BeginCount, Is.EqualTo(1));
+            recovery.Reward.Tick(recovery.Reward.RiseDuration, true); Assert.That(recovery.Reward.TryOpen(), Is.True);
+            recovery.Reward.Tick(recovery.Reward.OpeningDuration, true); Assert.That(recovery.Reward.TryConfirm(), Is.True);
+            Assert.That(h.Navigation.FirstView, Is.SameAs(h.Map));
             Assert.That(h.Bridge.Prepares, Is.Zero);
+        }
+    }
+
+    [Test]
+    public void InterruptedStartIsCancelledWithoutShowingAResultScreen()
+    {
+        var snapshot = new PopupStoreAccountRecoverySnapshot("restored-business", 0, PopupStoreGradeTier.None, false, 0, true);
+        using (var h = new Harness(recovery: snapshot))
+        {
+            Assert.That(h.Root.GetComponent<PopupStoreAccountRecoveryPresentation>(), Is.Null);
+            Assert.That(h.Phase, Is.Null); Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.NotStarted));
+            Assert.That(h.Bridge.Claims, Is.EqualTo(1)); Assert.That(h.Bridge.Prepares, Is.Zero);
+            h.Bridge.Complete(0);
         }
     }
 

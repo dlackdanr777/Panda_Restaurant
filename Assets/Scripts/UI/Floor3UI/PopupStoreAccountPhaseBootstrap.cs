@@ -38,6 +38,20 @@ public static class PopupStoreAccountPhaseBootstrap
             if (!start.BindHost(bridge.AdmissionHost)) { error = "Account admission binding was rejected."; return false; }
             if (bridge is IPopupStoreAccountRewardRecovery recovery && recovery.Recovery != null)
             {
+                if (recovery.Recovery.IsInterrupted)
+                {
+                    // A start that never finished has no result to show. Cancel it; the next open shows the normal start screen.
+                    // The used ticket is not refunded, and this open keeps the unavailable presentation.
+                    try
+                    {
+                        recovery.ClaimRecovery(response => {
+                            if (response?.State != PopupStoreAccountClaimState.Confirmed)
+                                Debug.LogWarning("POPUP_STORE_INTERRUPTED_CANCEL state=" + response?.State + " message=" + response?.Message);
+                        });
+                    }
+                    catch (Exception exception) { Debug.LogException(exception); }
+                    return true;
+                }
                 var recoveryReward = UnityEngine.Object.Instantiate(configuration.RewardPrefab, popup.transform, false)
                     .GetComponent<PopupStorePhaseRewardPresentation>();
                 if (!popup.gameObject.AddComponent<PopupStoreAccountRecoveryPresentation>()
