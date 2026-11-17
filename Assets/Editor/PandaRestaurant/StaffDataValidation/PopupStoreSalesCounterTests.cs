@@ -131,7 +131,19 @@ public sealed class PopupStoreSalesCounterTests
             Assert.That(entries, Has.Length.EqualTo(count));
             foreach (var entry in entries)
             {
-                host.Click(entry.Id);
+                var icon = host.Reveal(entry.Id);
+                Vector2 originalMesh = MaterialMeshSize(icon);
+                var data = Pointer(icon);
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerDownHandler);
+                AdvanceFeedback(icon, .10f);
+                AssertMeshScale(icon, originalMesh, .92f);
+                AssertRendered(host.Counter);
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerUpHandler);
+                AdvanceFeedback(icon, .12f);
+                AssertMeshScale(icon, originalMesh, 1f);
+                AssertRendered(host.Counter); // PointerUp is presentation-only.
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerClickHandler);
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerClickHandler);
                 AssertRendered(host.Counter, entry.Id);
                 Assert.That(host.Counter.Materials[0], Is.SameAs(entry));
                 ClearButton(host.Counter).onClick.Invoke();
@@ -170,8 +182,11 @@ public sealed class PopupStoreSalesCounterTests
         {
             var icon = host.Reveal("STAFF16");
             var list = icon.GetComponent<PopupStoreMaterialItem>().Owner;
+            Vector2 originalMesh = MaterialMeshSize(icon);
             var data = Pointer(icon);
             Assert.That(ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerDownHandler), Is.True);
+            AdvanceFeedback(icon, .10f);
+            AssertMeshScale(icon, originalMesh, .92f);
             switch (interruption)
             {
                 case "drag": Drag(list, data); break;
@@ -185,6 +200,10 @@ public sealed class PopupStoreSalesCounterTests
                 case "refresh": Assert.That(list.Refresh(), Is.True); break;
                 case "hide-reopen": host.HideAndReopenWithLifecycle(); break;
             }
+            if (interruption == "refresh" || interruption == "hide-reopen")
+                AssertMeshScale(icon, originalMesh, 1f); // Reuse restores immediately, without a later Update.
+            AdvanceFeedback(icon, .12f);
+            AssertMeshScale(icon, originalMesh, 1f);
             // Even a late, otherwise eligible click must not resurrect the cancelled press.
             data.dragging = false;
             data.eligibleForClick = true;
@@ -197,6 +216,108 @@ public sealed class PopupStoreSalesCounterTests
                 host.Click("STAFF16");
                 AssertRendered(host.Counter, "STAFF16");
             }
+        }
+    }
+
+    [Test]
+    public void RapidPressesOnlyScaleArtworkAndKeepOneSelectionPerClick()
+    {
+        using (var host = new Host())
+        {
+            var icon = host.Reveal("STAFF01");
+            var item = icon.GetComponent<PopupStoreMaterialItem>();
+            var rect = icon.rectTransform;
+            rect.localScale = new Vector3(1.2f, .8f, 1f);
+            Vector3 originalScale = rect.localScale;
+            Vector2 position = rect.anchoredPosition, size = rect.sizeDelta;
+            Vector2 contentPosition = Content(item.Owner).anchoredPosition;
+            Vector2 originalMesh = MaterialMeshSize(icon);
+            for (int i = 0; i < 4; i++)
+            {
+                var data = Pointer(icon);
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerDownHandler);
+                AdvanceFeedback(icon, .05f);
+                AssertMeshScale(icon, originalMesh, .96f); // Actual mesh reaches the smooth transition midpoint.
+                AdvanceFeedback(icon, .05f);
+                AssertMeshScale(icon, originalMesh, .92f);
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerUpHandler);
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerClickHandler);
+                Assert.That(host.Counter.Count, Is.EqualTo(i + 1));
+                AdvanceFeedback(icon, .04f); // Next press interrupts the previous release.
+                Assert.That(rect.localScale, Is.EqualTo(originalScale));
+                Assert.That(rect.anchoredPosition, Is.EqualTo(position));
+                Assert.That(rect.sizeDelta, Is.EqualTo(size));
+                Assert.That(Content(item.Owner).anchoredPosition, Is.EqualTo(contentPosition));
+                Assert.That(ExecuteEvents.GetEventHandler<IDragHandler>(icon.gameObject), Is.SameAs(item.Owner.gameObject));
+            }
+            AdvanceFeedback(icon, .12f);
+            AssertMeshScale(icon, originalMesh, 1f);
+        }
+    }
+
+    [TestCase("exit")]
+    [TestCase("cancel")]
+    [TestCase("disable")]
+    public void LeavingCancellingOrDisablingRestoresPressedArtwork(string interruption)
+    {
+        using (var host = new Host())
+        {
+            var icon = host.Reveal("BOX_PINK");
+            Vector2 originalMesh = MaterialMeshSize(icon);
+            var data = Pointer(icon);
+            ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerDownHandler);
+            AdvanceFeedback(icon, .10f);
+            AssertMeshScale(icon, originalMesh, .92f);
+            if (interruption == "exit")
+            {
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerExitHandler);
+                data.eligibleForClick = false; // The input module does not click a release outside the item.
+            }
+            else if (interruption == "cancel")
+                ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.cancelHandler);
+            else
+            {
+                icon.gameObject.SetActive(false);
+                // EditMode lifecycle dispatch is not guaranteed; invoke the same production callback.
+                InvokeItem(icon, "OnDisable");
+                icon.gameObject.SetActive(true);
+                AssertMeshScale(icon, originalMesh, 1f);
+            }
+            AdvanceFeedback(icon, .12f);
+            AssertMeshScale(icon, originalMesh, 1f);
+            ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerClickHandler);
+            AssertRendered(host.Counter);
+            host.Click("BOX_PINK");
+            AssertRendered(host.Counter, "BOX_PINK");
+        }
+    }
+
+    [TestCase("full")]
+    [TestCase("paused")]
+    [TestCase("packing")]
+    [TestCase("not-started")]
+    public void UnavailableMaterialInputDoesNotAnimateOrAdd(string state)
+    {
+        using (var host = new Host(state != "not-started"))
+        {
+            if (state == "full") for (int i = 0; i < PopupStoreSalesCounter.Capacity; i++) host.Click("STAFF01");
+            if (state == "paused") host.Root.GetComponent<PopupStoreBusinessClock>().SetManualPaused(true);
+            if (state == "packing")
+            {
+                var begin = typeof(PopupStoreSalesCounter).GetMethod("BeginPackingLock", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(begin, Is.Not.Null);
+                Assert.That(begin.Invoke(host.Counter, null), Is.True);
+            }
+            int before = host.Counter.Count;
+            var icon = host.Reveal("BOX_BLUE");
+            Vector2 originalMesh = MaterialMeshSize(icon);
+            var data = Pointer(icon);
+            ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerDownHandler);
+            AdvanceFeedback(icon, .10f);
+            AssertMeshScale(icon, originalMesh, 1f);
+            ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerUpHandler);
+            ExecuteEvents.Execute(icon.gameObject, data, ExecuteEvents.pointerClickHandler);
+            Assert.That(host.Counter.Count, Is.EqualTo(before));
         }
     }
 
@@ -365,6 +486,46 @@ public sealed class PopupStoreSalesCounterTests
         ExecuteEvents.Execute(list.gameObject, data, ExecuteEvents.endDragHandler);
     }
 
+    private static void AdvanceFeedback(Image icon, float seconds) => InvokeItem(icon, "AdvancePressFeedback", seconds);
+    private static void InvokeItem(Image icon, string methodName, params object[] args)
+    {
+        var item = icon.GetComponent<PopupStoreMaterialItem>();
+        var method = typeof(PopupStoreMaterialItem).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.That(item, Is.Not.Null);
+        Assert.That(method, Is.Not.Null, methodName);
+        method.Invoke(item, args);
+    }
+    private static void AssertMeshScale(Image icon, Vector2 original, float scale)
+    {
+        Vector2 actual = MaterialMeshSize(icon);
+        Assert.That(actual.x, Is.EqualTo(original.x * scale).Within(.01f), icon.name + " visible mesh width");
+        Assert.That(actual.y, Is.EqualTo(original.y * scale).Within(.01f), icon.name + " visible mesh height");
+    }
+    private static Vector2 MaterialMeshSize(Image icon)
+    {
+        var effect = icon.GetComponent<PopupStoreMaterialVisual>();
+        Assert.That(effect, Is.Not.Null);
+        var populate = typeof(Image).GetMethod("OnPopulateMesh", BindingFlags.Instance | BindingFlags.NonPublic,
+            null, new[] { typeof(VertexHelper) }, null);
+        Assert.That(populate, Is.Not.Null);
+        using (var mesh = new VertexHelper())
+        {
+            populate.Invoke(icon, new object[] { mesh });
+            effect.ModifyMesh(mesh);
+            Assert.That(mesh.currentVertCount, Is.GreaterThan(0));
+            Vector2 minimum = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+            Vector2 maximum = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+            var vertex = new UIVertex();
+            for (int i = 0; i < mesh.currentVertCount; i++)
+            {
+                mesh.PopulateUIVertex(ref vertex, i);
+                minimum = Vector2.Min(minimum, vertex.position);
+                maximum = Vector2.Max(maximum, vertex.position);
+            }
+            return maximum - minimum;
+        }
+    }
+
     private static PointerEventData Pointer(Image icon)
     {
         Vector2 point = RectTransformUtility.WorldToScreenPoint(null, icon.rectTransform.position);
@@ -384,7 +545,7 @@ public sealed class PopupStoreSalesCounterTests
         internal readonly UIPopupStore View;
         internal readonly PopupStoreSalesCounter Counter;
         internal readonly PopupStoreMaterialList[] Lists;
-        internal Host()
+        internal Host(bool start = true)
         {
             Root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
             try
@@ -400,7 +561,7 @@ public sealed class PopupStoreSalesCounterTests
                 View.Init();
                 View.Show();
                 // Explicit session start keeps these regression fixtures on the real runtime clock path.
-                Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True);
+                if (start) Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True);
                 Assert.That(Counter.Refresh(), Is.True);
                 foreach (var list in Lists) Assert.That(list.Refresh(), Is.True);
                 Canvas.ForceUpdateCanvases();

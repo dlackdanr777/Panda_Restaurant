@@ -49,6 +49,25 @@ public sealed class EnhancementFairyBrain
         Rest();
     }
 
+    /// <summary>House doorway travel is a presentation override; autonomous bounds/settings stay unchanged.</summary>
+    public void PlaceForHouse(Vector2 position)
+    {
+        GroundPosition = position;
+        _target = position;
+        VisualHeight = Tilt = Squash = 0f;
+        Rest();
+    }
+
+    public void MoveForHouse(Vector2 position, float deltaTime)
+    {
+        if (Mathf.Abs(position.x - GroundPosition.x) > .002f) FacingLeft = position.x < GroundPosition.x;
+        GroundPosition = position;
+        ElapsedSeconds += Mathf.Max(0f, deltaTime);
+        Action = EnhancementFairyAction.Walk;
+        VisualHeight = Squash = 0f;
+        Tilt = Mathf.Sin(ElapsedSeconds * _settings.WalkTiltRate + _phase) * _settings.WalkTiltDegrees;
+    }
+
     public void Step(float deltaTime, Vector2 neighbour, bool hasNeighbour)
     {
         if (deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;

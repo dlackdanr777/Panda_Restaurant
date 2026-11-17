@@ -184,6 +184,8 @@ public static partial class PopupStoreVerificationRunner
         }
         catch (IOException) { return; } // A writer may still own the request file.
         if (request == "inspect") InspectWorkspace();
+        else if (request == "floor3-art-evidence")
+            RunApprovedUiOperation("ThirdFloorApprovedArtEvidence", "Run", null);
         else if (request == "phase-tutorial-build")
             RunApprovedUiOperation("PopupStorePhasePreviewViewBuilder", "Build", new object[] { PopupStorePhasePreviewViewBuilder.GameplayPath });
         else if (request == "phase-reward-build")
@@ -944,6 +946,32 @@ public static partial class PopupStoreVerificationRunner
         File.WriteAllText(DirectoryPath + "/inspection.json", JsonUtility.ToJson(inspection, true));
     }
 
+    // Explicit original-project CLI entry; never launches Play or changes account mode.
+    // Delay until the startup editor lifecycle has settled before taking the workspace witness.
+    public static void RunFairyHouseBatch()
+    {
+        if (!Application.isBatchMode) throw new InvalidOperationException("Use run-fairy-house in an existing Editor.");
+        double readyAt = EditorApplication.timeSinceStartup + 3;
+        void StartWhenReady()
+        {
+            if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            EditorApplication.update -= StartWhenReady;
+            int exitCode = 1;
+            try
+            {
+                Run("run-fairy-house");
+                if (_report != null && _report.success)
+                {
+                    ThirdFloorApprovedArtEvidence.Run();
+                    exitCode = 0;
+                }
+            }
+            catch (Exception error) { Debug.LogException(error); }
+            finally { EditorApplication.Exit(exitCode); }
+        }
+        EditorApplication.update += StartWhenReady;
+    }
+
     private static void Run(string request)
     {
         _running = true; _abort = false; Cases.Clear(); Logs.Clear();
@@ -960,7 +988,8 @@ public static partial class PopupStoreVerificationRunner
                 && request != "run-server-fairy" && request != "run-server-all" && request != "run-server01b"
                 && request != "run-server01c" && request != "run-server01c-all"
                 && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b"
-                && request != "run-sound" && request != "run-entry" && request != "run-ui-performance")
+                && request != "run-sound" && request != "run-entry" && request != "run-ui-performance"
+                && request != "run-floor3-art-feedback" && request != "run-floor3-art" && request != "run-fairy-house")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1023,7 +1052,17 @@ public static partial class PopupStoreVerificationRunner
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        var selected = request == "run-entry" ? Fixtures.Concat(new[] {
+        var selected = request == "run-fairy-house" ? new[] {
+                "ThirdFloorFairyHouseTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
+                "FairyBirthSequenceTests", "FairyBirthInputTests", "ThirdFloorApprovedArtTests"
+            }
+            : request == "run-floor3-art" ? new[] { "ThirdFloorApprovedArtTests" }
+            : request == "run-floor3-art-feedback" ? new[] {
+                "ThirdFloorApprovedArtTests", "PopupStoreSoundTests", "PopupStoreNavigationTests",
+                "PopupStoreMaterialTests", "PopupStoreSalesCounterTests", "PopupStorePackingTests",
+                "PopupStoreUnorderedPackingTests"
+            }
+            : request == "run-entry" ? Fixtures.Concat(new[] {
                 "PopupStoreSoundTests", "PresentationSoundTests", "PopupStoreAccountPhaseConnectionTests",
                 "PopupStorePhasePreviewEntryGuideTests", "PopupStoreLatestEntryTests"
             }).Distinct().ToArray()
@@ -1067,6 +1106,10 @@ public static partial class PopupStoreVerificationRunner
             int beforeCount = names.Count;
             foreach (var method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                // This video/audio recording requires its dedicated evidence runner.
+                // Keep the actual birth/input assertions in this house regression group.
+                if (request == "run-fairy-house" && fixtureName == "FairyBirthInputTests"
+                    && method.Name == "Stage1_FiftyTapNormalSpeedVideoAndOriginalAudioEvidence") continue;
                 // This partial fixture also contains unrelated scene/content migrations.
                 // Select its existing memory-only mail and backend-economy contracts here.
                 if (fixtureName == "StaffStageMigrationCollectionTests")

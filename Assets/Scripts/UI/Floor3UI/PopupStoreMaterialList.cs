@@ -20,6 +20,10 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
     [SerializeField, Min(0)] private float _spacing = 18;
     [SerializeField, Min(0)] private float _padding = 10;
     [SerializeField, Min(1)] private float _pageDistance = 440;
+    [Header("Material Press Feedback")]
+    [SerializeField, Range(.5f, 1f)] private float _pressedScale = .92f;
+    [SerializeField, Min(0)] private float _pressDuration = .10f;
+    [SerializeField, Min(0)] private float _releaseDuration = .12f;
 
     private readonly List<Image> _slots = new List<Image>();
     private ScrollRect _boundScrollRect;
@@ -66,6 +70,15 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
     public bool IsReady { get; private set; }
     public int MaterialCount { get; private set; }
     internal uint InputVersion => _inputVersion;
+    internal float PressedScale => float.IsNaN(_pressedScale) || float.IsInfinity(_pressedScale)
+        ? .92f : Mathf.Clamp(_pressedScale, .5f, 1f);
+    internal float PressDuration => NonNegative(_pressDuration) ? _pressDuration : .10f;
+    internal float ReleaseDuration => NonNegative(_releaseDuration) ? _releaseDuration : .12f;
+
+    internal bool CanShowPressFeedback(PopupStoreMaterialItem item)
+        => IsReady && isActiveAndEnabled && item != null && item.Owner == this
+            && item.isActiveAndEnabled && item.Material != null && item.Material.Kind == _kind
+            && EditorMaterialAllowed(item.Material) && _counter != null && _counter.CanAdd(item.Material);
 
     public bool Refresh()
     {
@@ -272,6 +285,8 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
     private void CancelPendingClick()
     {
         unchecked { _inputVersion++; }
+        foreach (var slot in _slots)
+            if (slot != null) slot.GetComponent<PopupStoreMaterialItem>()?.CancelPressFeedback();
     }
 
     public void OnBeginDrag(PointerEventData eventData)
