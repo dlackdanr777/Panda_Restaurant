@@ -32,6 +32,52 @@ public sealed class PopupStoreBusinessClockTests
     }
 
     [Test]
+    public void TimeAdvancedKeepsOrderDuplicatesExceptionIsolationAndStableDeliveryDuringChanges()
+    {
+        using (var host = new Host())
+        {
+            host.Start();
+            var log = new System.Collections.Generic.List<string>();
+            Action<double> a = _ => log.Add("a");
+            Action<double> thrower = _ => { log.Add("boom"); throw new InvalidOperationException("boom-subscriber"); };
+            Action<double> late = _ => log.Add("late");
+            Action<double> removable = _ => log.Add("removable");
+            Action<double> mutator = _ => { host.Clock.TimeAdvanced += late; host.Clock.TimeAdvanced -= removable; log.Add("mutator"); };
+            host.Clock.TimeAdvanced += a; host.Clock.TimeAdvanced += a; host.Clock.TimeAdvanced += thrower;
+            host.Clock.TimeAdvanced += mutator; host.Clock.TimeAdvanced += removable;
+            LogAssert.Expect(LogType.Exception, new Regex("boom-subscriber"));
+            host.Clock.AdvanceTime(1);
+            CollectionAssert.AreEqual(new[] { "a", "a", "boom", "mutator", "removable" }, log);
+            log.Clear();
+            host.Clock.TimeAdvanced -= mutator; host.Clock.TimeAdvanced -= a; host.Clock.TimeAdvanced -= thrower;
+            host.Clock.AdvanceTime(1);
+            CollectionAssert.AreEqual(new[] { "a", "late" }, log);
+            host.Clock.TimeAdvanced -= a; host.Clock.TimeAdvanced -= late; host.Clock.TimeAdvanced -= late;
+            log.Clear();
+            host.Clock.AdvanceTime(1);
+            Assert.That(log, Is.Empty);
+        }
+    }
+
+    [Test]
+    public void TimeAdvancedDeliveryAllocationProbe()
+    {
+        using (var host = new Host())
+        {
+            host.Start(100000);
+            int calls = 0;
+            for (int i = 0; i < 10; i++) host.Clock.AdvanceTime(1);
+            long baseline = PopupStorePhasePreviewIntegrationTests.MeasureUiAllocations(() => host.Clock.AdvanceTime(1));
+            for (int i = 0; i < 3; i++) host.Clock.TimeAdvanced += _ => calls++;
+            for (int i = 0; i < 10; i++) host.Clock.AdvanceTime(1);
+            long allocated = PopupStorePhasePreviewIntegrationTests.MeasureUiAllocations(() => host.Clock.AdvanceTime(1));
+            Debug.Log("POPUP_STORE_TIME_ALLOC advance-time samples=600 noSubscriberBytes=" + baseline + "; threeSubscriberBytes=" + allocated + "; calls=" + calls);
+            Assert.That(calls, Is.EqualTo(3 * 610));
+            Assert.That(allocated - baseline, Is.LessThanOrEqualTo(0), "Delivery to unchanged subscribers must not allocate.");
+        }
+    }
+
+    [Test]
     public void FractionalTicksKeepTheLabelButFormatAndReferenceChangesRebindImmediately()
     {
         using (var host = new Host())

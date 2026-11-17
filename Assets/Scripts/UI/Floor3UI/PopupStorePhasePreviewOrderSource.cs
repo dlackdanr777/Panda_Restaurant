@@ -33,15 +33,15 @@ public sealed class PopupStorePhasePreviewOrderSource
         order = null;
         if (session == null || !session.CanAcceptPacking || string.IsNullOrEmpty(session.PhaseRunId)
             || _catalog == null || _next == null || _customers == null || _customers.Length != 3 || slot < 0 || slot >= 3
-            || !_catalog.TryGetMaterials(PopupStoreMaterialKind.Box, out var boxes, out _)
-            || !_catalog.TryGetMaterials(PopupStoreMaterialKind.Ribbon, out var ribbons, out _)) return false;
+            || !_catalog.TryGetSortedMaterials(PopupStoreMaterialKind.Box, out var boxes, out _)
+            || !_catalog.TryGetSortedMaterials(PopupStoreMaterialKind.Ribbon, out var ribbons, out _)) return false;
         try
         {
             int count = PlushCount(session.CurrentPhase.Grade, Next(100));
             var plush = new string[count];
             for (int i = 0; i < count; i++) plush[i] = session.CurrentPhase.AllowedPlushIds[Next(session.CurrentPhase.AllowedPlushIds.Count)];
-            if (!PopupStoreOrder.TryCreateEditorOrder(_customers[slot], plush, boxes[Next(boxes.Length)].Id,
-                ribbons[Next(ribbons.Length)].Id, _catalog, out order)) return false;
+            if (!PopupStoreOrder.TryCreateEditorOrder(_customers[slot], plush,             boxes[Next(boxes.Count)].Id,
+                            ribbons[Next(ribbons.Count)].Id, _catalog, out order)) return false;
             _bindings.Add(order.RuntimeId, new Binding(order, session.BusinessSessionId, session.PhaseRunId, slot));
             return true;
         }

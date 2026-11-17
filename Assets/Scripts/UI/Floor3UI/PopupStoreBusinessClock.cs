@@ -96,7 +96,35 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     public double RemainingSeconds => _remainingSeconds;
     /// <summary>Accepted Running time only, capped at the business deadline. Never advances while paused.</summary>
     public double ElapsedSeconds { get; private set; }
-    public event Action<double> TimeAdvanced;
+    private Action<double> _timeAdvanced;
+    // Delegates are immutable, so reference equality with _timeAdvanced proves the cached list is current.
+    private Action<double> _timeAdvancedSnapshotSource;
+    private Action<double>[] _timeAdvancedSnapshot = Array.Empty<Action<double>>();
+    public event Action<double> TimeAdvanced
+    {
+        add => _timeAdvanced = (Action<double>)Delegate.Combine(_timeAdvanced, value);
+        remove => _timeAdvanced = (Action<double>)Delegate.Remove(_timeAdvanced, value);
+    }
+
+    private void PublishTimeAdvanced(double position)
+    {
+        var source = _timeAdvanced;
+        if (source == null) return;
+        if (!ReferenceEquals(source, _timeAdvancedSnapshotSource))
+        {
+            var list = source.GetInvocationList();
+            var snapshot = new Action<double>[list.Length];
+            for (int i = 0; i < list.Length; i++) snapshot[i] = (Action<double>)list[i];
+            _timeAdvancedSnapshot = snapshot;
+            _timeAdvancedSnapshotSource = source;
+        }
+        // Subscription changes replace the array, so this local stays stable during delivery.
+        var handlers = _timeAdvancedSnapshot;
+        for (int i = 0; i < handlers.Length; i++)
+            try { handlers[i](position); }
+            catch (Exception exception) { Debug.LogException(exception, this); }
+    }
+
     public int ComplaintPenaltyCount => _penalizedOrders.Count;
     public double ComplaintPenaltySeconds { get; private set; }
     public bool CanAdvanceVisuals => _accountRecovery != null
@@ -358,10 +386,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         // Publish the committed absolute position before terminal notifications. Repeated or nested
         // observers cannot charge this interval twice, including the final partial frame at zero.
         double position = ElapsedSeconds;
-        if (consumed > 0d && TimeAdvanced != null)
-            foreach (Action<double> handler in TimeAdvanced.GetInvocationList())
-                try { handler(position); }
-                catch (Exception exception) { Debug.LogException(exception, this); }
+        if (consumed > 0d) PublishTimeAdvanced(position);
         if (!ended) return;
         LogState();
         Publish(StateChanged);
@@ -458,10 +483,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
             // The phase state is settled before customer observers. A phase deadline blocks new
             // expiration/packing commits, while already committed delivery remains free to finish.
             double position = ElapsedSeconds;
-            if (consumed > 0d && TimeAdvanced != null)
-                foreach (Action<double> handler in TimeAdvanced.GetInvocationList())
-                    try { handler(position); }
-                    catch (Exception exception) { Debug.LogException(exception, this); }
+            if (consumed > 0d) PublishTimeAdvanced(position);
             // Preview phases do not change the ordinary Running enum. Notify existing button
             // consumers when their phase gates change, after patience settles this same sample.
             if (playing != _phasePreview.CanPlay

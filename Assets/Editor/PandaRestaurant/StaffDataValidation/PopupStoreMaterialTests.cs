@@ -128,6 +128,41 @@ public sealed class PopupStoreMaterialTests
     }
 
     [Test]
+    public void CachedListsRefreshAfterEditsRejectInvalidDataAndNeverShareReturnedArrays()
+    {
+        var catalog = Object.Instantiate(Catalog());
+        try
+        {
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Plush, out var first, out string error), Is.True, error);
+            string firstId = first[0].Id;
+            first[0] = null; Array.Reverse(first); // caller mutation must not reach the cache
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Plush, out var again, out error), Is.True, error);
+            Assert.That(again[0].Id, Is.EqualTo(firstId));
+            Assert.That(again, Is.Not.SameAs(first));
+
+            var entries = Entries(catalog);
+            var a = entries.Single(item => item.Id == "STAFF01");
+            var b = entries.Single(item => item.Id == "STAFF02");
+            int order = a.DisplayOrder;
+            Write(a, "_displayOrder", b.DisplayOrder); Write(b, "_displayOrder", order);
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Plush, out var swapped, out error), Is.True, error);
+            Assert.That(swapped[0], Is.SameAs(b));
+
+            Write(a, "_sprite", b.Sprite);
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Plush, out var invalid, out error), Is.False);
+            Assert.That(invalid, Is.Empty);
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Box, out _, out _), Is.False);
+
+            Write(catalog, "_entries", Entries(Catalog()).Select(item => item).ToArray());
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Plush, out var reconnected, out error), Is.True, error);
+            Assert.That(reconnected[0].Id, Is.EqualTo(firstId));
+            Write(catalog, "_entries", entries.Skip(1).ToArray());
+            Assert.That(catalog.TryGetMaterials(PopupStoreMaterialKind.Ribbon, out _, out _), Is.False);
+        }
+        finally { Object.DestroyImmediate(catalog); }
+    }
+
+    [Test]
     public void DisplayOrderCanBeEditedWithoutChangingStableIdsOrSprites()
     {
         var catalog = Object.Instantiate(Catalog());

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
@@ -57,12 +58,76 @@ public sealed class PopupStoreMaterialCatalog : ScriptableObject
     public bool TryGetMaterials(PopupStoreMaterialKind kind, out PopupStoreMaterialEntry[] materials, out string error)
     {
         materials = Array.Empty<PopupStoreMaterialEntry>();
-        if (!Enum.IsDefined(typeof(PopupStoreMaterialKind), kind))
-        { error = "Unknown material list category."; return false; }
-        if (!TryValidate(out error)) return false;
-        materials = _entries.Where(entry => entry.Kind == kind)
-            .OrderBy(entry => entry.DisplayOrder).ThenBy(entry => entry.Id, StringComparer.Ordinal).ToArray();
+        if (!TryGetSortedMaterials(kind, out var sorted, out error)) return false;
+        // Callers own the returned array; the cached list must never be exposed to mutation.
+        materials = new PopupStoreMaterialEntry[sorted.Count];
+        for (int i = 0; i < materials.Length; i++) materials[i] = sorted[i];
         return true;
+    }
+
+    /// <summary>Allocation-free read-only view of the validated, sorted list for hot paths.</summary>
+    internal bool TryGetSortedMaterials(PopupStoreMaterialKind kind, out IReadOnlyList<PopupStoreMaterialEntry> materials, out string error)
+    {
+        materials = Array.Empty<PopupStoreMaterialEntry>();
+        error = null;
+        if ((uint)kind > (uint)PopupStoreMaterialKind.Ribbon)
+        { error = "Unknown material list category."; return false; }
+        if (!IsCacheCurrent())
+        {
+            _sortedByKind = null;
+            if (!TryValidate(out error)) return false;
+            RebuildCache();
+        }
+        materials = _sortedByKind[(int)kind];
+        return true;
+    }
+
+    // Inspector or runtime edits are detected by comparing validated fields, so every supported change refreshes the cache.
+    private PopupStoreMaterialEntry[] _cachedEntries;
+    private string[] _cachedIds;
+    private Sprite[] _cachedSprites;
+    private int[] _cachedKinds, _cachedOrders;
+    private ReadOnlyCollection<PopupStoreMaterialEntry>[] _sortedByKind;
+
+    private bool IsCacheCurrent()
+    {
+        var entries = _entries;
+        if (_sortedByKind == null || !ReferenceEquals(entries, _cachedEntries) || entries == null
+            || entries.Length != _cachedIds.Length) return false;
+        for (int i = 0; i < entries.Length; i++)
+        {
+            var entry = entries[i];
+            if (entry == null || entry.Sprite == null || !ReferenceEquals(entry.Sprite, _cachedSprites[i])
+                || !string.Equals(entry.Id, _cachedIds[i], StringComparison.Ordinal)
+                || (int)entry.Kind != _cachedKinds[i] || entry.DisplayOrder != _cachedOrders[i]) return false;
+        }
+        return true;
+    }
+
+    private void RebuildCache()
+    {
+        int count = _entries.Length;
+        _cachedEntries = _entries;
+        _cachedIds = new string[count];
+        _cachedSprites = new Sprite[count];
+        _cachedKinds = new int[count];
+        _cachedOrders = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            var entry = _entries[i];
+            _cachedIds[i] = entry.Id;
+            _cachedSprites[i] = entry.Sprite;
+            _cachedKinds[i] = (int)entry.Kind;
+            _cachedOrders[i] = entry.DisplayOrder;
+        }
+        var lists = new ReadOnlyCollection<PopupStoreMaterialEntry>[3];
+        for (int k = 0; k < lists.Length; k++)
+        {
+            var kind = (PopupStoreMaterialKind)k;
+            lists[k] = Array.AsReadOnly(_entries.Where(entry => entry.Kind == kind)
+                .OrderBy(entry => entry.DisplayOrder).ThenBy(entry => entry.Id, StringComparer.Ordinal).ToArray());
+        }
+        _sortedByKind = lists;
     }
 
     internal static bool IsKnownId(string id, PopupStoreMaterialKind kind)

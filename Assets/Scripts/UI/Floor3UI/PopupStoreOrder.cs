@@ -75,9 +75,9 @@ public sealed class PopupStoreOrder
         { error = "An order requires one to three plush IDs."; return false; }
         if (catalog == null)
         { error = "An approved material catalog is required."; return false; }
-        if (!catalog.TryGetMaterials(PopupStoreMaterialKind.Plush, out var plushes, out error)
-            || !catalog.TryGetMaterials(PopupStoreMaterialKind.Box, out var boxes, out error)
-            || !catalog.TryGetMaterials(PopupStoreMaterialKind.Ribbon, out var ribbons, out error)) return false;
+        if (!catalog.TryGetSortedMaterials(PopupStoreMaterialKind.Plush, out var plushes, out error)
+            || !catalog.TryGetSortedMaterials(PopupStoreMaterialKind.Box, out var boxes, out error)
+            || !catalog.TryGetSortedMaterials(PopupStoreMaterialKind.Ribbon, out var ribbons, out error)) return false;
 
         var resolved = new PopupStoreMaterialEntry[_plushIds.Length + 2];
         for (int i = 0; i < _plushIds.Length; i++)
@@ -94,11 +94,14 @@ public sealed class PopupStoreOrder
         return true;
     }
 
-    private static bool TryFind(PopupStoreMaterialEntry[] entries, string id, out PopupStoreMaterialEntry found)
+    private static bool TryFind(IReadOnlyList<PopupStoreMaterialEntry> entries, string id, out PopupStoreMaterialEntry found)
     {
-        foreach (var entry in entries)
+        for (int i = 0; i < entries.Count; i++)
+        {
+            var entry = entries[i];
             if (string.Equals(entry.Id, id, StringComparison.Ordinal))
             { found = entry; return true; }
+        }
         found = null;
         return false;
     }

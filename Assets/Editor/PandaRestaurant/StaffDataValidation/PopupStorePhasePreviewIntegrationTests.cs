@@ -77,6 +77,62 @@ public sealed class PopupStorePhasePreviewIntegrationTests
         }
     }
 
+    [Test]
+    public void CachedCatalogOrderSourceMatchesLegacySelectionAndAllocationProbe()
+    {
+        using (var h = new Host())
+        {
+            var customers = new[] { "CUSTOMER01", "CUSTOMER04", "CUSTOMER11" };
+            var rolls = new System.Random(1234); var expectedRolls = new System.Random(1234);
+            var source = new PopupStorePhasePreviewOrderSource(h.Catalog, customers, max => rolls.Next(max));
+            var session = h.Preview.Session;
+            Assert.That(h.Catalog.TryGetMaterials(PopupStoreMaterialKind.Box, out var boxes, out _), Is.True);
+            Assert.That(h.Catalog.TryGetMaterials(PopupStoreMaterialKind.Ribbon, out var ribbons, out _), Is.True);
+            for (int i = 0; i < 60; i++)
+            {
+                int count = PopupStorePhasePreviewOrderSource.PlushCount(session.CurrentPhase.Grade, expectedRolls.Next(100));
+                var expected = new string[count];
+                for (int p = 0; p < count; p++) expected[p] = session.CurrentPhase.AllowedPlushIds[expectedRolls.Next(session.CurrentPhase.AllowedPlushIds.Count)];
+                string box = boxes[expectedRolls.Next(boxes.Length)].Id, ribbon = ribbons[expectedRolls.Next(ribbons.Length)].Id;
+                Assert.That(source.TryCreate(session, i % 3, out var order), Is.True);
+                CollectionAssert.AreEqual(expected, order.PlushIds);
+                Assert.That(order.BoxId, Is.EqualTo(box)); Assert.That(order.RibbonId, Is.EqualTo(ribbon));
+                Assert.That(order.CustomerId, Is.EqualTo(customers[i % 3]));
+            }
+            Assert.That(rolls.Next(1000000), Is.EqualTo(expectedRolls.Next(1000000)), "same random call count");
+            for (int i = 0; i < 10; i++) source.TryCreate(session, 0, out _);
+            int slot = 0;
+            long created = MeasureOrders(() => source.TryCreate(session, slot++ % 3, out _));
+            long legacyLookups = MeasureOrders(() =>
+            {
+                for (int k = 0; k < 5; k++)
+                { h.Catalog.TryValidate(out _); h.Catalog.TryGetMaterials(PopupStoreMaterialKind.Box, out _, out _); }
+            });
+            long cachedLookups = MeasureOrders(() =>
+            {
+                for (int k = 0; k < 5; k++) h.Catalog.TryGetSortedMaterials(PopupStoreMaterialKind.Box, out _, out _);
+            });
+            Debug.Log("POPUP_STORE_ORDER_ALLOC create-order samples=100 bytes=" + created + "; cachedLookupBytes=" + cachedLookups
+                + "; validateAndClonedLookupBytes=" + legacyLookups);
+            Assert.That(cachedLookups, Is.Zero);
+        }
+    }
+
+    private static long MeasureOrders(Action action)
+    {
+        using (var recorder = Unity.Profiling.ProfilerRecorder.StartNew(Unity.Profiling.ProfilerCategory.Memory,
+            "GC.Alloc", 65536, Unity.Profiling.ProfilerRecorderOptions.StartImmediately
+                | Unity.Profiling.ProfilerRecorderOptions.CollectOnlyOnCurrentThread))
+        {
+            for (int i = 0; i < 100; i++) action();
+            recorder.Stop();
+            Assert.That(recorder.Valid && !recorder.WrappedAround, Is.True);
+            long bytes = 0;
+            for (int i = 0; i < recorder.Count; i++) bytes += recorder.GetSample(i).Value;
+            return bytes;
+        }
+    }
+
     [TestCase(PopupStoreGradeTier.C, 100, 0, 0)]
     [TestCase(PopupStoreGradeTier.B, 70, 30, 0)]
     [TestCase(PopupStoreGradeTier.A, 40, 60, 0)]
