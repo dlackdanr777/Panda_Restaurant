@@ -17,6 +17,8 @@ using Object = UnityEngine.Object;
 public sealed class PopupStoreCleanPartsTests
 {
     internal const string Art = "Assets/Sprites/PopupStore/CleanPartsV4/";
+    internal const string CurrentBackgroundPath = Art + "팝업스토어_배경비율수정_4대3_귀여운버전.png";
+    private const string CurrentBackgroundSha = "7a47a0ad687a0e3647532d62787048afe59c2479573649a2c2728565ab4bfb50";
     internal const string PreviousArt = "Assets/Sprites/PopupStore/FinalGuideV3/";
     private const string PrefabPath = "Assets/Resources/UI/PopupStore/UIPopupStore.prefab";
     private const BindingFlags Fields = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
@@ -93,12 +95,49 @@ public sealed class PopupStoreCleanPartsTests
     public void AllTwentyFourApprovedPngsKeepSourceHashRealAlphaSixPixelPaddingAndFullResolutionImports()
     {
         foreach (var part in Parts().parts) AssertPart(part);
-        CollectionAssert.AreEquivalent(Parts().parts.Select(p => p.id + ".png").Concat(new[] { "V4_Background_NoOldSign.png" }).ToArray(),
+        CollectionAssert.AreEquivalent(Parts().parts.Select(p => p.id + ".png")
+            .Concat(new[] { "V4_Background_NoOldSign.png", Path.GetFileName(CurrentBackgroundPath) }).ToArray(),
             Directory.GetFiles(Art, "*.png").Select(Path.GetFileName).ToArray());
     }
 
     [Test]
-    public void SignRemovedBackgroundUsesOnlyTheApprovedDerivedBytesAtOriginalResolution() => AssertCurrentBackground();
+    public void DerivedV4BackgroundSourceRemainsVerifiedAtOriginalResolution() => AssertCurrentBackground();
+
+    [Test]
+    public void FourByThreeBackgroundIsUsedAtFullResolutionAndConfiguredToCoverItsParent()
+    {
+        Assert.That(Hash(CurrentBackgroundPath), Is.EqualTo(CurrentBackgroundSha));
+        AssertImport(CurrentBackgroundPath, 1448, 1086);
+        var root = Prefab();
+        var background = root.transform.Find("Approved Front Background").GetComponent<Image>();
+        Assert.That(AssetDatabase.GetAssetPath(background.sprite), Is.EqualTo(CurrentBackgroundPath));
+        Assert.That(background.preserveAspect, Is.True);
+        var entries = Read<PopupStoreFinalGuideLayout.Entry[]>(root.GetComponent<PopupStoreFinalGuideLayout>(), "_placements");
+        Assert.That(entries.Single(entry => entry.Target == background.rectTransform).CoverParent, Is.True);
+        var tray = root.transform.Find("Sales Counter - Five Slots").GetComponent<RectTransform>();
+        var trayEntry = entries.Single(entry => entry.Target == tray);
+        Assert.That(trayEntry.FollowBackground, Is.True);
+        Assert.That(trayEntry.BackgroundAnchorX, Is.EqualTo(.5f));
+        CollectionAssert.AreEqual(new[] { 1.3333334f, 1.7777778f, 2f },
+            trayEntry.AspectYPositions.Select(position => position.AspectRatio).ToArray());
+        CollectionAssert.AreEqual(new[] { -31f, -41f, -45f },
+            trayEntry.AspectYPositions.Select(position => position.Y).ToArray());
+    }
+
+    [TestCase(2000, 1000, -45f)]
+    [TestCase(1440, 1080, -31f)]
+    [TestCase(1920, 1080, -41f)]
+    [TestCase(1280, 720, -41f)]
+    [TestCase(1600, 1000, -37f)]
+    [TestCase(1900, 1000, -43.2f)]
+    public void SalesCounterKeepsItsAspectSpecificYOverTheCoverBackground(int width, int height, float expectedY)
+    {
+        using (var host = new Host(width, height, false))
+        {
+            AssertBackgroundCoversViewport(host.Root, host.Rect);
+            AssertTrayFollowsBackground(host.Root, expectedY);
+        }
+    }
 
     [Test]
     public void AllTenRetainedV3AssetsKeepBytesReferencesAndUniqueOriginalFiles()
@@ -187,8 +226,7 @@ public sealed class PopupStoreCleanPartsTests
             var body = new[] { new Rect(315, 306, 215, 183), new Rect(722, 325, 223, 165), new Rect(1151, 295, 225, 192) };
             for (int i = 0; i < 3; i++)
                 PopupStoreFinalGuideTests.AssertGuideRect(h.Root.transform.Find("Customer Place " + (i + 1) + "/Approved Body Area").GetComponent<RectTransform>(), h.Rect, body[i], "original customer body area");
-            PopupStoreFinalGuideTests.AssertGuideRect(h.Root.transform.Find("Sales Counter - Five Slots/Approved Tray").GetComponent<RectTransform>(), h.Rect,
-                new Rect(382, 526, 910, 175), "original tray");
+            AssertTrayAtAspect(h.Root, -41f);
             PopupStoreFinalGuideTests.AssertGuideRect(h.Root.transform.Find("HUD/Close Button").GetComponent<RectTransform>(), h.Rect,
                 new Rect(1549, 19, 88, 84), "original X");
         }
@@ -550,7 +588,8 @@ public sealed class PopupStoreCleanPartsTests
         foreach (var part in Parts().parts) Assert.That(dependencies, Does.Contain(Art + part.id + ".png"));
         foreach (var retained in Map().unchanged_v3) Assert.That(dependencies, Does.Contain(PreviousArt + retained.id + ".png"));
         var images = root.GetComponentsInChildren<Image>(true);
-        Assert.That(images.Count(i => AssetDatabase.GetAssetPath(i.sprite) == Art + "V4_Background_NoOldSign.png"), Is.EqualTo(1));
+        Assert.That(images.Count(i => AssetDatabase.GetAssetPath(i.sprite) == CurrentBackgroundPath), Is.EqualTo(1));
+        Assert.That(images.Count(i => AssetDatabase.GetAssetPath(i.sprite) == Art + "V4_Background_NoOldSign.png"), Is.Zero);
         Assert.That(images.Count(i => AssetDatabase.GetAssetPath(i.sprite) == Art + "V4_Sign_RopesLeaves_EMPTY.png"), Is.EqualTo(1));
         foreach (string path in dependencies)
         {
@@ -567,7 +606,46 @@ public sealed class PopupStoreCleanPartsTests
         }
         var sign = root.transform.Find("Approved Clean Sign").GetComponent<Image>();
         AssertMappedRect(sign, rect, new Replacement { replacement_id = Map().new_overlay.new_id, target_guide_rect_xywh = Map().new_overlay.target_guide_rect_xywh });
-        PopupStoreFinalGuideTests.AssertGuideRect(root.transform.Find("Approved Front Background").GetComponent<RectTransform>(), rect, new Rect(0, 0, 1672, 941), "background");
+        AssertBackgroundCoversViewport(root, rect);
+    }
+
+    internal static void AssertBackgroundCoversViewport(GameObject root, RectTransform viewport)
+    {
+        var image = root.transform.Find("Approved Front Background").GetComponent<Image>();
+        Assert.That(AssetDatabase.GetAssetPath(image.sprite), Is.EqualTo(CurrentBackgroundPath));
+        Assert.That(image.preserveAspect, Is.True);
+        var corners = new Vector3[4];
+        image.rectTransform.GetWorldCorners(corners);
+        var points = corners.Select(viewport.InverseTransformPoint).ToArray();
+        Rect bounds = Rect.MinMaxRect(points.Min(point => point.x), points.Min(point => point.y),
+            points.Max(point => point.x), points.Max(point => point.y));
+        float imageAspect = image.sprite.rect.width / image.sprite.rect.height;
+        Assert.That(bounds.width / bounds.height, Is.EqualTo(imageAspect).Within(.001f));
+        Assert.That(bounds.xMin, Is.LessThanOrEqualTo(viewport.rect.xMin + .1f));
+        Assert.That(bounds.yMin, Is.LessThanOrEqualTo(viewport.rect.yMin + .1f));
+        Assert.That(bounds.xMax, Is.GreaterThanOrEqualTo(viewport.rect.xMax - .1f));
+        Assert.That(bounds.yMax, Is.GreaterThanOrEqualTo(viewport.rect.yMax - .1f));
+    }
+
+    internal static void AssertTrayFollowsBackground(GameObject root, float expectedY)
+    {
+        var background = root.transform.Find("Approved Front Background").GetComponent<RectTransform>();
+        var tray = root.transform.Find("Sales Counter - Five Slots").GetComponent<RectTransform>();
+        var entries = Read<PopupStoreFinalGuideLayout.Entry[]>(root.GetComponent<PopupStoreFinalGuideLayout>(), "_placements");
+        var entry = entries.Single(item => item.Target == tray);
+        float expectedX = background.anchoredPosition.x
+            + (entry.BackgroundAnchorX - .5f) * background.rect.width;
+        Assert.That(entry.FollowBackground, Is.True);
+        Assert.That(tray.anchoredPosition.x, Is.EqualTo(expectedX).Within(.1f));
+        Assert.That(tray.anchoredPosition.y, Is.EqualTo(expectedY).Within(.1f));
+    }
+
+    internal static void AssertTrayAtAspect(GameObject root, float expectedY)
+    {
+        var tray = root.transform.Find("Sales Counter - Five Slots").GetComponent<RectTransform>();
+        Assert.That(tray.anchoredPosition.x, Is.Zero.Within(.1f));
+        Assert.That(tray.anchoredPosition.y, Is.EqualTo(expectedY).Within(.1f));
+        Assert.That(tray.sizeDelta, Is.EqualTo(new Vector2(910, 175)));
     }
     internal static void AssertMappedRect(Image image, RectTransform root, Replacement row)
     {

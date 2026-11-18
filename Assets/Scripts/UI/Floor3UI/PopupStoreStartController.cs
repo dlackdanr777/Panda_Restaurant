@@ -91,6 +91,12 @@ public sealed class PopupStoreStartController : MonoBehaviour
         RefreshPresentation();
     }
 
+    internal void ResetTutorialPages()
+    {
+        GetComponent<PopupStorePhasePreview>()?.TutorialView?.ResetTutorialPage();
+        _unavailableTutorial?.ResetTutorialPage();
+    }
+
     private void BindPanel()
     {
         if (Panel == null) return;

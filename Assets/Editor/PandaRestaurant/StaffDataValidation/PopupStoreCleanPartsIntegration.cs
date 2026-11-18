@@ -20,9 +20,9 @@ public static class PopupStoreCleanPartsIntegration
     [Serializable] private sealed class Replacement { public string old_id, replacement_id; public int[] target_guide_rect_xywh; }
     [Serializable] private sealed class Audit { public string utc; public bool safeToDelete; public Dependency[] assets; }
     [Serializable] private sealed class Dependency { public string path, guid; public string[] dependents; }
-    private const string Background = "V4_Background_NoOldSign";
+    private const string Background = "Assets/Sprites/PopupStore/CleanPartsV4/팝업스토어_배경비율수정_4대3_귀여운버전.png";
     private const string OldBackground = "FG_Background_CafeCounter_APPROVED";
-    private const string BackgroundSha = "c14f16e8aee392ca70b6101eeabd6629c9488e801eb021ba789353dd78d719d3";
+    private const string BackgroundSha = "7a47a0ad687a0e3647532d62787048afe59c2479573649a2c2728565ab4bfb50";
 
     public static void Apply()
     {
@@ -33,7 +33,7 @@ public static class PopupStoreCleanPartsIntegration
             throw new InvalidOperationException("Expected approved 24 parts and 32 old bindings.");
         var parts = manifest.parts.ToDictionary(p => p.id, StringComparer.Ordinal);
         foreach (var part in manifest.parts) Verify(Folder + part.id + ".png", part.sha256);
-        Verify(Folder + Background + ".png", BackgroundSha);
+        Verify(Background, BackgroundSha);
         var witness = GachaCollectionPreviewSceneWitness.Capture();
         GameObject popup = null;
         try
@@ -73,7 +73,9 @@ public static class PopupStoreCleanPartsIntegration
                 if (changed) serialized.ApplyModifiedPropertiesWithoutUndo();
             }
             var background = root.Find("Approved Front Background").GetComponent<Image>();
-            background.sprite = Sprite(Background); background.color = Color.white;
+            background.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(Background)
+                ?? throw new InvalidOperationException("Missing approved popup background Sprite: " + Background);
+            background.color = Color.white;
             var sign = root.Find("Approved Clean Sign") as RectTransform;
             if (sign == null)
             {

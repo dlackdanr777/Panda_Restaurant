@@ -81,8 +81,8 @@ public sealed class PopupStoreFinalGuideTests
     [Test]
     public void BackgroundRetainsApprovedRgbBytesDimensionsAndOneFullResolutionSprite()
     {
-        // V4 replaces only the old sign and ropes. Keep the original source identity in
-        // its unchanged manifest and validate the approved derived background.
+        // Keep the approved V4 source package intact even though the prefab now uses the
+        // separate 4:3 background selected for runtime.
         Assert.That(LoadManifest().background.sha256, Is.EqualTo(PopupStoreCleanPartsTests.Map().background.original_sha256));
         PopupStoreCleanPartsTests.AssertCurrentBackground();
     }
@@ -177,8 +177,7 @@ public sealed class PopupStoreFinalGuideTests
                 AssertGuideRect(image.rectTransform, host.Rect,
                     new Rect(part.place_png_top_left_guide[0], part.place_png_top_left_guide[1], part.png_size[0], part.png_size[1]), id);
             }
-            AssertGuideRect(host.Root.transform.Find("Approved Front Background").GetComponent<RectTransform>(), host.Rect,
-                new Rect(0, 0, 1672, 941), "background uses the same contain transform");
+            PopupStoreCleanPartsTests.AssertBackgroundCoversViewport(host.Root, host.Rect);
             AssertGuideRect(Read<Button>(host.View, "_closeButton").GetComponent<RectTransform>(), host.Rect,
                 new Rect(1549, 19, 88, 84), "original X placement");
         }

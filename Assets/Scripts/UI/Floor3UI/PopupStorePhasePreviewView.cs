@@ -177,8 +177,8 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
             {
                 CloseRequestCount++;
                 // Navigation has accepted this close. Explicitly retire the visible tutorial
-                // so reentry starts a fresh visible interval even when EditMode does not run
-                // MonoBehaviour.OnDisable. Keep its page and admission untouched.
+                // even when EditMode does not run MonoBehaviour.OnDisable. Its popup owner
+                // resets the page when the popup is hidden; admission remains untouched.
                 HideAll();
             }
             return accepted;
@@ -269,6 +269,12 @@ public sealed class PopupStorePhasePreviewView : MonoBehaviour, ICanvasRaycastFi
         if (_presentationGroup != null) _presentationGroup.SetActive(false);
         if (_inputGroup != null) { _inputGroup.interactable = false; _inputGroup.blocksRaycasts = false; }
         LastCue = null;
+    }
+
+    internal void ResetTutorialPage()
+    {
+        _currentPage = 0;
+        _lastLoggedPage = -1;
     }
 
     private void RenderPage()

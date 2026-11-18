@@ -56,6 +56,7 @@ public sealed class UIPopupStore : MobileUIView
 
     public override void Hide()
     {
+        GetComponent<PopupStoreStartController>()?.ResetTutorialPages();
         VisibleState = VisibleState.Disappeared;
         GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(false);
         GetComponent<PopupStoreExitConfirmation>()?.DismissForForcedHide();

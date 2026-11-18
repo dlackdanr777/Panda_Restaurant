@@ -60,7 +60,7 @@ public sealed class PopupStorePhaseTutorialNavigationTests
     }
 
     [Test]
-    public void TutorialCloseReturnsToTheRealMapWithoutConsumingAdmissionAndReentryKeepsItsPage()
+    public void TutorialCloseReturnsToTheRealMapWithoutConsumingAdmissionAndReentryStartsAtFirstPage()
     {
         using (var t = new TutorialHarness())
         {
@@ -72,7 +72,7 @@ public sealed class PopupStorePhaseTutorialNavigationTests
             t.AssertUnused();
             h.Reenter();
             Assert.That(t.View.IsTutorialVisible, Is.True);
-            Assert.That(t.View.CurrentPage, Is.EqualTo(1));
+            Assert.That(t.View.CurrentPage, Is.Zero);
             Assert.That(t.TicketStatus.text, Is.EqualTo("이용권 1/1"));
             Assert.That(t.View.TryClose(), Is.True, "Reopening must clear the accepted close latch.");
             Assert.That(t.View.CloseRequestCount, Is.EqualTo(2));

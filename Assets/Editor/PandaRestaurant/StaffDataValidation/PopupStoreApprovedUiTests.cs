@@ -380,7 +380,7 @@ public sealed class PopupStoreApprovedUiTests
         }
         private void Layout()
         {
-            // V3 owns one popup-local contain transform; exercise it after the fixture changes
+            // Exercise popup-local guide placement and the cover background after changing
             // logical resolution, without changing the shared CanvasScaler or user GameView.
             var guide = Root.GetComponent("PopupStoreFinalGuideLayout");
             Assert.That(guide, Is.Not.Null);

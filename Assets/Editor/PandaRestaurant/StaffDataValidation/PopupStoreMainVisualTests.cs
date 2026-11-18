@@ -111,8 +111,7 @@ public sealed class PopupStoreMainVisualTests
             var tray = h.Root.transform.Find("Sales Counter - Five Slots/Approved Tray").GetComponent<Image>();
             // V3's approved tray is 902px plus 4px padding per side. Its outer width may exceed
             // the old UI02 1000 logical-unit threshold after the shared contain transform.
-            PopupStoreFinalGuideTests.AssertGuideRect(tray.rectTransform, h.Root.GetComponent<RectTransform>(),
-                new Rect(382, 526, 910, 175), "approved v3 tray");
+            PopupStoreCleanPartsTests.AssertTrayAtAspect(h.Root, -41f);
             Assert.That(tray.preserveAspect, Is.True);
             Assert.That(tray.rectTransform.rect.width / tray.rectTransform.rect.height,
                 Is.EqualTo(tray.sprite.rect.width / tray.sprite.rect.height).Within(.02f));
