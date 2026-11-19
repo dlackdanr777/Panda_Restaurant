@@ -63,8 +63,10 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
     }
 
     internal void Initialize(bool furnitureFix = false, bool staffAi = false,
-        string encounterCustomerId = null, int encounterVisitCount = 0)
+        string encounterCustomerId = null, int encounterVisitCount = 0, bool prepareFairies = false)
     {
+        if (prepareFairies && (!CustomerPartyManualPlayBootstrap.Active || Backend.IsInitialized || Backend.IsLogin))
+            throw new InvalidOperationException("Fairy review requires the original memory-only Play fence.");
         if (encounterCustomerId != null && (!CustomerEncounterCatalog.IsSupportedCustomer(encounterCustomerId)
             || (encounterVisitCount != 0 && encounterVisitCount != 24 && encounterVisitCount != 49)))
             throw new InvalidOperationException("Invalid memory-only encounter fixture.");
@@ -118,6 +120,8 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
             var stage=new StageInfo();
             if(index==0)
             {
+                // This is the fresh memory row, not the live account or a source asset.
+                if (prepareFairies) stage.ChangeUnlockFloor(ERestaurantFloorType.Floor3);
                 Set(stage,"_satisfaction",10f);
                 var tables=(FurnitureData[,])Field(typeof(StageInfo),"_equipFurnitureDatas").GetValue(stage);
                 var kitchens=(KitchenUtensilData[,])Field(typeof(StageInfo),"_equipKitchenUtensilDatas").GetValue(stage);
@@ -136,6 +140,7 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         }
         Owner=BackendManager.CreateEditorOfflineOwner(this,this,UserInfo.StaffPurchaseWallet,_=>throw new InvalidOperationException("Purchase not part of UI preview"),_=>throw new InvalidOperationException("No purchase effects"));
         Field(typeof(BackendManager),"_instance").SetValue(null,Owner);Owner.SetEditorOfflineUtcClock(UtcNow);
+        if (prepareFairies) PrepareFairyInventory();
         Set(Owner,"_firstTutorialState",Activator.CreateInstance(typeof(UserInfo).Assembly.GetType("UserFirstTutorialState",true),true));
         Set(Owner,"_attendanceState",Activator.CreateInstance(typeof(UserInfo).Assembly.GetType("UserAttendanceState",true),true));
         Set(Owner,"_attendanceNowKst",(Func<DateTime>)(()=>UtcNow().AddHours(9)));
@@ -150,6 +155,21 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         var snapshot=(GachaEconomySnapshot)typeof(UserInfo).GetMethod("CaptureGachaEconomy",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{AccountInDate,Owner.StaffRuntime.Snapshot});
         var economy=new GachaEconomyService(new GachaEconomyMemoryStore(snapshot),catalog.Items,Resources.Load<GachaEconomySettings>("GachaEconomySettings"),clock:new Clock(UtcNow),displayRandom:new System.Random(1917));
         Set(Owner,"_gachaEconomy",economy);Set(Owner,"_gachaEconomyQuery",Owner.CurrentMailReceiveQuery);
+    }
+    private void PrepareFairyInventory()
+    {
+        if (!CustomerPartyManualPlayBootstrap.Active || Backend.IsInitialized || Backend.IsLogin
+            || Owner == null || !Owner.IsEditorOfflineOwner || !ReferenceEquals(BackendManager.ExistingInstance, Owner))
+            throw new InvalidOperationException("Fairy review requires the installed memory-only backend owner.");
+        var ids = ItemManager.Instance.GetGachaItemDataList()
+            .Where(data => EnhancementFairyCatalog.IsEligible(data) && !string.IsNullOrWhiteSpace(data.Id)
+                && data.Sprite != null && data.MaxLevel >= 1)
+            .Select(data => data.Id).Distinct(StringComparer.Ordinal).OrderBy(id => id, StringComparer.Ordinal).Take(18).ToArray();
+        if (ids.Length != 18) throw new InvalidOperationException("Fairy review requires 18 valid catalog sprites.");
+        // Restore through the existing game-data transport. No acquisition events,
+        // gacha transaction, reward call, or real-account write is issued.
+        game["GiveGachaItemCountList"] = new JArray(ids.Select(id => new JObject { ["Id"] = id, ["Count"] = 1 }));
+        game["GiveGachaItemLevelList"] = new JArray(ids.Select(id => new JObject { ["Id"] = id, ["Level"] = 1 }));
     }
     private sealed class Clock:IGachaExchangeClock
     {private readonly Func<DateTime> now;internal Clock(Func<DateTime> now){this.now=now;}public bool TryGetUtcNow(out DateTime utc){utc=now();return true;}}

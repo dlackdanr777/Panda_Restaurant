@@ -70,6 +70,10 @@ public sealed class ThirdFloorFairyHouseTests
             Assert.That(house.Settings.ReturnStaggerMinSeconds, Is.EqualTo(6f));
             Assert.That(house.Settings.ReturnStaggerMaxSeconds, Is.EqualTo(10f));
             Assert.That(house.Settings.MaximumConcurrentReturns, Is.EqualTo(1));
+            Assert.That(house.Settings.TapSpawnFirstDelay, Is.Zero);
+            Assert.That(house.Settings.SpawnInterval, Is.EqualTo(.18f));
+            Assert.That(house.Settings.EntranceDuration, Is.EqualTo(.45f));
+            Assert.That(house.Settings.TapDispersalSpeedMultiplier, Is.EqualTo(1f));
             Assert.That(sprite.color, Is.EqualTo(Color.white));
             string path = AssetDatabase.GetAssetPath(sprite.sprite);
             Assert.That(path, Is.EqualTo("Assets/Sprites/3층/FairyHouse/3F_FairyHouse_Standalone_Transparent.png"));
@@ -124,7 +128,7 @@ public sealed class ThirdFloorFairyHouseTests
             foreach (int count in new[] { 1, 2, 3 })
             {
                 Assert.That(f.Request(count), Is.EqualTo(count));
-                f.Advance(.7f);
+                f.DrainHouseQueue();
                 f.AssertUniqueOwned();
             }
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(18));
@@ -147,7 +151,7 @@ public sealed class ThirdFloorFairyHouseTests
         using (var f = new Fixture(owned))
         {
             for (int tap = 0; tap < 10; tap++) f.Request(3);
-            f.Advance(3f);
+            f.DrainHouseQueue();
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(Mathf.Min(owned, 24)));
             Assert.That(f.Habitat.PooledObjectCount, Is.EqualTo(Mathf.Min(owned, 24)));
             Assert.That(f.Request(3), Is.Zero);
@@ -166,7 +170,7 @@ public sealed class ThirdFloorFairyHouseTests
             var original = f.ActiveIds();
             Assert.That(f.Config.TemporaryPlaySeconds, Is.EqualTo(45f));
             f.Request(3);
-            f.Until(() => f.Habitat.PendingHouseSpawnCount == 0, 3f);
+            f.DrainHouseQueue();
             float firstDeadline = f.Habitat.HouseReturnDueAt;
             Assert.That(firstDeadline, Is.EqualTo(f.Habitat.HouseActivitySeconds + 45f).Within(.001f));
             f.Advance(30f);
@@ -174,10 +178,11 @@ public sealed class ThirdFloorFairyHouseTests
             Assert.That(original.IsSubsetOf(f.ActiveIds()), Is.True, "The old 12-second roster rotation must not cut the visit short.");
             Assert.That(f.Habitat.ReturningHouseCount, Is.Zero);
             Assert.That(f.Request(1), Is.EqualTo(1));
-            Assert.That(f.Habitat.HouseReturnDueAt, Is.EqualTo(firstDeadline), "A reservation alone must not extend the visit.");
-            f.Step(.05f);
+            f.Until(() => f.Habitat.ActiveCount == 16, 15f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(16));
             float lastSpawnAt = f.Habitat.HouseActivitySeconds;
+            Assert.That(f.Habitat.HouseReturnDueAt, Is.GreaterThan(firstDeadline),
+                "The default immediate successful spawn restarts the stay; a failed tap still cannot do so.");
             Assert.That(f.Habitat.HouseReturnDueAt, Is.EqualTo(lastSpawnAt + 45f).Within(.001f));
             f.Advance(44.8f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(16));
@@ -204,6 +209,7 @@ public sealed class ThirdFloorFairyHouseTests
             }, 12f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(12));
             Assert.That(f.Request(1), Is.EqualTo(1));
+            f.DrainHouseQueue();
             f.Advance(f.Settings.RotationFadeSeconds + .5f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(13));
             Assert.That(original.IsSubsetOf(f.ActiveIds()), Is.True,
@@ -224,7 +230,7 @@ public sealed class ThirdFloorFairyHouseTests
             string older = f.Habitat.GetActiveBrain(0).ItemId;
             f.Advance(26f);
             Assert.That(f.Request(1), Is.EqualTo(1));
-            f.Step(.05f);
+            f.Until(() => f.Habitat.HouseEmergenceCount == 1, 15f);
             string newcomer = f.ActiveIds().Single(id => id != older);
             float appearedAt = f.Habitat.HouseActivitySeconds;
             f.Until(() => f.Habitat.ActiveCount == 1, 3f);
@@ -246,7 +252,7 @@ public sealed class ThirdFloorFairyHouseTests
         using (var f = new Fixture(40, input: true))
         {
             for (int tap = 0; tap < 10; tap++) f.Tap();
-            f.Until(() => f.Habitat.PendingHouseSpawnCount == 0, 4f);
+            f.DrainHouseQueue();
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(24));
             float due = f.Habitat.HouseReturnDueAt;
             f.Advance(30f);
@@ -275,7 +281,7 @@ public sealed class ThirdFloorFairyHouseTests
             string older = f.Habitat.GetActiveBrain(0).ItemId;
             Assert.That(f.Habitat.ConfirmAcquisition("memory-only-oldest-protection", f.Items[0]), Is.True);
             Assert.That(f.Request(1), Is.EqualTo(1));
-            f.Step(.05f);
+            f.Until(() => f.Habitat.HouseEmergenceCount == 1, 15f);
             string newcomer = f.ActiveIds().Single(id => id != older);
             float appearedAt = f.Habitat.HouseActivitySeconds;
             f.Advance(24.8f);
@@ -370,13 +376,13 @@ public sealed class ThirdFloorFairyHouseTests
         using (var f = new Fixture(10, baseLimit: 1))
         {
             f.FastReturns();
-            f.Settings.GroundArea = new Rect(-5f, 7.85f, 10f, 0f);
+            f.Settings.GroundArea = new Rect(-13.4f, 7.85f, 60f, 0f);
             f.Habitat.ResetOfflineSession(f.OwnedIds);
             f.Entrance.localPosition = new Vector3(0f, 9f, 0f);
             f.Step(.05f);
             f.AssertFairySortingAbove(houseSprite);
             f.Request(1);
-            f.Step(.05f);
+            f.Until(() => f.Habitat.HouseEmergenceCount == 1, 15f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(2));
             f.AssertFairySortingAbove(houseSprite);
             f.Until(() => f.Habitat.ReturningHouseCount == 1, 2f);
@@ -395,17 +401,18 @@ public sealed class ThirdFloorFairyHouseTests
         {
             f.Entrance.localPosition = new Vector3(0f, 2f, 0f);
             Assert.That(f.Request(3), Is.EqualTo(3));
-            f.Step(.05f);
+            f.Until(() => f.Habitat.HouseEmergenceCount == 1, 15f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(2));
             var first = f.Habitat.GetActiveBrain(1);
             Assert.That(first.GroundPosition, Is.EqualTo((Vector2)f.Entrance.localPosition),
                 "The exit begins at the actual elevated doorway, before reaching the ground bounds.");
-            f.Advance(.2f);
+            f.Until(() => f.Habitat.HouseEmergenceCount == 2, 15f);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(3));
             var second = f.Habitat.GetActiveBrain(2);
             Assert.That(second.GroundPosition, Is.EqualTo((Vector2)f.Entrance.localPosition));
             Assert.That(first.GroundPosition, Is.Not.EqualTo(second.GroundPosition));
-            f.Advance(.8f);
+            f.DrainHouseQueue();
+            f.Advance(f.Config.SafeEntranceDuration + .2f);
             Assert.That(f.Habitat.GetActiveBrain(1), Is.SameAs(first));
             Assert.That(f.Habitat.GetActiveBrain(2), Is.SameAs(second));
             Assert.That(first.ElapsedSeconds, Is.GreaterThan(0f));
@@ -427,18 +434,27 @@ public sealed class ThirdFloorFairyHouseTests
             f.Config.ReturnFadeSeconds = .5f;
             f.Entrance.localPosition = new Vector3(0f, 2f, 0f);
             var oldest = f.Habitat.GetActiveBrain(0);
+            // Render the resident before the synchronous tap emergence so it is
+            // genuinely the oldest visible fairy, not merely first in the list.
+            f.Advance(.05f);
             oldest.PlaceForBirth(new Vector2(4f, 0f));
             var root = f.Host.transform.Find("Fairy " + oldest.ItemId);
             var body = root.Find("Item sprite").GetComponent<SpriteRenderer>();
             f.Request(1);
-            f.Until(() => f.Habitat.ReturningHouseCount == 1, 2f);
+            f.Until(() => f.Habitat.HouseEmergenceCount == 1, f.Config.SafeExitClearanceTimeoutSeconds + 1f);
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(2));
+            f.Until(() => f.Habitat.ReturningHouseCount == 1, f.Config.SafeTemporaryPlaySeconds + 1f);
+            Assert.That(f.Habitat.ReturningHouseItemIds.Single(), Is.EqualTo(oldest.ItemId));
+            Assert.That(f.HousePhase(oldest.ItemId), Is.EqualTo("Returning"));
             float before = Vector2.Distance(oldest.GroundPosition, f.Entrance.localPosition);
             float returnStartedAt = f.Habitat.HouseActivitySeconds;
+            float speedLimit = Mathf.Min(f.Settings.WalkSpeed * f.Settings.CalmEnergy, f.Config.SafeReturnMoveSpeed);
+            float travelBudget = Mathf.Max(f.Config.SafeReturnTravelSeconds, before / Mathf.Max(.001f, speedLimit));
             f.Advance(.2f);
             Assert.That(Vector2.Distance(oldest.GroundPosition, f.Entrance.localPosition), Is.LessThan(before));
             float travelled = before - Vector2.Distance(oldest.GroundPosition, f.Entrance.localPosition);
             Assert.That(travelled, Is.LessThanOrEqualTo(f.Settings.WalkSpeed * f.Settings.CalmEnergy * .2f + .001f));
-            f.Until(() => Vector2.Distance(oldest.GroundPosition, f.Entrance.localPosition) <= .05f, 8f);
+            f.Until(() => Vector2.Distance(oldest.GroundPosition, f.Entrance.localPosition) <= .05f, travelBudget + .2f);
             Assert.That(f.Habitat.HouseActivitySeconds - returnStartedAt, Is.GreaterThanOrEqualTo(3.8f));
             float fullScale = body.transform.localScale.x;
             f.Advance(.2f);
@@ -466,7 +482,7 @@ public sealed class ThirdFloorFairyHouseTests
             // Restore filters both duplicated ownership IDs and an uncatalogued ID.
             f.Habitat.RestoreOwnership(f.OwnedIds.Concat(f.OwnedIds).Concat(new[] { "not-in-catalog", "RECIPE" }));
             int accepted = f.Request(3);
-            f.Advance(1f);
+            f.DrainHouseQueue();
             Assert.That(accepted, Is.EqualTo(Mathf.Min(3, Mathf.Max(0, owned - 12))));
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(owned));
             Assert.That(f.Habitat.OwnedTypeCount, Is.EqualTo(owned));
@@ -485,13 +501,15 @@ public sealed class ThirdFloorFairyHouseTests
                 Assert.That(f.Request(3), Is.InRange(0, 3));
                 Assert.That(f.Habitat.PendingHouseSpawnCount, Is.LessThanOrEqualTo(12));
             }
-            for (int frame = 0; frame < 600; frame++)
+            for (int frame = 0; frame < 1200; frame++)
             {
                 f.Step(.05f);
                 Assert.That(f.Habitat.ActiveCount, Is.LessThanOrEqualTo(24));
                 Assert.That(f.Habitat.PooledObjectCount, Is.LessThanOrEqualTo(24));
                 Assert.That(f.Habitat.ReturningHouseCount, Is.LessThanOrEqualTo(1));
                 f.AssertUniqueOwned();
+                if (f.Habitat.PendingHouseSpawnCount == 0 && f.Habitat.ActiveCount == 12
+                    && f.Habitat.ReturningHouseCount == 0) break;
             }
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(12));
             Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
@@ -502,6 +520,44 @@ public sealed class ThirdFloorFairyHouseTests
             f.Request(3);
             f.Advance(1f);
             Assert.That(f.Habitat.PooledObjectCount, Is.EqualTo(allocated), "The second outing must reuse the existing pool.");
+        }
+    }
+
+    [Test]
+    public void CrowdedDoorwayCannotDelayTheAcceptedBurstOrLeaveLateRequestsAfterCancellation()
+    {
+        using (var f = new Fixture(40))
+        {
+            // A deliberately crowded floor exercises prompt presentation independently
+            // of the later natural walking/dispersal policy.
+            f.Settings.GroundArea = new Rect(-10f, 0f, 20f, 0f);
+            f.Habitat.ResetOfflineSession(f.OwnedIds);
+            for (int tap = 0; tap < 4; tap++) Assert.That(f.Request(3), Is.EqualTo(3));
+            f.DrainHouseQueue();
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(24));
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(12));
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            float deadline = f.Habitat.HouseReturnDueAt;
+            for (int tap = 0; tap < 20; tap++)
+            {
+                Assert.That(f.Request(3), Is.Zero);
+                f.Step(.05f);
+                Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+                Assert.That(f.Habitat.ActiveCount, Is.EqualTo(24));
+                Assert.That(f.Habitat.PooledObjectCount, Is.EqualTo(24));
+                Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(12));
+                Assert.That(f.Habitat.HouseReturnDueAt, Is.EqualTo(deadline));
+                f.AssertUniqueOwned();
+            }
+            f.Habitat.SetFloorVisible(true, false);
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            f.Advance(70f);
+            f.Habitat.SetFloorVisible(true, true);
+            f.Advance(.5f);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(12), "Hidden/reopened rooms cannot replay old tap requests.");
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(12));
+            Assert.That(f.Habitat.OwnedTypeCount, Is.EqualTo(40));
+            f.AssertUniqueOwned();
         }
     }
 
@@ -519,7 +575,7 @@ public sealed class ThirdFloorFairyHouseTests
             for (int i = 0; i < f.Habitat.ActiveCount; i++)
                 f.Habitat.GetActiveBrain(i).PlaceForBirth(new Vector2(4f, 0f));
             f.Request(2);
-            f.Advance(.35f);
+            f.DrainHouseQueue();
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(4));
             Assert.That(f.Habitat.ReturningHouseCount, Is.Zero, "Excess is allowed to play before returning.");
             f.Until(() => f.Habitat.ReturningHouseCount > 0, 3f);
@@ -547,10 +603,10 @@ public sealed class ThirdFloorFairyHouseTests
             f.Config.TemporaryPlaySeconds = .5f;
             f.Request(3);
             f.Request(3);
-            f.Advance(.5f);
-            f.Until(() => f.Habitat.ReturningHouseCount > 0, 3f);
+            f.Until(() => f.Habitat.HouseEmergenceCount > 0, 30f);
+            f.Until(() => f.Habitat.ReturningHouseCount > 0, 40f);
             Assert.That(f.Request(3), Is.InRange(0, 3));
-            for (int frame = 0; frame < 600; frame++)
+            for (int frame = 0; frame < 1200; frame++)
             {
                 f.Step(.05f);
                 Assert.That(f.Habitat.ActiveCount, Is.LessThanOrEqualTo(24));
@@ -558,6 +614,8 @@ public sealed class ThirdFloorFairyHouseTests
                 Assert.That(f.Habitat.PooledObjectCount, Is.LessThanOrEqualTo(24));
                 Assert.That(f.Habitat.ReturningHouseCount, Is.LessThanOrEqualTo(1));
                 f.AssertUniqueOwned();
+                if (f.Habitat.PendingHouseSpawnCount == 0 && f.Habitat.ActiveCount == 12
+                    && f.Habitat.ReturningHouseCount == 0) break;
             }
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(12));
             Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
@@ -598,6 +656,7 @@ public sealed class ThirdFloorFairyHouseTests
         using (var f = new Fixture(13))
         {
             f.FastReturns();
+            f.Config.TapSpawnFirstDelay = .2f; // Keep a real configurable reservation window for acquisition priority.
             var queued = f.Items.Single(item => f.OwnedIds.Contains(item.Id) && !f.ActiveIds().Contains(item.Id));
             Assert.That(f.Request(1), Is.EqualTo(1));
             Assert.That(f.Habitat.PendingHouseSpawnCount, Is.EqualTo(1));
@@ -631,7 +690,7 @@ public sealed class ThirdFloorFairyHouseTests
         {
             f.Request(3);
             f.Request(3);
-            f.Advance(.3f);
+            f.Until(() => f.Habitat.HouseEmergenceCount > 0, 15f);
             Assert.That(f.Habitat.ActiveCount, Is.GreaterThan(12));
             switch (reason)
             {
@@ -671,6 +730,114 @@ public sealed class ThirdFloorFairyHouseTests
             Assert.That(f.Tap(), Is.True);
             Assert.That(f.House.CurrentShakeStage, Is.EqualTo(1));
             Assert.That(f.House.LastRequestedSpawnCount, Is.EqualTo(1));
+        }
+    }
+
+    [TestCase(30)]
+    [TestCase(60)]
+    public void ActualHouseTapBurstsStartDuringTheShakeAndFinishOnTheConfiguredScheduleAtBothFrameRates(int framesPerSecond)
+    {
+        using (var f = new Fixture(40, input: true))
+        {
+            float dt = 1f / framesPerSecond;
+            Assert.That(f.Config.TapSpawnFirstDelay, Is.Zero);
+            Assert.That(f.Config.SpawnInterval, Is.EqualTo(.18f));
+            Assert.That(f.Config.EntranceDuration, Is.EqualTo(.45f));
+            Assert.That(f.Config.TapDispersalSpeedMultiplier, Is.EqualTo(1f));
+            int[] requests = { 1, 2, 3, 3 };
+            for (int tap = 0; tap < requests.Length; tap++)
+                f.AssertTapBurst(requests[tap], Mathf.Min(tap + 1, 3), dt);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(9));
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(21));
+            f.Advance(f.Config.TapSequenceResetSeconds + .1f);
+            f.AssertTapBurst(1, 1, dt);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(10));
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(22));
+            f.AssertUniqueOwned();
+        }
+    }
+
+    [TestCase(30)]
+    [TestCase(60)]
+    public void ConfiguredFirstTapDelayAppliesOnceThenUsesTheConfiguredCadence(int framesPerSecond)
+    {
+        using (var f = new Fixture(20, input: true))
+        {
+            f.Config.TapSpawnFirstDelay = .2f;
+            f.Config.FirstTapSpawnCount = 3;
+            f.AssertTapBurst(3, 1, 1f / framesPerSecond, .2f);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(3));
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(15));
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+        }
+    }
+
+    [TestCase(30)]
+    [TestCase(60)]
+    public void RapidActualTapsKeepTwentyFourUniqueAndFullCapacityNeverReservesFutureReturnSlots(int framesPerSecond)
+    {
+        using (var f = new Fixture(40, input: true))
+        {
+            f.FastReturns();
+            int accepted = 0;
+            for (int tap = 0; tap < 100; tap++)
+            {
+                Assert.That(f.Tap(), Is.True);
+                accepted += f.House.LastAcceptedSpawnCount;
+                Assert.That(f.Habitat.ActiveCount + f.Habitat.PendingHouseSpawnCount, Is.LessThanOrEqualTo(24));
+                f.AssertUniqueOwned();
+            }
+            Assert.That(accepted, Is.EqualTo(12));
+            float dt = 1f / framesPerSecond;
+            float spawnBudget = f.Config.SafeTapSpawnFirstDelay
+                + f.Habitat.PendingHouseSpawnCount * f.Config.SafeSpawnInterval + dt;
+            for (int frame = 0; frame < Mathf.CeilToInt(spawnBudget / dt)
+                && f.Habitat.PendingHouseSpawnCount > 0; frame++)
+            {
+                f.Step(dt);
+                Assert.That(f.Habitat.ActiveCount, Is.LessThanOrEqualTo(24));
+                f.AssertUniqueOwned();
+            }
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(24));
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(12));
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            f.Until(() => f.Habitat.ReturningHouseCount == 1, 3f);
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(24), "A returning sprite still occupies its display slot.");
+            float due = f.Habitat.HouseReturnDueAt;
+            Assert.That(f.Tap(), Is.True, "A full house still shakes.");
+            Assert.That(f.House.LastAcceptedSpawnCount, Is.Zero);
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero, "A due return is not permission to reserve a future slot.");
+            Assert.That(f.Habitat.HouseReturnDueAt, Is.EqualTo(due));
+            f.Until(() => f.Habitat.ActiveCount < 24, 5f);
+            f.Advance(1f);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(12), "Rejected full-cap taps cannot spawn later after a slot opens.");
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            Assert.That(f.Habitat.OwnedTypeCount, Is.EqualTo(40));
+            f.AssertUniqueOwned();
+        }
+    }
+
+    [TestCase(12, 0)]
+    [TestCase(13, 1)]
+    [TestCase(14, 2)]
+    [TestCase(15, 3)]
+    public void ActualThreeFairyTapReducesToAvailableOwnershipWithoutADeferredShortfall(int owned, int expected)
+    {
+        using (var f = new Fixture(owned, input: true))
+        {
+            f.Config.FirstTapSpawnCount = 3;
+            Assert.That(f.Tap(), Is.True);
+            Assert.That(f.House.LastRequestedSpawnCount, Is.EqualTo(3));
+            Assert.That(f.House.LastAcceptedSpawnCount, Is.EqualTo(expected));
+            Assert.That(f.House.IsShaking, Is.True);
+            f.DrainHouseQueue();
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(expected));
+            Assert.That(f.Habitat.ActiveCount, Is.EqualTo(owned));
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            f.Advance(5f);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(expected));
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            f.AssertUniqueOwned();
         }
     }
 
@@ -794,6 +961,92 @@ public sealed class ThirdFloorFairyHouseTests
         }
     }
 
+    [Test]
+    public void AmbientHouseHintMovesOnlyTheVisualWithoutRequestingOrCreatingFairies()
+    {
+        using (var f = new Fixture(30, input: true))
+        {
+            f.Config.FirstHintDelay = new Vector2(.1f, .1f);
+            var ids = f.ActiveIds();
+            int pooled = f.Habitat.PooledObjectCount;
+            Vector3 position = f.Visual.localPosition, scale = f.Visual.localScale;
+            Quaternion rotation = f.Visual.localRotation;
+            Vector3 hitPosition = f.Hit.transform.position;
+            Vector2 hitSize = f.Hit.size;
+            bool moved = false;
+            float maxAngle = 0f;
+            for (int i = 0; i < 45; i++)
+            {
+                f.Step(.02f);
+                moved |= f.House.IsIdleHintPlaying;
+                maxAngle = Mathf.Max(maxAngle, Quaternion.Angle(rotation, f.Visual.localRotation));
+            }
+            Assert.That(moved, Is.True);
+            Assert.That(maxAngle, Is.InRange(.05f, 1.51f));
+            Assert.That(f.Visual.localPosition, Is.EqualTo(position));
+            Assert.That(f.Visual.localScale, Is.EqualTo(scale));
+            Assert.That(f.Visual.localRotation, Is.EqualTo(rotation));
+            Assert.That(f.Hit.transform.position, Is.EqualTo(hitPosition));
+            Assert.That(f.Hit.size, Is.EqualTo(hitSize));
+            Assert.That(f.House.LastRequestedSpawnCount, Is.Zero);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.Zero);
+            Assert.That(f.Habitat.PendingHouseSpawnCount, Is.Zero);
+            Assert.That(f.Habitat.PooledObjectCount, Is.EqualTo(pooled));
+            CollectionAssert.AreEquivalent(ids, f.ActiveIds());
+            Assert.That(f.Habitat.OwnedTypeCount, Is.EqualTo(30));
+        }
+    }
+
+    [Test]
+    public void ActualHouseTapImmediatelyReplacesTheAmbientHintWithItsOriginalSpawnAndShake()
+    {
+        using (var f = new Fixture(30, input: true))
+        {
+            f.Config.FirstHintDelay = new Vector2(.1f, .1f);
+            Quaternion rotation = f.Visual.localRotation;
+            f.Advance(.25f);
+            Assert.That(f.House.IsIdleHintPlaying, Is.True);
+            Assert.That(f.Tap(), Is.True);
+            Assert.That(f.House.IsIdleHintPlaying, Is.False);
+            Assert.That(f.House.IsShaking, Is.True);
+            Assert.That(f.House.CurrentShakeStage, Is.EqualTo(1));
+            Assert.That(f.House.LastRequestedSpawnCount, Is.EqualTo(1));
+            f.Config.EnableIdleHint = false;
+            f.Advance(1f);
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.EqualTo(1));
+            Assert.That(f.Visual.localRotation, Is.EqualTo(rotation));
+            f.AssertUniqueOwned();
+        }
+    }
+
+    [TestCase("floor-hidden")]
+    [TestCase("camera-moving")]
+    [TestCase("world-block")]
+    [TestCase("offscreen")]
+    [TestCase("disabled")]
+    public void HouseAmbientHintStopsAndRestoresWhenPresentationIsUnavailable(string reason)
+    {
+        using (var f = new Fixture(30, input: true))
+        {
+            f.Config.FirstHintDelay = new Vector2(.1f, .1f);
+            Quaternion rotation = f.Visual.localRotation;
+            f.Advance(.25f);
+            Assert.That(f.House.IsIdleHintPlaying, Is.True);
+            switch (reason)
+            {
+                case "floor-hidden": f.Habitat.SetFloorVisible(true, false); break;
+                case "camera-moving": Set(f.CameraInput, "_isMoveAction", true); break;
+                case "world-block": f.CameraInput.SetWorldInputBlocked(f, true); break;
+                case "offscreen": f.WorldCamera.transform.position += Vector3.right * 100f; break;
+                case "disabled": f.House.enabled = false; Invoke(f.House, "OnDisable"); break;
+            }
+            f.Step(.05f);
+            Assert.That(f.House.IsIdleHintPlaying, Is.False);
+            Assert.That(f.Visual.localRotation, Is.EqualTo(rotation));
+            Assert.That(f.Habitat.HouseEmergenceCount, Is.Zero);
+        }
+    }
+
     private sealed class Fixture : IDisposable
     {
         private readonly Scene _scene = EditorSceneManager.NewPreviewScene();
@@ -822,7 +1075,9 @@ public sealed class ThirdFloorFairyHouseTests
                 Settings = ScriptableObject.CreateInstance<EnhancementFairySettings>();
                 Settings.MaxActive = baseLimit;
                 Settings.RotationSeconds = 10000f;
-                Settings.GroundArea = new Rect(-5f, 0f, 10f, 0f);
+                // Stage1 has 60 units of floor, with the house 13.4 units from its
+                // left edge. A ten-unit fixture cannot fit 24 full-size sprites.
+                Settings.GroundArea = new Rect(-13.4f, 0f, 60f, 0f);
                 Settings.BirthArea = new Rect(-4f, 1f, 8f, 3f);
                 Settings.BirthStartDelay = new Vector2(.1f, .1f);
                 _texture = new Texture2D(4, 4);
@@ -848,6 +1103,7 @@ public sealed class ThirdFloorFairyHouseTests
                 Visual.localPosition = new Vector3(.25f, .4f, 0f);
                 Visual.localScale = new Vector3(1.2f, .9f, 1f);
                 Visual.localRotation = Quaternion.Euler(0f, 0f, 13f);
+                Visual.gameObject.AddComponent<SpriteRenderer>().sprite = _sprite;
                 var touch = Create("Stationary house hit area", true);
                 touch.transform.SetParent(root.transform, false);
                 Hit = touch.AddComponent<BoxCollider2D>();
@@ -891,6 +1147,72 @@ public sealed class ThirdFloorFairyHouseTests
         internal Vector2 ScreenPoint => WorldCamera.WorldToScreenPoint(Hit.transform.position);
         internal bool Tap() => House.TryTapAtWorldPoint(Hit.transform.position);
         internal int Request(int count) => Habitat.RequestHouseEmergence(Owner, count);
+        internal string HousePhase(string id)
+        {
+            foreach (object view in (System.Collections.IEnumerable)Field(typeof(EnhancementFairyHabitat), "_views").GetValue(Habitat))
+            {
+                var brain = (EnhancementFairyBrain)Field(view.GetType(), "Brain").GetValue(view);
+                if (brain != null && brain.ItemId == id) return Field(view.GetType(), "HouseMotion").GetValue(view).ToString();
+            }
+            return "Missing";
+        }
+
+        internal void AssertTapBurst(int expected, int expectedStage, float dt, float firstDelay = 0f)
+        {
+            var before = ActiveIds();
+            float tappedAt = Habitat.HouseActivitySeconds;
+            var starts = new Dictionary<string, float>();
+            var finishes = new Dictionary<string, float>();
+            var dispersalStarts = new Dictionary<string, float>();
+            Assert.That(Tap(), Is.True);
+            Assert.That(House.CurrentShakeStage, Is.EqualTo(expectedStage));
+            Assert.That(House.LastRequestedSpawnCount, Is.EqualTo(expected));
+            Assert.That(House.LastAcceptedSpawnCount, Is.EqualTo(expected));
+            Quaternion restRotation = Visual.localRotation;
+            bool sawMovingShake = false;
+            // Spawn cadence and animation completion each round to a frame boundary.
+            float completionBound = firstDelay + (expected - 1) * Config.SafeSpawnInterval
+                + Config.SafeEntranceDuration + 2f * dt + .001f;
+            int frames = Mathf.CeilToInt(completionBound / dt) + 1;
+            for (int frame = 0; frame < frames; frame++)
+            {
+                float elapsed = Habitat.HouseActivitySeconds - tappedAt;
+                foreach (string id in ActiveIds())
+                {
+                    if (before.Contains(id)) continue;
+                    string phase = HousePhase(id);
+                    if (!starts.ContainsKey(id))
+                    {
+                        starts.Add(id, elapsed);
+                        Assert.That(phase, Is.EqualTo("Emerging"), "Observe the actual start, not the end of the doorway animation.");
+                        if (starts.Count == 1)
+                            Assert.That(House.IsShaking, Is.True, "The first fairy must appear while the house is still shaking.");
+                    }
+                    if (phase != "Emerging" && !finishes.ContainsKey(id)) finishes.Add(id, elapsed);
+                    if (Habitat.IsItemDispersing(id) && !dispersalStarts.ContainsKey(id)) dispersalStarts.Add(id, elapsed);
+                }
+                sawMovingShake |= House.IsShaking && Quaternion.Angle(restRotation, Visual.localRotation) > .01f;
+                Assert.That(Habitat.ActiveCount, Is.LessThanOrEqualTo(24));
+                AssertUniqueOwned();
+                if (finishes.Count == expected) break;
+                Step(dt);
+            }
+            Assert.That(starts.Count, Is.EqualTo(expected));
+            Assert.That(finishes.Count, Is.EqualTo(expected));
+            Assert.That(dispersalStarts.Count, Is.EqualTo(expected), "Every completed emergence hands the same fairy to its real outward walk.");
+            float[] times = starts.Values.OrderBy(value => value).ToArray();
+            Assert.That(times[0], Is.GreaterThanOrEqualTo(firstDelay - .001f));
+            Assert.That(times[0], Is.LessThanOrEqualTo(firstDelay == 0f ? .1f : firstDelay + dt + .001f));
+            for (int index = 1; index < times.Length; index++)
+                Assert.That(times[index] - times[index - 1], Is.EqualTo(Config.SafeSpawnInterval).Within(dt + .001f));
+            foreach (var finish in finishes)
+                Assert.That(finish.Value - starts[finish.Key],
+                    Is.EqualTo(Config.SafeEntranceDuration).Within(dt + .001f),
+                    "Each fairy keeps the configured natural doorway animation duration.");
+            Assert.That(finishes.Values.Max(), Is.LessThanOrEqualTo(completionBound));
+            Assert.That(sawMovingShake, Is.True);
+            Assert.That(Habitat.PendingHouseSpawnCount, Is.Zero);
+        }
         internal string[] ActiveIdsInOrder() => Enumerable.Range(0, Habitat.ActiveCount).Select(i => Habitat.GetActiveBrain(i).ItemId).ToArray();
         internal HashSet<string> ActiveIds() => new HashSet<string>(ActiveIdsInOrder(), StringComparer.Ordinal);
         internal void AssertUniqueOwned()
@@ -931,9 +1253,8 @@ public sealed class ThirdFloorFairyHouseTests
             Config.ReturnMoveSpeed = Settings.WalkSpeed = 40f;
             Config.ReturnTimeoutSeconds = 10f;
             Config.ReturnFadeSeconds = .1f;
-            Settings.HopProbability = Settings.VisitProbability = Settings.WalkProbability = 0f;
-            Settings.LookProbability = Settings.TurnProbability = 0f;
-            Settings.RestProbability = 1f;
+            // Keep the real autonomous actions: a permanently frozen resident just
+            // beyond the doorway would make the exit impossible, not exercise returns.
         }
 
         internal void ShowBaseResidentsOneAtATime()
@@ -956,11 +1277,24 @@ public sealed class ThirdFloorFairyHouseTests
             for (int frame = 0; frame < frames; frame++) Step(.05f);
         }
 
+        internal void DrainHouseQueue()
+        {
+            // A tap burst is bounded by its configured first delay and cadence;
+            // doorway occupancy must not turn it into a delayed admission queue.
+            float budget = Config.SafeTapSpawnFirstDelay
+                + Habitat.PendingHouseSpawnCount * Config.SafeSpawnInterval
+                + Config.SafeEntranceDuration + 1f;
+            Until(() => Habitat.PendingHouseSpawnCount == 0, budget);
+        }
+
         internal void Until(Func<bool> predicate, float timeout)
         {
             int frames = Mathf.CeilToInt(timeout / .05f);
             while (!predicate() && frames-- > 0) Step(.05f);
-            Assert.That(predicate(), Is.True, "The actual presentation state did not advance before the bounded deadline.");
+            Assert.That(predicate(), Is.True, "The actual presentation state did not advance before the bounded deadline. "
+                + "active=" + Habitat.ActiveCount + "; pending=" + Habitat.PendingHouseSpawnCount
+                + "; emerged=" + Habitat.HouseEmergenceCount + "; returning=" + Habitat.ReturningHouseCount
+                + "; activitySeconds=" + Habitat.HouseActivitySeconds + "; exit=" + Habitat.LastHouseExitDecision);
         }
 
         public void Dispose()

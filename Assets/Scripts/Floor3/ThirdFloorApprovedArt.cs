@@ -14,6 +14,22 @@ public sealed class ThirdFloorApprovedArt : MonoBehaviour
     [SerializeField] private SpriteRenderer[] _legacySprites = Array.Empty<SpriteRenderer>();
     [SerializeField, Tooltip("Only the old map hit areas; keep camera drag and fairy colliders out of this list.")]
     private Collider2D[] _legacyColliders = Array.Empty<Collider2D>();
+    [SerializeField, Min(0f), Tooltip("Quiet time between automatic hints in this approved room root. User taps and furniture activities take priority.")]
+    private float _hintMinimumGap = 2f;
+    private float _nextIdleHintAllowedAt = float.NegativeInfinity;
+
+    public float HintMinimumGap => float.IsNaN(_hintMinimumGap) || float.IsInfinity(_hintMinimumGap)
+        ? 2f : Mathf.Clamp(_hintMinimumGap, 0f, 30f);
+
+    // A single room-local timestamp coordinates the existing animations; it does not run animations itself.
+    public bool TryBeginIdleHint(float now, float duration, bool prioritizeFirstVisible = false)
+    {
+        if (!isActiveAndEnabled || !_useApprovedArt || float.IsNaN(now) || float.IsInfinity(now)
+            || float.IsNaN(duration) || float.IsInfinity(duration)
+            || (!prioritizeFirstVisible && now < _nextIdleHintAllowedAt)) return false;
+        _nextIdleHintAllowedAt = now + Mathf.Max(0f, duration) + HintMinimumGap;
+        return true;
+    }
 
     // Serialized so saving/reloading while approved art is visible never loses the original states.
     [SerializeField, HideInInspector] private bool _hasLegacySnapshot;
@@ -61,7 +77,11 @@ public sealed class ThirdFloorApprovedArt : MonoBehaviour
         if (_refreshRequested) Refresh();
     }
 
-    private void OnDisable() => Apply(false);
+    private void OnDisable()
+    {
+        _nextIdleHintAllowedAt = float.NegativeInfinity;
+        Apply(false);
+    }
     private void OnDestroy() => OnDisable();
 
     public void Refresh() => Apply(isActiveAndEnabled && _useApprovedArt && HasOwnedContent());

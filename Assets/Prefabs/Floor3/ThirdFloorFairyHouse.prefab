@@ -61,9 +61,23 @@ MonoBehaviour:
     ShakeAngles: {x: 3, y: 5, z: 7}
     ShakeDuration: 0.45
     ShakeCycles: 2
+    EnableIdleHint: 1
+    FirstHintDelay: {x: 6, y: 10}
+    HintInterval: {x: 15, y: 25}
+    HintRotationDegrees: 1.25
+    HintDuration: 0.6
+    TapSpawnFirstDelay: 0
     SpawnInterval: 0.18
     EntranceDuration: 0.45
+    TapDispersalSpeedMultiplier: 1
     EntranceSpread: 3.5
+    ExitClearanceTimeoutSeconds: 60
+    HouseCrowdingRadius: 3.75
+    HouseResidentLimit: 2
+    HouseResidentGraceSeconds: 1.25
+    MinimumFairySpacing: 1.5
+    SpriteSpacingPadding: 0.2
+    DispersionSearchDistance: 18
     TemporaryPlaySeconds: 45
     MinimumIndividualStaySeconds: 25
     ReturnStaggerMinSeconds: 6

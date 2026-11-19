@@ -111,9 +111,10 @@ public static partial class PopupStoreVerificationRunner
     }
     [Serializable] private sealed class Inspection
     {
-        public string capturedUtc, error;
+        public string capturedUtc, error, thirdFloorDiagnostics;
         public bool playing, compiling, updating, sdkInitialized, isLogin;
         public int[] gameManagerIds, challengeManagerIds;
+        public string[] dirtySceneComponents;
         public Workspace workspace;
     }
     [Serializable] private sealed class Report
@@ -186,6 +187,16 @@ public static partial class PopupStoreVerificationRunner
         if (request == "inspect") InspectWorkspace();
         else if (request == "floor3-art-evidence")
             RunApprovedUiOperation("ThirdFloorApprovedArtEvidence", "Run", null);
+        else if (request == "floor3-play-area-evidence")
+            RunApprovedUiOperation("ThirdFloorFairyPlayAreaEvidence", "Run", null);
+        else if (request == "run-fairy-ai-probe")
+            RunApprovedUiOperation("ThirdFloorFairyAiHotfixEvidence", "RunCurrentDiagnostic", null);
+        else if (request == "run-fairy-ai-after")
+            RunApprovedUiOperation("ThirdFloorFairyAiHotfixEvidence", "RunAfterFix", null);
+        else if (request == "run-fairy-crowd-recheck")
+            RunApprovedUiOperation("ThirdFloorFairyAiHotfixEvidence", "RunCrowdRecheck", null);
+        else if (request == "run-fairy-fast-emergence")
+            RunApprovedUiOperation("ThirdFloorFairyAiHotfixEvidence", "RunFastEmergenceEvidence", null);
         else if (request == "phase-tutorial-build")
             RunApprovedUiOperation("PopupStorePhasePreviewViewBuilder", "Build", new object[] { PopupStorePhasePreviewViewBuilder.GameplayPath });
         else if (request == "phase-reward-build")
@@ -940,10 +951,152 @@ public static partial class PopupStoreVerificationRunner
             inspection.challengeManagerIds = Resources.FindObjectsOfTypeAll<ChallengeManager>()
                 .Where(manager => manager.gameObject.scene.IsValid()).Select(manager => manager.GetInstanceID()).OrderBy(id => id).ToArray();
             inspection.workspace = ReadWorkspace();
+            // Read-only component evidence helps distinguish editor/UI refresh dirtiness from scene edits.
+            inspection.dirtySceneComponents = Resources.FindObjectsOfTypeAll<Component>()
+                .Where(value => value != null && value.gameObject.scene.IsValid()
+                    && !EditorSceneManager.IsPreviewScene(value.gameObject.scene) && EditorUtility.IsDirty(value))
+                .Select(value => value.gameObject.scene.path + "|" + value.gameObject.GetInstanceID()
+                    + "|" + value.GetInstanceID() + "|" + value.gameObject.name + "|" + value.GetType().FullName)
+                .OrderBy(value => value, StringComparer.Ordinal).ToArray();
+            inspection.thirdFloorDiagnostics = ReadThirdFloorDiagnostics();
         }
         catch (Exception error) { inspection.error = Unwrap(error).ToString(); }
         Directory.CreateDirectory(DirectoryPath);
         File.WriteAllText(DirectoryPath + "/inspection.json", JsonUtility.ToJson(inspection, true));
+    }
+
+    // Explicit inspect-only evidence from existing scene objects. Do not initialize,
+    // bind, move, invoke input handlers, or access a service/account singleton here.
+    private static string ReadThirdFloorDiagnostics()
+    {
+        var text = new System.Text.StringBuilder();
+        text.AppendLine("Read-only third-floor scene diagnostics; no input dispatch or initialization.");
+        var cameras = ThirdFloorSceneComponents<CameraController>();
+        foreach (var camera in cameras)
+            AppendThirdFloorDiagnostic(text, "Camera " + ThirdFloorObject(camera), () =>
+            {
+                text.AppendLine("active=" + camera.gameObject.activeInHierarchy + "; enabled=" + camera.enabled
+                    + "; moving=" + camera.IsCameraMoving + "; worldInputBlocked=" + camera.IsWorldInputBlocked);
+                text.AppendLine("lastWorldTap=" + camera.EditorLastWorldTapDiagnostic);
+                var mainScene = PauseField(camera, "_mainScene") as MainScene;
+                text.AppendLine("mainScene=" + ThirdFloorObject(mainScene) + "; floor="
+                    + (mainScene != null ? camera.CurrentFloor.ToString() : "unbound")
+                    + "; restaurant=" + (mainScene != null ? camera.CurrentRestaurant.ToString() : "unbound")
+                    + "; tapCandidate=" + PauseField(camera, "_tapCandidate")
+                    + "; dragging=" + PauseField(camera, "_isDragging")
+                    + "; draggingEnabled=" + PauseField(camera, "_isDraggingEnabled"));
+                var navigation = PauseField(camera, "_navigationCoordinator") as Muks.UI.UINavigationCoordinator;
+                text.AppendLine("navigation=" + ThirdFloorObject(navigation) + "; openViews="
+                    + (navigation != null ? navigation.GetOpenViewCount().ToString() : "unbound"));
+                var callbacks = PauseField(camera, "OnWorldTapHandler") as Delegate;
+                var invocation = callbacks != null ? callbacks.GetInvocationList() : Array.Empty<Delegate>();
+                text.AppendLine("worldTapListenerCount=" + invocation.Length);
+                for (int i = 0; i < invocation.Length; i++)
+                    text.AppendLine("listener[" + i + "]=" + invocation[i].Method.DeclaringType?.FullName
+                        + "." + invocation[i].Method.Name + "; target="
+                        + (invocation[i].Target is UnityEngine.Object target ? ThirdFloorObject(target)
+                            : invocation[i].Target?.GetType().FullName ?? "static"));
+            });
+
+        foreach (var area in ThirdFloorSceneComponents<ThirdFloorFairyPlayArea>())
+            AppendThirdFloorDiagnostic(text, "PlayArea " + ThirdFloorObject(area), () =>
+            {
+                var inputCamera = PauseField(area, "_cameraController") as CameraController;
+                var worldCamera = PauseField(area, "_worldCamera") as Camera;
+                text.AppendLine("active=" + area.gameObject.activeInHierarchy + "; enabled=" + area.enabled
+                    + "; registered=" + PauseField(area, "_registered") + "; runtimeBound=" + PauseField(area, "_runtimeBound")
+                    + "; offline=" + PauseField(area, "_offline"));
+                text.AppendLine("lastFurnitureTap=" + area.EditorLastFurnitureTapDiagnostic);
+                text.AppendLine("habitat=" + ThirdFloorObject(PauseField(area, "_habitat") as UnityEngine.Object)
+                    + "; inputCamera=" + ThirdFloorObject(inputCamera) + "; worldCamera=" + ThirdFloorObject(worldCamera)
+                    + "; subscribedCamera=" + ThirdFloorObject(PauseField(area, "_subscribedCamera") as UnityEngine.Object));
+                foreach (var point in area.Points ?? Array.Empty<FairyFurniturePoint>())
+                {
+                    if (point == null) continue;
+                    var collider = point.TouchCollider;
+                    var visual = point.HintSprite;
+                    text.AppendLine("furniture=" + point.Name + "; kind=" + point.Kind + "; enabled=" + point.Enabled
+                        + "; touchEnabled=" + point.TouchEnabled + "; touchAnimating=" + area.IsTouchAnimating(point)
+                        + "; pivot=" + ThirdFloorObject(point.HintVisual)
+                        + "; visual=" + ThirdFloorObject(visual)
+                        + "; collider=" + ThirdFloorObject(collider));
+                    if (point.HintVisual != null)
+                        text.AppendLine("pivot active=" + point.HintVisual.gameObject.activeInHierarchy
+                            + "; localPosition=" + point.HintVisual.localPosition
+                            + "; localRotation=" + point.HintVisual.localRotation
+                            + "; localScale=" + point.HintVisual.localScale);
+                    if (visual != null)
+                        text.AppendLine("visual active=" + visual.gameObject.activeInHierarchy + "; enabled=" + visual.enabled
+                            + "; sprite=" + ThirdFloorObject(visual.sprite) + "; bounds=" + visual.bounds
+                            + "; sortingLayer=" + visual.sortingLayerName + "; sortingOrder=" + visual.sortingOrder);
+                    if (collider == null) continue;
+                    text.AppendLine("collider active=" + collider.gameObject.activeInHierarchy + "; enabled=" + collider.enabled
+                        + "; layer=" + collider.gameObject.layer + ":" + LayerMask.LayerToName(collider.gameObject.layer)
+                        + "; bounds=" + collider.bounds + "; worldPosition=" + collider.transform.position);
+                    Camera probeCamera = worldCamera;
+                    if (probeCamera == null && inputCamera != null) probeCamera = inputCamera.GetComponent<Camera>();
+                    if (probeCamera == null)
+                    {
+                        var existing = cameras.FirstOrDefault(value => value.gameObject.scene == area.gameObject.scene);
+                        if (existing != null) probeCamera = existing.GetComponent<Camera>();
+                    }
+                    var eventSystem = UnityEngine.EventSystems.EventSystem.current;
+                    if (probeCamera == null || eventSystem == null)
+                    {
+                        text.AppendLine(point.Kind + "Raycasts=NOT RUN; existing camera or EventSystem missing");
+                        continue;
+                    }
+                    Vector3 center = collider is BoxCollider2D box
+                        ? box.transform.TransformPoint(box.offset) : collider.bounds.center;
+                    Vector3 screen = probeCamera.WorldToScreenPoint(center);
+                    text.AppendLine(point.Kind + "RaycastCamera=" + ThirdFloorObject(probeCamera) + "; center=" + center
+                        + "; screen=" + screen + "; eventSystem=" + ThirdFloorObject(eventSystem));
+                    var pointer = new UnityEngine.EventSystems.PointerEventData(eventSystem) { position = screen };
+                    var results = new List<UnityEngine.EventSystems.RaycastResult>();
+                    eventSystem.RaycastAll(pointer, results);
+                    for (int i = 0; i < results.Count; i++)
+                    {
+                        var hit = results[i];
+                        if (hit.gameObject == null) continue;
+                        text.AppendLine(point.Kind + "Raycast[" + i + "]=" + hit.gameObject.name + "; type="
+                            + (hit.module != null ? hit.module.GetType().FullName : "none") + "; layer="
+                            + hit.gameObject.layer + ":" + LayerMask.LayerToName(hit.gameObject.layer));
+                    }
+                    if (results.Count == 0) text.AppendLine(point.Kind + "Raycasts=empty");
+                }
+            });
+
+        foreach (var house in ThirdFloorSceneComponents<ThirdFloorFairyHouse>())
+            AppendThirdFloorDiagnostic(text, "House " + ThirdFloorObject(house), () =>
+                text.AppendLine("active=" + house.gameObject.activeInHierarchy + "; enabled=" + house.enabled
+                    + "; registered=" + PauseField(house, "_registered") + "; runtimeBound=" + PauseField(house, "_runtimeBound")
+                    + "; subscribed=" + PauseField(house, "_subscribed")
+                    + "; habitat=" + ThirdFloorObject(PauseField(house, "_habitat") as UnityEngine.Object)
+                    + "; inputCamera=" + ThirdFloorObject(PauseField(house, "_cameraController") as UnityEngine.Object)
+                    + "; worldCamera=" + ThirdFloorObject(PauseField(house, "_worldCamera") as UnityEngine.Object)));
+        foreach (var habitat in ThirdFloorSceneComponents<EnhancementFairyHabitat>())
+            AppendThirdFloorDiagnostic(text, "Habitat " + ThirdFloorObject(habitat), () =>
+            {
+                text.AppendLine("active=" + habitat.gameObject.activeInHierarchy + "; enabled=" + habitat.enabled);
+                text.AppendLine(habitat.GetAiDiagnosticSnapshot());
+            });
+        return text.ToString();
+    }
+
+    private static T[] ThirdFloorSceneComponents<T>() where T : Component
+        => Resources.FindObjectsOfTypeAll<T>().Where(value => value != null && !EditorUtility.IsPersistent(value)
+            && value.gameObject.scene.IsValid() && value.gameObject.scene.isLoaded
+            && !EditorSceneManager.IsPreviewScene(value.gameObject.scene)).OrderBy(value => value.GetInstanceID()).ToArray();
+
+    private static string ThirdFloorObject(UnityEngine.Object value)
+        => value == null ? "null" : value.GetType().Name + ":" + value.name + "#" + value.GetInstanceID()
+            + (value is Component component ? "@" + component.gameObject.scene.path : "");
+
+    private static void AppendThirdFloorDiagnostic(System.Text.StringBuilder text, string heading, Action read)
+    {
+        text.AppendLine("[" + heading + "]");
+        try { read(); }
+        catch (Exception error) { text.AppendLine("readError=" + Unwrap(error).GetType().Name + ":" + Unwrap(error).Message); }
     }
 
     // Explicit original-project CLI entry; never launches Play or changes account mode.
@@ -1053,7 +1206,7 @@ public static partial class PopupStoreVerificationRunner
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
         var selected = request == "run-fairy-house" ? new[] {
-                "ThirdFloorFairyHouseTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
+                "ThirdFloorFairyHouseTests", "ThirdFloorFairyPlayAreaTests", "ThirdFloorFairyAiHotfixTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
                 "FairyBirthSequenceTests", "FairyBirthInputTests", "ThirdFloorApprovedArtTests"
             }
             : request == "run-floor3-art" ? new[] { "ThirdFloorApprovedArtTests" }

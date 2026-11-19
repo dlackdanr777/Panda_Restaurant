@@ -29,6 +29,11 @@ public sealed class ThirdFloorFairyHouse : MonoBehaviour
     private float _shakeAngle;
     private bool _shaking;
     private int _tapStage;
+    private SpriteRenderer _visualSprite;
+    private ThirdFloorApprovedArt _approvedArt;
+    private readonly System.Random _hintRandom = new System.Random();
+    private bool _hintEligible, _hintPlaying, _hintShown;
+    private float _hintRemaining, _hintElapsed;
 
     public EnhancementFairyHouseSettings Settings => _settings;
     public Transform Entrance => _entrance;
@@ -40,12 +45,14 @@ public sealed class ThirdFloorFairyHouse : MonoBehaviour
         : BaseSettings != null ? Mathf.Clamp(BaseSettings.MaxActive, 1, 64) : 12;
     public int CurrentShakeStage => _tapStage;
     public bool IsShaking => _shaking;
+    public bool IsIdleHintPlaying => _hintPlaying;
     public int LastRequestedSpawnCount { get; private set; }
     public int LastAcceptedSpawnCount { get; private set; }
 
     private void OnEnable()
     {
         CaptureRestPose();
+        _approvedArt = GetComponentInParent<ThirdFloorApprovedArt>();
         ResetSequence();
         if (_offline) RegisterAndSubscribe();
         else if (Application.isPlaying) TryBindRuntime();
@@ -149,6 +156,7 @@ public sealed class ThirdFloorFairyHouse : MonoBehaviour
             || !_touchCollider.OverlapPoint(worldPosition)) return false;
 
         int maximumStage = _settings.SafeMaximumShakeStage;
+        StopIdleHint();
         bool expired = _clock - _lastTapAt > _settings.SafeTapSequenceResetSeconds;
         _tapStage = expired ? 1 : Mathf.Min(maximumStage, _tapStage + 1);
         _lastTapAt = _clock;
@@ -172,7 +180,20 @@ public sealed class ThirdFloorFairyHouse : MonoBehaviour
     {
         if (float.IsNaN(deltaTime) || float.IsInfinity(deltaTime) || deltaTime <= 0f) return;
         _clock += deltaTime;
-        if (!_shaking || _visual == null || !_hasRestPose) return;
+        if (_visual == null || !_hasRestPose) return;
+        if (_habitat == null || !_habitat.CanUseHouse
+            || (_cameraController != null && (_cameraController.IsCameraMoving || _cameraController.IsWorldInputBlocked)))
+        {
+            _shaking = false;
+            StopIdleHint();
+            RestoreRestPose();
+            return;
+        }
+        if (!_shaking)
+        {
+            AdvanceIdleHint(deltaTime);
+            return;
+        }
         _shakeElapsed += deltaTime;
         float duration = _settings.SafeShakeDuration;
         if (_shakeElapsed >= duration)
@@ -187,9 +208,59 @@ public sealed class ThirdFloorFairyHouse : MonoBehaviour
         _visual.localRotation = _restRotation * Quaternion.Euler(0f, 0f, angle);
     }
 
+    private void AdvanceIdleHint(float deltaTime)
+    {
+        if (!_settings.EnableIdleHint || !_registered || _habitat.HasHouseDoorwayActivity || !IsVisualOnScreen())
+        {
+            StopIdleHint();
+            return;
+        }
+        if (!_hintEligible)
+        {
+            _hintEligible = true;
+            var delay = _hintShown ? _settings.HintInterval : _settings.FirstHintDelay;
+            _hintRemaining = Mathf.Lerp(delay.x, delay.y, (float)_hintRandom.NextDouble());
+        }
+        if (!_hintPlaying)
+        {
+            _hintRemaining -= deltaTime;
+            if (_hintRemaining > 0f) return;
+            if (_approvedArt != null && !_approvedArt.TryBeginIdleHint(Time.unscaledTime, _settings.HintDuration))
+            { _hintRemaining = 0f; return; }
+            _hintElapsed = Mathf.Max(0f, -_hintRemaining);
+            _hintPlaying = _hintShown = true;
+        }
+        else _hintElapsed += deltaTime;
+        if (_hintElapsed >= _settings.HintDuration)
+        {
+            StopIdleHint();
+            return;
+        }
+        float t = _hintElapsed / _settings.HintDuration;
+        float envelope = Mathf.Sin(t * Mathf.PI);
+        float angle = Mathf.Sin(t * Mathf.PI * 4f) * envelope * envelope * _settings.HintRotationDegrees;
+        _visual.localRotation = _restRotation * Quaternion.Euler(0f, 0f, angle);
+    }
+
+    private bool IsVisualOnScreen()
+    {
+        if (_worldCamera == null || _visualSprite == null || !_visualSprite.enabled
+            || !_visualSprite.gameObject.activeInHierarchy || _visualSprite.sprite == null) return false;
+        var point = _worldCamera.WorldToViewportPoint(_visualSprite.bounds.center);
+        return point.z > 0f && point.x >= 0f && point.x <= 1f && point.y >= 0f && point.y <= 1f;
+    }
+
+    private void StopIdleHint()
+    {
+        if (_hintPlaying) RestoreRestPose();
+        _hintEligible = _hintPlaying = false;
+        _hintRemaining = _hintElapsed = 0f;
+    }
+
     private void CaptureRestPose()
     {
         _hasRestPose = _visual != null;
+        _visualSprite = _visual != null ? _visual.GetComponentInChildren<SpriteRenderer>(true) : null;
         if (!_hasRestPose) return;
         _restPosition = _visual.localPosition;
         _restScale = _visual.localScale;
@@ -210,6 +281,8 @@ public sealed class ThirdFloorFairyHouse : MonoBehaviour
         _lastTapAt = float.NegativeInfinity;
         _tapStage = 0;
         _shaking = false;
+        StopIdleHint();
+        _hintShown = false;
         LastRequestedSpawnCount = LastAcceptedSpawnCount = 0;
     }
 

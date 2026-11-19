@@ -7,10 +7,10 @@ using UnityEngine.UI;
 
 /// <summary>Pooled third-floor presentation with read-only item inspection.</summary>
 [DisallowMultipleComponent]
-public sealed class EnhancementFairyHabitat : MonoBehaviour
+public sealed partial class EnhancementFairyHabitat : MonoBehaviour
 {
     private enum HouseMotion { None, Emerging, Returning, Fading }
-    private sealed class View
+    private sealed partial class View
     {
         public Transform Root;
         public SpriteRenderer Body;
@@ -21,6 +21,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         public Transform[] StarTransforms;
         public Vector2 SpriteCenter;
         public Vector2[] SpriteVertices;
+        public ushort[] SpriteTriangles;
         public float PuffScalePerUnit;
         public float StarScalePerUnit;
         public Vector2 PuffCenter;
@@ -93,7 +94,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private int _houseExitSequence;
     // Independent presentation variation, never UnityEngine.Random or gameplay RNG.
     private System.Random _houseReturnRandom = new System.Random();
-
+    private ThirdFloorFairyPlayArea _playArea;
     public int OwnedTypeCount => _owned.Count;
     public int ActiveCount => _visible && gameObject.activeInHierarchy ? _views.Count : 0;
     public int PooledObjectCount => _pool.Count + _views.Count;
@@ -107,6 +108,15 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     public int BaseActiveLimit => _settings == null ? 12 : Mathf.Clamp(_settings.MaxActive, 1, 64);
     public int HouseHardCap => Mathf.Min(24, BaseActiveLimit + (_houseSettings?.SafeExtraLimit ?? 0));
     public int PendingHouseSpawnCount => _houseRequests.Count;
+    public bool HasHouseDoorwayActivity
+    {
+        get
+        {
+            if (_houseRequests.Count > 0) return true;
+            foreach (var view in _views) if (view.HouseMotion != HouseMotion.None) return true;
+            return false;
+        }
+    }
     public int HouseEmergenceCount { get; private set; }
     public float HouseActivitySeconds => _clock;
     public float HouseReturnDueAt => _houseReturnDueAt;
@@ -158,10 +168,9 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     {
         if (!ReferenceEquals(_houseOwner, owner) || !CanUseHouse || requested <= 0) return 0;
         int slots = HouseHardCap - _views.Count - _houseRequests.Count;
-        // A full house may reserve only the slots already due to be freed. A tap
-        // cannot postpone the deadline; only a successful later emergence can.
-        if (_clock >= _houseReturnDueAt)
-            slots += Mathf.Max(0, _views.Count - BaseActiveLimit);
+        // A full house never accepts a delayed request against a future return.
+        // Only a successful emergence below the cap can restart the stay timer.
+        bool wasEmpty = _houseRequests.Count == 0;
         int room = Mathf.Min(Mathf.Max(0, slots), Mathf.Max(0, _houseSettings.SafeExtraLimit - _houseRequests.Count));
         int accepted = 0;
         foreach (string id in _ordered)
@@ -170,6 +179,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             if (HasView(id) || _houseQueued.Contains(id) || _arrivals.IsPending(id) || _catalog[id].Sprite == null) continue;
             _houseQueued.Add(id);
             _houseRequests.Enqueue(id);
+            _houseRequestDeadlines[id] = _clock + _houseSettings.SafeExitClearanceTimeoutSeconds;
             accepted++;
         }
         if (accepted > 0)
@@ -178,6 +188,10 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             // A rotation fade selected just before this tap must not silently
             // remove a guest during the new temporary-stay session.
             foreach (var view in _views) view.Replacing = false;
+            if (wasEmpty) _nextHouseSpawnAt = _clock + _houseSettings.SafeTapSpawnFirstDelay;
+            // The first visual response belongs to this tap; it does not wait for
+            // an earlier guest to finish its doorway animation or outward walk.
+            AdvanceHouseQueue();
         }
         return accepted;
     }
@@ -202,6 +216,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     {
         _houseRequests.Clear();
         _houseQueued.Clear();
+        _houseRequestDeadlines.Clear();
     }
 
     private int FindOldestHouseReturnCandidate(bool allowEmerging = false)
@@ -226,6 +241,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void CancelHouseSession()
     {
+        CancelAllSpacing();
         ClearHouseRequests();
         for (int i = _views.Count - 1; i >= 0; i--)
         {
@@ -252,20 +268,29 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void AdvanceHouseQueue()
     {
+        PruneHouseRequests(); // Expire/invalid cleanup also runs while the cap or camera blocks spawning.
         if (_houseRequests.Count == 0 || _clock < _nextHouseSpawnAt || !CanUseHouse || _views.Count >= HouseHardCap) return;
         while (_houseRequests.Count > 0)
         {
-            string id = _houseRequests.Dequeue();
+            string id = _houseRequests.Peek();
+            if (!TryPrepareHouseExit(id, out Vector2 landing, out Vector2 destination, out int side)) return;
+            _houseRequests.Dequeue();
             _houseQueued.Remove(id);
-            if (!_owned.Contains(id) || !_catalog.ContainsKey(id) || HasView(id)
-                || _arrivals.IsPending(id) || _catalog[id].Sprite == null) continue;
+            _houseRequestDeadlines.Remove(id);
             Spawn(id);
             var view = _views[_views.Count - 1];
             Vector2 start = transform.InverseTransformPoint(_houseEntrance.position);
-            int sequence = _houseExitSequence++;
-            float offset = (sequence % 2 == 0 ? -1f : 1f) * _houseSettings.SafeEntranceSpread * (1f + (sequence / 2 % 3) * .2f);
+            _houseExitSequence++;
             view.HouseStart = start;
-            view.HouseEnd = ClampPoint(_settings.SafeGroundArea, start + new Vector2(offset, 0f));
+            // The distant landing reserves room for the later walk. The doorway
+            // reveal itself stays close, with SmoothStep's peak speed no faster
+            // than the ordinary calm walk (its maximum derivative is 1.5).
+            float calmSpeed = Mathf.Max(.1f, _settings.WalkSpeed) * Mathf.Max(.1f, _settings.CalmEnergy);
+            view.HouseEnd = Vector2.MoveTowards(start, landing,
+                calmSpeed * _houseSettings.SafeEntranceDuration / 1.5f);
+            view.HouseExitSide = side;
+            view.HasPlannedExit = true;
+            view.PlannedExitTarget = destination;
             view.Brain.PlaceForHouse(start);
             view.HouseMotion = HouseMotion.Emerging;
             view.HouseSpawned = true;
@@ -273,7 +298,10 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             view.HouseScale = .65f;
             view.Fade = .15f;
             HouseEmergenceCount++;
-            _nextHouseSpawnAt = _clock + _houseSettings.SafeSpawnInterval;
+            LastHouseExitDecision = "started: reserved landing and same-side outward target";
+            // Keep the scheduled cadence instead of adding a frame's rounding on
+            // every guest. A slow frame still creates at most one guest per call.
+            _nextHouseSpawnAt = Mathf.Max(_nextHouseSpawnAt + _houseSettings.SafeSpawnInterval, _clock);
             if (_views.Count > BaseActiveLimit)
                 _houseReturnDueAt = _clock + _houseSettings.SafeTemporaryPlaySeconds;
             Render(view);
@@ -302,6 +330,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         int index = FindOldestHouseReturnCandidate();
         if (index < 0) return;
         var view = _views[index];
+        CancelSpacing(view);
         view.Replacing = false;
         view.Fade = 1f;
         view.HouseMotion = HouseMotion.Returning;
@@ -334,6 +363,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
                 view.HouseMotion = HouseMotion.None;
                 view.HouseScale = 1f;
                 view.HouseLift = 0f;
+                BeginHouseDispersal(view);
             }
         }
         else if (view.HouseMotion == HouseMotion.Returning)
@@ -365,6 +395,79 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         }
         return false;
     }
+
+    public void RegisterPlayArea(ThirdFloorFairyPlayArea area)
+    {
+        if (area == null || ReferenceEquals(_playArea, area)) return;
+        _playArea?.CancelAll();
+        _playArea = area;
+    }
+
+    public void UnregisterPlayArea(ThirdFloorFairyPlayArea area)
+    {
+        if (!ReferenceEquals(_playArea, area)) return;
+        _playArea.CancelAll();
+        _playArea = null;
+    }
+
+    // Furniture is now visual-only. These anchors/speed still belong to the
+    // existing house dispersal clearance, not an activity or reservation system.
+    private float FurnitureWalkSpeed => Mathf.Max(.1f, _settings.WalkSpeed) * Mathf.Max(.1f, _settings.CalmEnergy);
+    private Vector2 FurnitureLocal(Transform target) => transform.InverseTransformPoint(target.position);
+    internal CameraController FurnitureInputCamera => _cameraController;
+    internal Camera FurnitureWorldCamera => _worldCamera;
+
+    public bool CanPresentFurnitureHints(ThirdFloorFairyPlayArea area)
+        => ReferenceEquals(_playArea, area) && area != null && area.isActiveAndEnabled
+            && IsVisible && isActiveAndEnabled && !IsItemCardOpen && CanPresentBirth()
+            && (!_runtime || (_cameraController != null && !_cameraController.IsWorldInputBlocked
+                && !UserInfo.IsTutorialStart));
+
+#if UNITY_EDITOR
+    [ContextMenu("Editor/요정 AI 상태 기록")]
+    private void LogAiDiagnosticSnapshot() => Debug.Log(GetAiDiagnosticSnapshot(), this);
+
+    // Explicit read-only diagnostic. Never initializes account services or logs each frame.
+    public string GetAiDiagnosticSnapshot()
+    {
+        var text = new System.Text.StringBuilder();
+        text.AppendLine("clock=" + _clock + "; runtime=" + _runtime + "; visible=" + IsVisible
+            + "; area=" + (_playArea != null) + "; presentationAllowed=" + CanPresentBirth()
+            + "; returning=" + ReturningHouseCount + "; houseReturnDue=" + _houseReturnDueAt);
+        text.AppendLine("houseCrowd=" + HouseCrowdCount + "; houseResidents=" + HouseResidentCount
+            + "; residentLimit=" + (_houseSettings != null ? _houseSettings.SafeHouseResidentLimit : 0)
+            + "; dispersing=" + DispersingCount + "; pendingExit=" + _houseRequests.Count
+            + "; exitWait=" + HouseExitBlockedSeconds + "; exitDecision=" + LastHouseExitDecision);
+        if (_runtime)
+        {
+            text.AppendLine("camera=" + (_cameraController != null) + "; cameraMoving="
+                + (_cameraController != null && _cameraController.IsCameraMoving)
+                + "; worldInputBlocked=" + (_cameraController != null && _cameraController.IsWorldInputBlocked)
+                + "; tutorial=" + UserInfo.IsTutorialStart + "; approachingFloor=" + _approachingFloor3
+                + "; waitingCameraFrame=" + _waitForCameraFrame + "; waitingUi=" + _waitingForUiHide
+                + "; closingViews=" + HasClosingViews()
+                + "; openViews=" + (_navigation != null ? _navigation.GetOpenViewCount() : 0));
+            foreach (var uiView in _sceneViews)
+                if (uiView != null && uiView.gameObject.activeInHierarchy && uiView.VisibleState != VisibleState.Disappeared)
+                    text.AppendLine("blockingView=" + uiView.name + "; state=" + uiView.VisibleState);
+        }
+        foreach (var view in _views)
+        {
+            if (view.Brain == null) continue;
+            text.AppendLine("item=" + view.Brain.ItemId + "; action=" + view.Brain.Action
+                + "; ground=" + view.Brain.GroundPosition + "; house=" + view.HouseMotion
+                + "; priorityUntil=" + view.PriorityUntil + "; arrivalRemaining=" + view.ArrivalRemaining
+                + "; owned=" + _owned.Contains(view.Brain.ItemId) + "; onScreen=" + IsViewOnScreen(view)
+                + "; birthPending=" + _arrivals.IsPending(view.Brain.ItemId) + "; replacing=" + view.Replacing
+                + "; dispersing=" + view.Dispersing + "; dispersalTarget=" + view.DispersalTarget
+                + "; movementTarget=" + view.Brain.MovementTarget + "; exitSide=" + view.HouseExitSide
+                + "; halfWidth=" + view.SpacingHalfWidth + "; houseDwell=" + view.HouseResidentSeconds
+                + "; bodyOverlapSeconds=" + view.HouseOverlapSeconds + "; yielding=" + view.SpacingYielding
+                + "; plannedLanding=" + view.HouseEnd + "; plannedExitTarget=" + view.PlannedExitTarget);
+        }
+        return text.ToString();
+    }
+#endif
 
     public static EnhancementFairyHabitat AttachTo(Floor3Controller floor)
     {
@@ -537,7 +640,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     public void SetFloorVisible(bool unlocked, bool visible)
     {
         bool next = unlocked && visible;
-        if (!next) { PauseBirth(); CancelHouseSession(); }
+        if (!next) { _playArea?.CancelAll(); PauseBirth(); CancelHouseSession(); }
         if (_visible == next)
         {
             enabled = next;
@@ -548,7 +651,11 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         }
         _visible = next;
         enabled = next; // events wake the component; no Update calls for a hidden third floor
-        for (int i = 0; i < _views.Count; i++) _views[i].Root.gameObject.SetActive(next);
+        for (int i = _views.Count - 1; i >= 0; i--)
+        {
+            if (_views[i].Root == null || _views[i].Body == null) { Release(i); continue; }
+            _views[i].Root.gameObject.SetActive(next);
+        }
         if (next) Reconcile();
     }
 
@@ -717,6 +824,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         {
             int i = (_rotationSlot + n) % _views.Count;
             if (_views[i].HouseMotion != HouseMotion.None
+                || (!forArrival && IsDispersing(_views[i]))
                 || (!forArrival && _views[i].HouseSpawned && _houseSettings != null
                     && (float.IsPositiveInfinity(_views[i].DisplayedAt)
                         || _clock - _views[i].DisplayedAt < _houseSettings.SafeMinimumIndividualStaySeconds))
@@ -740,6 +848,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         Bounds bounds = sprite.bounds;
         view.SpriteCenter = bounds.center;
         view.SpriteVertices = sprite.vertices;
+        view.SpriteTriangles = sprite.triangles;
         view.Scale = _settings.SpriteHeight / Mathf.Max(0.01f, bounds.size.y);
         view.ArrivalRemaining = 0f;
         view.ArrivalStarted = false;
@@ -756,6 +865,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         view.DisplaySequence = _displaySequence++;
         view.Root.gameObject.SetActive(_visible);
         _views.Add(view);
+        InitializeSpacing(view);
         Render(view);
     }
 
@@ -776,6 +886,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         }
         if (_clock < _nextBirthAt || !IsNextWaitingBirth(view)) return;
         if (!TryFindBirthPosition(view, out Vector2 position, out Rect area)) return;
+        CancelSpacing(view);
         view.BirthPosition = position;
         view.BirthElapsed = 0f;
         view.Brain.PlaceForBirth(position); // The ordinary brain stays on its existing ground plane.
@@ -975,7 +1086,19 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private void Release(int index)
     {
         var view = _views[index];
+        CancelSpacing(view);
         CancelBirth(view);
+        if (view.Root == null || view.Body == null)
+        {
+            if (view.Root != null)
+            {
+                if (Application.isPlaying) Destroy(view.Root.gameObject);
+                else DestroyImmediate(view.Root.gameObject);
+            }
+            view.Brain = null;
+            _views.RemoveAt(index);
+            return;
+        }
         view.Root.gameObject.SetActive(false);
         view.Body.sprite = null;
         view.Brain = null;
@@ -1010,9 +1133,11 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         _rotationClock += dt;
         AdvanceBirth(dt);
         BeginHouseReturns();
+        UpdateHouseSpacing(dt);
         for (int i = _views.Count - 1; i >= 0; i--)
         {
             var view = _views[i];
+            if (view.Root == null || view.Body == null) { Release(i); continue; }
             if (view.HouseMotion != HouseMotion.None)
             {
                 if (AdvanceHouseMotion(view, dt)) { Release(i); continue; }
@@ -1021,7 +1146,9 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             }
             var neighbour = _views.Count > 1 ? _views[(i + 1) % _views.Count].Brain.GroundPosition : Vector2.zero;
             // Keep each birth at its own ground position; resume its ordinary brain on landing.
-            if (!_arrivals.IsPending(view.Brain.ItemId)) view.Brain.Step(dt, neighbour, _views.Count > 1);
+            if (!_arrivals.IsPending(view.Brain.ItemId) && !ShouldYieldSpacingWalk(view))
+                view.Brain.Step(dt, neighbour, _views.Count > 1);
+            if (view.Dispersing && !view.Brain.IsDirectedWalking) CancelSpacing(view);
             view.Fade = Mathf.MoveTowards(view.Fade, view.Replacing ? 0f : 1f, dt / Mathf.Max(0.1f, _settings.RotationFadeSeconds));
             if (view.Replacing && view.Fade <= 0f) { Release(i); continue; }
             Render(view);
@@ -1042,6 +1169,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void Render(View view)
     {
+        if (view.Root == null || view.Body == null || view.Brain == null) return;
         var brain = view.Brain;
         float duration = Mathf.Max(0.1f, _settings.ArrivalSeconds);
         bool arriving = view.ArrivalRemaining > 0f;
@@ -1153,14 +1281,23 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         View nearest = null;
         float distance = float.PositiveInfinity;
         float minimumSize = Mathf.Clamp(Screen.dpi * .7f / 2.54f, 44f, 96f);
+        bool furnitureTap = _playArea != null && _playArea.IsFurnitureTapTarget(screenPosition);
+        // An active prop consumes repeated taps until its visual has returned to rest.
+        // Idle direct fairy mesh hits still open the existing inspection card.
+        if (furnitureTap && _playArea.IsAnimatingFurnitureTapTarget(screenPosition)) return false;
         foreach (var view in _views)
         {
-            if (!view.Body.enabled || view.Body.color.a < .5f || !view.Root.gameObject.activeInHierarchy) continue;
+            if (view.Root == null || view.Body == null || view.Brain == null || !view.Body.enabled || view.Body.sprite == null
+                || view.Body.color.a < .5f || !view.Root.gameObject.activeInHierarchy) continue;
             var bounds = view.Body.bounds;
             Vector3 lower = _worldCamera.WorldToScreenPoint(bounds.min);
             Vector3 upper = _worldCamera.WorldToScreenPoint(bounds.max);
             if (lower.z <= 0f) continue;
             Vector2 center = (lower + upper) * .5f;
+            // Preserve direct fairy taps, but let exposed furniture receive clicks through
+            // transparent corners of a tight sprite mesh and enlarged touch padding.
+            if (furnitureTap && (!Rect.MinMaxRect(lower.x, lower.y, upper.x, upper.y).Contains(screenPosition)
+                || !IsDirectFairyMeshHit(view, screenPosition))) continue;
             Vector2 size = new Vector2(Mathf.Max(minimumSize, upper.x - lower.x), Mathf.Max(minimumSize, upper.y - lower.y));
             if (!new Rect(center - size * .5f, size).Contains(screenPosition)) continue;
             float candidate = (screenPosition - center).sqrMagnitude;
@@ -1182,15 +1319,41 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             _itemPopup.Closed += OnItemCardClosed;
         }
         _itemPopup.ShowItem(_catalog[nearest.Brain.ItemId], false);
+        _playArea?.CancelAll();
         _cameraController.SetWorldInputBlocked(this, true);
         return true;
     }
+
+    private bool IsDirectFairyMeshHit(View view, Vector2 screenPosition)
+    {
+        if (view.SpriteVertices == null || view.SpriteTriangles == null || view.BodyTransform == null) return false;
+        Ray ray = _worldCamera.ScreenPointToRay(screenPosition);
+        var plane = new Plane(view.BodyTransform.forward, view.BodyTransform.position);
+        if (!plane.Raycast(ray, out float distance)) return false;
+        Vector2 point = view.BodyTransform.InverseTransformPoint(ray.GetPoint(distance));
+        if (view.Body.flipX) point.x = -point.x;
+        if (view.Body.flipY) point.y = -point.y;
+        var vertices = view.SpriteVertices;
+        var triangles = view.SpriteTriangles;
+        for (int i = 0; i + 2 < triangles.Length; i += 3)
+        {
+            Vector2 a = vertices[triangles[i]], b = vertices[triangles[i + 1]], c = vertices[triangles[i + 2]];
+            if (Mathf.Abs(TapEdge(a, b, c)) <= Mathf.Epsilon) continue;
+            float ab = TapEdge(a, b, point), bc = TapEdge(b, c, point), ca = TapEdge(c, a, point);
+            if (!((ab < 0f || bc < 0f || ca < 0f) && (ab > 0f || bc > 0f || ca > 0f))) return true;
+        }
+        return false;
+    }
+
+    private static float TapEdge(Vector2 a, Vector2 b, Vector2 point)
+        => (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
 
     public void CloseItemCard() => _itemPopup?.Hide();
     private void OnItemCardClosed() => _cameraController?.SetWorldInputBlocked(this, false);
 
     private void OnDisable()
     {
+        _playArea?.CancelAll();
         CancelHouseSession();
         PauseBirth();
         CloseItemCard();
@@ -1224,6 +1387,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void OnDestroy()
     {
+        _playArea?.CancelAll();
         ClearHouseRequests();
         PauseBirth();
         CloseItemCard();

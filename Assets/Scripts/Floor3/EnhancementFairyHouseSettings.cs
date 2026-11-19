@@ -16,10 +16,33 @@ public sealed class EnhancementFairyHouseSettings
     public Vector3 ShakeAngles = new Vector3(3f, 5f, 7f);
     [Min(.05f)] public float ShakeDuration = .45f;
     [Range(1, 5)] public int ShakeCycles = 2;
+    [Header("Automatic visual hint (never requests fairies)")]
+    public bool EnableIdleHint = true;
+    public Vector2 FirstHintDelay = new Vector2(6f, 10f);
+    public Vector2 HintInterval = new Vector2(15f, 25f);
+    [Range(0f, 2f)] public float HintRotationDegrees = 1.25f;
+    [Range(.1f, 2f)] public float HintDuration = .6f;
     [Header("Sequential exit")]
-    [Min(.05f)] public float SpawnInterval = .18f;
+    [Tooltip("Delay before the first guest of a new tap queue. Zero responds immediately.")]
+    [Min(0f)] public float TapSpawnFirstDelay = 0f;
+    [InspectorName("Tap Spawn Interval"), Min(.05f)] public float SpawnInterval = .18f;
     [Min(.1f)] public float EntranceDuration = .45f;
+    [Tooltip("Ordinary walking pace for the first fixed outward route after emerging. Limited to a small adjustment; autonomous behaviour and home returns keep their original speeds.")]
+    [Range(1f, 1.2f)] public float TapDispersalSpeedMultiplier = 1f;
     [Min(.1f)] public float EntranceSpread = 3.5f;
+    [Tooltip("A pending visual emergence expires after this much visible activity time if no in-bounds exit plan or capacity is available. Temporary doorway overlap does not delay a spawn. Further taps never extend an existing request.")]
+    [Min(1f)] public float ExitClearanceTimeoutSeconds = 60f;
+    [Header("Room spacing after the doorway animation")]
+    [Tooltip("Ground-plane radius around the entrance. Default fits the current house and fairy sprites.")]
+    [Min(.5f)] public float HouseCrowdingRadius = 3.75f;
+    [Range(0, 6)] public int HouseResidentLimit = 2;
+    [Tooltip("Grace for surplus bodies within the house zone before an outward walk. Movement does not reset dwell; protected birth, emergence, return and furniture activities are excluded.")]
+    [Range(.1f, 2f)] public float HouseResidentGraceSeconds = 1.25f;
+    [Tooltip("Actual sprite half-widths plus padding can require more separation than this minimum.")]
+    [Min(.1f)] public float MinimumFairySpacing = 1.5f;
+    [Min(0f)] public float SpriteSpacingPadding = .2f;
+    [Tooltip("Prefer free destinations within this entrance distance; search the existing ground bounds if this region is full.")]
+    [Min(1f)] public float DispersionSearchDistance = 18f;
     [Header("Oldest eligible fairy returns first")]
     [Tooltip("Visible third-floor activity time after the last successful house emergence. Empty taps never restart this timer.")]
     [Min(.1f)] public float TemporaryPlaySeconds = 45f;
@@ -40,9 +63,18 @@ public sealed class EnhancementFairyHouseSettings
     public int SafeMaximumShakeStage => Mathf.Clamp(MaximumShakeStage, 1, 3);
     public float SafeTapSequenceResetSeconds => Finite(TapSequenceResetSeconds, 3f, .1f, 30f);
     public float SafeShakeDuration => Finite(ShakeDuration, .45f, .05f, 3f);
+    public float SafeTapSpawnFirstDelay => Finite(TapSpawnFirstDelay, 0f, 0f, 3f);
     public float SafeSpawnInterval => Finite(SpawnInterval, .18f, .05f, 3f);
     public float SafeEntranceDuration => Finite(EntranceDuration, .45f, .1f, 5f);
+    public float SafeTapDispersalSpeedMultiplier => Finite(TapDispersalSpeedMultiplier, 1f, 1f, 1.2f);
     public float SafeEntranceSpread => Finite(EntranceSpread, 3.5f, .1f, 10f);
+    public float SafeExitClearanceTimeoutSeconds => Finite(ExitClearanceTimeoutSeconds, 60f, 1f, 120f);
+    public float SafeHouseCrowdingRadius => Finite(HouseCrowdingRadius, 3.75f, .5f, 15f);
+    public int SafeHouseResidentLimit => Mathf.Clamp(HouseResidentLimit, 0, 6);
+    public float SafeHouseResidentGraceSeconds => Finite(HouseResidentGraceSeconds, 1.25f, .1f, 2f);
+    public float SafeMinimumFairySpacing => Finite(MinimumFairySpacing, 1.5f, .1f, 10f);
+    public float SafeSpriteSpacingPadding => Finite(SpriteSpacingPadding, .2f, 0f, 3f);
+    public float SafeDispersionSearchDistance => Finite(DispersionSearchDistance, 18f, 1f, 120f);
     public float SafeTemporaryPlaySeconds => Finite(TemporaryPlaySeconds, 45f, .1f, 600f);
     public float SafeMinimumIndividualStaySeconds => Finite(MinimumIndividualStaySeconds, 25f, 0f, 600f);
     public float SafeReturnStaggerMinSeconds => Finite(ReturnStaggerMinSeconds, 6f, .05f, 60f);
@@ -69,9 +101,22 @@ public sealed class EnhancementFairyHouseSettings
         ShakeAngles = new Vector3(ShakeAngleForStage(1), ShakeAngleForStage(2), ShakeAngleForStage(3));
         ShakeDuration = SafeShakeDuration;
         ShakeCycles = Mathf.Clamp(ShakeCycles, 1, 5);
+        FirstHintDelay = HintRange(FirstHintDelay, 6f, 10f);
+        HintInterval = HintRange(HintInterval, 15f, 25f);
+        HintRotationDegrees = Finite(HintRotationDegrees, 1.25f, 0f, 2f);
+        HintDuration = Finite(HintDuration, .6f, .1f, 2f);
+        TapSpawnFirstDelay = SafeTapSpawnFirstDelay;
         SpawnInterval = SafeSpawnInterval;
         EntranceDuration = SafeEntranceDuration;
+        TapDispersalSpeedMultiplier = SafeTapDispersalSpeedMultiplier;
         EntranceSpread = SafeEntranceSpread;
+        ExitClearanceTimeoutSeconds = SafeExitClearanceTimeoutSeconds;
+        HouseCrowdingRadius = SafeHouseCrowdingRadius;
+        HouseResidentLimit = SafeHouseResidentLimit;
+        HouseResidentGraceSeconds = SafeHouseResidentGraceSeconds;
+        MinimumFairySpacing = SafeMinimumFairySpacing;
+        SpriteSpacingPadding = SafeSpriteSpacingPadding;
+        DispersionSearchDistance = SafeDispersionSearchDistance;
         TemporaryPlaySeconds = SafeTemporaryPlaySeconds;
         MinimumIndividualStaySeconds = SafeMinimumIndividualStaySeconds;
         ReturnStaggerMinSeconds = SafeReturnStaggerMinSeconds;
@@ -85,4 +130,10 @@ public sealed class EnhancementFairyHouseSettings
 
     private static float Finite(float value, float fallback, float min, float max) =>
         Mathf.Clamp(float.IsNaN(value) || float.IsInfinity(value) ? fallback : value, min, max);
+
+    private static Vector2 HintRange(Vector2 value, float fallbackMin, float fallbackMax)
+    {
+        float minimum = Finite(value.x, fallbackMin, .1f, 300f);
+        return new Vector2(minimum, Finite(value.y, fallbackMax, minimum, 300f));
+    }
 }

@@ -15,6 +15,8 @@ public sealed class EnhancementFairyBrain
     private float _actionElapsed;
     private float _phase;
     private int _hopCount;
+    private bool _directedWalk;
+    private float _directedWalkSpeed;
 
     public string ItemId { get; }
     public Vector2 GroundPosition { get; private set; }
@@ -24,6 +26,29 @@ public sealed class EnhancementFairyBrain
     public bool FacingLeft { get; private set; }
     public EnhancementFairyAction Action { get; private set; }
     public float ElapsedSeconds { get; private set; }
+    public Vector2 MovementTarget => _target;
+    public bool IsDirectedWalking => _directedWalk;
+    // Optional habitat spacing policy; an unattached brain retains its original decisions.
+    public Func<EnhancementFairyBrain, Vector2, Vector2> TargetResolver { private get; set; }
+
+    public void BeginDirectedWalk(Vector2 target, float speedMultiplier = 1f)
+    {
+        if (!IsFinite(target)) return;
+        _target = Clamp(target);
+        if ((_target - GroundPosition).sqrMagnitude <= Mathf.Pow(Mathf.Max(.01f, _settings.ArrivalDistance), 2f))
+        { Rest(); return; }
+        _directedWalk = true;
+        float multiplier = float.IsNaN(speedMultiplier) || float.IsInfinity(speedMultiplier)
+            ? 1f : Mathf.Clamp(speedMultiplier, 1f, 8f);
+        _directedWalkSpeed = Mathf.Max(.1f, _settings.WalkSpeed)
+            * Mathf.Max(.1f, Mathf.Min(_energy, _settings.CalmEnergy)) * multiplier;
+        _remaining = Vector2.Distance(GroundPosition, _target) / _directedWalkSpeed + 1f;
+        _actionElapsed = 0f;
+        VisualHeight = Tilt = Squash = 0f;
+        Action = EnhancementFairyAction.Walk;
+    }
+
+    public void CancelDirectedWalk() { if (_directedWalk) Rest(); }
 
     public EnhancementFairyBrain(string itemId, EnhancementFairySettings settings)
     {
@@ -60,6 +85,7 @@ public sealed class EnhancementFairyBrain
 
     public void MoveForHouse(Vector2 position, float deltaTime)
     {
+        _directedWalk = false; // Birth/house/furniture overrides always take priority.
         if (Mathf.Abs(position.x - GroundPosition.x) > .002f) FacingLeft = position.x < GroundPosition.x;
         GroundPosition = position;
         ElapsedSeconds += Mathf.Max(0f, deltaTime);
@@ -75,11 +101,16 @@ public sealed class EnhancementFairyBrain
         ElapsedSeconds += dt;
         _remaining -= dt;
         _actionElapsed += dt;
-        if (_remaining <= 0f) ChooseAction(neighbour, hasNeighbour);
+        if (_remaining <= 0f)
+        {
+            if (_directedWalk) Rest();
+            else ChooseAction(neighbour, hasNeighbour);
+        }
 
         if (Action == EnhancementFairyAction.Walk || Action == EnhancementFairyAction.Visit)
         {
-            var next = Vector2.MoveTowards(GroundPosition, _target, Mathf.Max(0.1f, _settings.WalkSpeed) * _energy * dt);
+            float speed = _directedWalk ? _directedWalkSpeed : Mathf.Max(0.1f, _settings.WalkSpeed) * _energy;
+            var next = Vector2.MoveTowards(GroundPosition, _target, speed * dt);
             if (Mathf.Abs(next.x - GroundPosition.x) > 0.002f) FacingLeft = next.x < GroundPosition.x;
             GroundPosition = Clamp(next);
             float arrive = Mathf.Max(0.01f, _settings.ArrivalDistance);
@@ -126,13 +157,13 @@ public sealed class EnhancementFairyBrain
         else if (roll < visit && hasNeighbour)
         {
             Action = EnhancementFairyAction.Visit;
-            _target = Clamp(neighbour + Offset(_settings.VisitRadius));
+            _target = ResolveTarget(Clamp(neighbour + Offset(_settings.VisitRadius)));
             _remaining = Duration(_settings.VisitSeconds);
         }
         else if (roll < walk)
         {
             Action = EnhancementFairyAction.Walk;
-            _target = Clamp(GroundPosition + Offset(_settings.WalkRadius));
+            _target = ResolveTarget(Clamp(GroundPosition + Offset(_settings.WalkRadius)));
             _remaining = Duration(_settings.WalkSeconds);
         }
         else if (roll < look)
@@ -151,12 +182,21 @@ public sealed class EnhancementFairyBrain
 
     private void Rest()
     {
+        _directedWalk = false;
         Action = EnhancementFairyAction.Rest;
         _remaining = Range(Mathf.Max(0.1f, _settings.RestMinSeconds), Mathf.Max(_settings.RestMinSeconds, _settings.RestMaxSeconds)) / _energy;
         _actionElapsed = 0f;
     }
 
     private Vector2 Clamp(Vector2 p) => new Vector2(Mathf.Clamp(p.x, _bounds.xMin, _bounds.xMax), Mathf.Clamp(p.y, _bounds.yMin, _bounds.yMax));
+    private Vector2 ResolveTarget(Vector2 proposed)
+    {
+        if (TargetResolver == null) return proposed;
+        Vector2 resolved = TargetResolver(this, proposed);
+        return IsFinite(resolved) ? Clamp(resolved) : proposed;
+    }
+    private static bool IsFinite(Vector2 point) => !float.IsNaN(point.x) && !float.IsInfinity(point.x)
+        && !float.IsNaN(point.y) && !float.IsInfinity(point.y);
     private float Range(float min, float max) => min + (float)_random.NextDouble() * (max - min);
     private float Duration(Vector2 range) => Range(Mathf.Max(0.1f, Mathf.Min(range.x, range.y)), Mathf.Max(0.1f, Mathf.Max(range.x, range.y)));
     private Vector2 Offset(Vector2 radius) => new Vector2(Range(-Mathf.Abs(radius.x), Mathf.Abs(radius.x)), Range(-Mathf.Abs(radius.y), Mathf.Abs(radius.y)));
