@@ -98,7 +98,7 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
         return true;
     }
 
-    public bool TryAdd(PopupStoreMaterialEntry material)
+    internal bool CanAdd(PopupStoreMaterialEntry material)
     {
         if (!CanAcceptInput) return false;
         if (_editorInputBound && (material == null || !_editorMaterialAllowed(material))) return false;
@@ -108,8 +108,12 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
         bool registered = false;
         foreach (var entry in approved)
             if (ReferenceEquals(entry, material)) { registered = true; break; }
-        if (!registered) return false;
+        return registered;
+    }
 
+    public bool TryAdd(PopupStoreMaterialEntry material)
+    {
+        if (!CanAdd(material)) return false;
         _materials.Add(material);
         Render();
         PopupStoreSound.Play(this, PopupStoreSoundCue.MaterialAdded);

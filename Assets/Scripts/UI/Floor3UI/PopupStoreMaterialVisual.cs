@@ -7,6 +7,22 @@ using UnityEngine.UI;
 public sealed class PopupStoreMaterialVisual : BaseMeshEffect
 {
     [SerializeField] private PopupStoreSpriteVisualBounds _bounds;
+    private float _pressScale = 1f;
+
+    // Mesh-only feedback keeps the authored slot, hit area and any non-unit Transform scale intact.
+    internal void SetPressScale(float scale)
+    {
+        scale = float.IsNaN(scale) || float.IsInfinity(scale) ? 1f : Mathf.Clamp01(scale);
+        if (_pressScale == scale) return;
+        _pressScale = scale;
+        if (graphic != null) graphic.SetVerticesDirty();
+    }
+
+    protected override void OnDisable()
+    {
+        SetPressScale(1f);
+        base.OnDisable();
+    }
 
     public override void ModifyMesh(VertexHelper vertices)
     {
@@ -44,7 +60,7 @@ public sealed class PopupStoreMaterialVisual : BaseMeshEffect
         for (int i = 0; i < vertices.currentVertCount; i++)
         {
             vertices.PopulateUIVertex(ref vertex, i);
-            Vector2 point = target.center + ((Vector2)vertex.position - visibleCenter) * scale;
+            Vector2 point = target.center + ((Vector2)vertex.position - visibleCenter) * (scale * _pressScale);
             vertex.position = new Vector3(point.x, point.y, vertex.position.z);
             vertices.SetUIVertex(vertex, i);
         }

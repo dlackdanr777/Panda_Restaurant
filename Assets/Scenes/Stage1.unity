@@ -50845,6 +50845,7 @@ Transform:
   - {fileID: 1463843599}
   - {fileID: 2043683405}
   - {fileID: 11308790}
+  - {fileID: 922310001}
   m_Father: {fileID: 1916410803}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &165052851
@@ -636402,6 +636403,88 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!1001 &922310000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 165052850}
+    m_Modifications:
+    - target: {fileID: 100100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: m_Name
+      value: ThirdFloorApprovedArtRoot
+      objectReference: {fileID: 0}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.size
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[0]
+      value: 
+      objectReference: {fileID: 698507211}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[1]
+      value: 
+      objectReference: {fileID: 1320218231}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[2]
+      value: 
+      objectReference: {fileID: 1313443179}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[3]
+      value: 
+      objectReference: {fileID: 1403959710}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[4]
+      value: 
+      objectReference: {fileID: 1439490935}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[5]
+      value: 
+      objectReference: {fileID: 1540763926}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[6]
+      value: 
+      objectReference: {fileID: 1555236285}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[7]
+      value: 
+      objectReference: {fileID: 1578735815}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacySprites.Array.data[8]
+      value: 
+      objectReference: {fileID: 2016981213}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacyColliders.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacyColliders.Array.data[0]
+      value: 
+      objectReference: {fileID: 628165040}
+    - target: {fileID: 114500, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _legacyMapTouch
+      value: 
+      objectReference: {fileID: 628165041}
+    - target: {fileID: 114500, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _cameraController
+      value: 
+      objectReference: {fileID: 330585548}
+    - target: {fileID: 114500, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+      propertyPath: _navigation
+      value: 
+      objectReference: {fileID: 853526496}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+--- !u!4 &922310001 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400100, guid: beaff975afdd4aa5800812591c16664f, type: 3}
+  m_PrefabInstance: {fileID: 922310000}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

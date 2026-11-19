@@ -286,7 +286,7 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
     internal Camera Camera => Controller.GetComponent<Camera>();
     internal IReadOnlyList<GachaItemData> Catalog { get; }
 
-    internal EnhancementFairyStage1Host()
+    internal EnhancementFairyStage1Host(Action<EnhancementFairyStage1Host> beforeFloorStart = null)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
             throw new InvalidOperationException("Stage1 fixture requires SDK-free Edit Mode.");
@@ -320,12 +320,12 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
             Invoke(manager, "InitCsv"); // Same synchronous Production CSV/sprite loader, without singleton lifecycle/persistence.
             Catalog = manager.GetGachaItemDataList().ToArray();
             Assert.That(Catalog.Count, Is.GreaterThan(0));
-            ReloadStage();
+            ReloadStage(beforeFloorStart);
         }
         catch { Dispose(); throw; }
     }
 
-    internal void ReloadStage()
+    internal void ReloadStage(Action<EnhancementFairyStage1Host> beforeFloorStart = null)
     {
         CloseStage();
         _scene = EditorSceneManager.OpenPreviewScene("Assets/Scenes/Stage1.unity");
@@ -346,6 +346,7 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
             };
         }
         Set(Controller, "_targetPosDic", targets);
+        beforeFloorStart?.Invoke(this);
         Invoke(Floor, "Start");
         Assert.That(Get(Habitat, "_cameraController"), Is.SameAs(Controller), "Production scene-local discovery");
         Assert.That(Get(Habitat, "_navigation"), Is.SameAs(SceneComponents<UINavigationCoordinator>().Single()));
