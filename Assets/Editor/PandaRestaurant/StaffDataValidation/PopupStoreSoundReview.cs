@@ -22,6 +22,7 @@ public static class PopupStoreSoundReview
     private static AudioSource _background;
     private static bool? _backgroundMute;
     private static AudioClip _backgroundClip;
+    private static readonly Dictionary<int, string> DirectAudioStates = new Dictionary<int, string>();
 
     [Serializable]
     public sealed class Entry
@@ -48,15 +49,27 @@ public static class PopupStoreSoundReview
     }
 
     [Serializable]
+    public sealed class DirectAudioObservation
+    {
+        public string utc, scene, sourcePath, clip, clipPath, clipGuid, mixer;
+        public string ownerType, ownerPath, ownerVisibleState, popupStates;
+        public int sourceId, frame, timeSamples;
+        public bool present, activeSelf, activeInHierarchy, enabled, playing, loop, playOnAwake, muted;
+        public float volume;
+        public double dspTime;
+    }
+
+    [Serializable]
     public sealed class Report
     {
-        public string scope = "Existing SoundManager effect dispatches and background source state; not speaker/audio capture or proof of audibility.";
+        public string scope = "Existing SoundManager effect dispatches, background source and direct scene AudioSource state changes; not speaker/audio capture or proof of audibility. AudioSource.clip does not identify PlayOneShot clips.";
         public string workspace = "Original", status, armedUtc, startedUtc, finishedUtc, reason;
         public bool sdkInitializedObserved, loginObserved, nativePlaybackSuppressed, truncated;
         public int acceptedDispatches;
         public List<Entry> entries = new List<Entry>();
         public List<BackgroundObservation> backgroundMuteChanges = new List<BackgroundObservation>();
         public List<StoppedEffect> stoppedEffects = new List<StoppedEffect>();
+        public List<DirectAudioObservation> directAudioChanges = new List<DirectAudioObservation>();
     }
 
     static PopupStoreSoundReview()
@@ -98,6 +111,7 @@ public static class PopupStoreSoundReview
                 string utc = DateTime.UtcNow.ToString("O");
                 SessionState.SetString(ArmedKey, utc);
                 _lastBlockedReason = null;
+                DirectAudioStates.Clear();
                 _report = new Report { status = "ARMED", armedUtc = utc };
                 Save(_report);
             }
@@ -117,7 +131,7 @@ public static class PopupStoreSoundReview
             var manager = SoundManager.TryGetExistingInstance();
             if (_manager != null && manager != _manager)
             { Finish("BLOCKED", "The observed SoundManager changed during this review."); return; }
-            if (_manager != null) { ObserveBackground(); return; }
+            if (_manager != null) { ObserveBackground(); ObserveDirectAudio(); return; }
             if (manager == null) return;
             _manager = manager;
             _manager.EffectPlaybackRequested += OnEffect;
@@ -126,6 +140,7 @@ public static class PopupStoreSoundReview
             _report.status = "RECORDING";
             ObserveSafety();
             ObserveBackground();
+            ObserveDirectAudio();
             Save(_report);
         }
         catch (Exception exception)
@@ -221,6 +236,73 @@ public static class PopupStoreSoundReview
             });
     }
 
+    // Observe the recipe jar's direct loop sources as well as other scene-owned audio.
+    // Native playback and all source properties remain untouched. The manager pool is
+    // already observed above, including its actual PlayOneShot-equivalent dispatch clip.
+    private static void ObserveDirectAudio()
+    {
+        if (_report == null || _manager == null) return;
+        if (_report.directAudioChanges.Count >= MaximumEntries) { _report.truncated = true; return; }
+        var popups = new List<string>();
+        foreach (var popup in Resources.FindObjectsOfTypeAll<UIPopupStore>())
+            if (!EditorUtility.IsPersistent(popup) && popup.gameObject.scene.IsValid() && popup.gameObject.scene.isLoaded)
+                popups.Add(popup.GetInstanceID() + ":" + ObjectPath(popup.transform) + ":"
+                    + popup.VisibleState + ":active=" + popup.gameObject.activeInHierarchy);
+        popups.Sort(StringComparer.Ordinal);
+        string popupStates = string.Join("; ", popups);
+        var seen = new HashSet<int>();
+        foreach (var source in Resources.FindObjectsOfTypeAll<AudioSource>())
+        {
+            if (EditorUtility.IsPersistent(source) || !source.gameObject.scene.IsValid()
+                || !source.gameObject.scene.isLoaded || source.GetComponentInParent<SoundManager>(true) != null) continue;
+            int id = source.GetInstanceID();
+            seen.Add(id);
+            var owner = source.GetComponentInParent<Muks.UI.UIView>(true);
+            string clipPath = source.clip != null ? AssetDatabase.GetAssetPath(source.clip) : string.Empty;
+            var observation = new DirectAudioObservation {
+                present = true, sourceId = id, scene = source.gameObject.scene.path,
+                sourcePath = ObjectPath(source.transform), clip = source.clip != null ? source.clip.name : "missing",
+                clipPath = clipPath, clipGuid = string.IsNullOrEmpty(clipPath) ? string.Empty : AssetDatabase.AssetPathToGUID(clipPath),
+                mixer = source.outputAudioMixerGroup != null ? source.outputAudioMixerGroup.name : "none",
+                ownerType = owner != null ? owner.GetType().FullName : "none",
+                ownerPath = owner != null ? ObjectPath(owner.transform) : string.Empty,
+                ownerVisibleState = owner != null ? owner.VisibleState.ToString() : string.Empty,
+                popupStates = popupStates, activeSelf = source.gameObject.activeSelf,
+                activeInHierarchy = source.gameObject.activeInHierarchy, enabled = source.enabled,
+                playing = source.isPlaying, loop = source.loop, playOnAwake = source.playOnAwake,
+                muted = source.mute, volume = source.volume
+            };
+            // Exclude the advancing clock and playback cursor from the state fingerprint.
+            string state = JsonUtility.ToJson(observation);
+            if (DirectAudioStates.TryGetValue(id, out string previous) && previous == state) continue;
+            DirectAudioStates[id] = state;
+            observation.timeSamples = source.clip != null ? source.timeSamples : 0;
+            RecordDirectAudio(observation);
+        }
+        foreach (int id in new List<int>(DirectAudioStates.Keys))
+            if (!seen.Contains(id))
+            {
+                DirectAudioStates.Remove(id);
+                RecordDirectAudio(new DirectAudioObservation { sourceId = id, present = false, popupStates = popupStates });
+            }
+    }
+
+    private static string ObjectPath(Transform item)
+    {
+        string path = item.name;
+        while (item.parent != null) { item = item.parent; path = item.name + "/" + path; }
+        return path;
+    }
+
+    private static void RecordDirectAudio(DirectAudioObservation observation)
+    {
+        if (_report.directAudioChanges.Count >= MaximumEntries) { _report.truncated = true; return; }
+        observation.utc = DateTime.UtcNow.ToString("O");
+        observation.dspTime = AudioSettings.dspTime;
+        observation.frame = Time.frameCount;
+        _report.directAudioChanges.Add(observation);
+    }
+
     private static void OnPlayModeChanged(PlayModeStateChange state)
     {
         if (!Armed) return;
@@ -247,6 +329,7 @@ public static class PopupStoreSoundReview
         ObserveSafety();
         _manager = null;
         _background = null; _backgroundMute = null; _backgroundClip = null;
+        DirectAudioStates.Clear();
         var report = _report ?? new Report { armedUtc = SessionState.GetString(ArmedKey, "") };
         SessionState.EraseString(ArmedKey);
         _report = null;

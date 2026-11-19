@@ -19,6 +19,10 @@ public class CameraController : MonoBehaviour
     private readonly HashSet<object> _worldInputBlocks = new HashSet<object>();
     private Vector2 _tapStartPosition;
     private bool _tapCandidate;
+#if UNITY_EDITOR
+    // Read-only evidence for the last real input gesture; no per-frame logging or test initialization.
+    public string EditorLastWorldTapDiagnostic { get; private set; } = "No pointer gesture observed";
+#endif
     public bool IsWorldInputBlocked => _worldInputBlocks.Count > 0;
     public void SetWorldInputBlocked(object owner, bool blocked)
     {
@@ -709,6 +713,10 @@ public class CameraController : MonoBehaviour
     {
         _tapStartPosition = position;
         _tapCandidate = !_isMoveAction && !IsWorldInputBlocked && !IsPointerOverUI(position);
+#if UNITY_EDITOR
+        EditorLastWorldTapDiagnostic = "began: candidate=" + _tapCandidate + "; moving=" + _isMoveAction
+            + "; blocked=" + IsWorldInputBlocked + "; pixel=" + position;
+#endif
     }
 
     private void TrackWorldTap(Vector2 position)
@@ -723,9 +731,23 @@ public class CameraController : MonoBehaviour
         bool eligible = _tapCandidate && !_isDraggingEnabled && !_isMoveAction
             && !IsWorldInputBlocked && !IsPointerOverUI(position);
         _tapCandidate = false;
+#if UNITY_EDITOR
+        EditorLastWorldTapDiagnostic = "completed: eligible=" + eligible + "; dragging=" + _isDraggingEnabled
+            + "; moving=" + _isMoveAction + "; blocked=" + IsWorldInputBlocked
+            + "; handlers=" + (OnWorldTapHandler?.GetInvocationList().Length ?? 0) + "; pixel=" + position;
+#endif
         if (!eligible || OnWorldTapHandler == null) return false;
         foreach (Func<Vector2, bool> handler in OnWorldTapHandler.GetInvocationList())
-            if (handler(position)) return true;
+            if (handler(position))
+            {
+#if UNITY_EDITOR
+                EditorLastWorldTapDiagnostic += "; consumed=" + handler.Method.DeclaringType?.Name + "." + handler.Method.Name;
+#endif
+                return true;
+            }
+#if UNITY_EDITOR
+        EditorLastWorldTapDiagnostic += "; unhandled";
+#endif
         return false;
     }
 

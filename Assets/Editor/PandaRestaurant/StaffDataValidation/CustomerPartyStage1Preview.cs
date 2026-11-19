@@ -23,6 +23,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
     private const string EncounterPrepKey = "Panda.PartyManual.EncounterPrep";
     private const string EncounterCustomerKey = "Panda.PartyManual.EncounterCustomer";
     private const string EncounterVisitsKey = "Panda.PartyManual.EncounterVisits";
+    private const string FairyPrepKey = "Panda.PartyManual.FairyPrep";
     private static readonly string[] EncounterCustomerIds =
     {
         "CUSTOMER01", "CUSTOMER02", "CUSTOMER03", "CUSTOMER04", "CUSTOMER05", "CUSTOMER06",
@@ -37,6 +38,9 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
     private static CustomerController controller;
     private static TableManager tables;
     private static CustomerPartySettings settings;
+    private static EnhancementFairyHabitat fairyReviewHabitat;
+    private static ThirdFloorFairyPlayArea fairyReviewArea;
+    private static double nextFairyReviewLookup;
     private static readonly Dictionary<string, CustomerData> originalCustomers = new Dictionary<string, CustomerData>();
     private static readonly List<CustomerData> runtimeCustomers = new List<CustomerData>();
     private static bool ready, prepared, reloadLocked, guideBound;
@@ -45,6 +49,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
     private bool unowned;
     private int floor;
     private bool prepareEncounterMemory;
+    private bool prepareFairyMemory;
     private int encounterCustomerIndex;
     private int encounterVisitIndex;
 
@@ -84,6 +89,10 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             staffAi = EditorGUILayout.Toggle("직원 AI 검수 준비", EditorApplication.isPlaying ? SessionState.GetBool(StaffAiKey, false) : staffAi);
             if (staffAi) naturalAi = EditorGUILayout.Toggle("자연 호출 설정 (메모리만)", EditorApplication.isPlaying ? SessionState.GetBool(NaturalAiKey, false) : naturalAi);
             prepareEncounterMemory = EditorGUILayout.Toggle("인카운터 검수 조건 (메모리만)", prepareEncounterMemory);
+            prepareFairyMemory = EditorGUILayout.Toggle("3층 요정 검수 준비 (메모리만)",
+                EditorApplication.isPlaying ? SessionState.GetBool(FairyPrepKey, false) : prepareFairyMemory);
+            if (prepareFairyMemory)
+                EditorGUILayout.HelpBox("메모리 Stage1의 3층과 카탈로그 요정 18종을 준비합니다. 실제 계정·가챠·저장 파일은 변경하지 않습니다.", MessageType.None);
             if (prepareEncounterMemory)
             {
                 encounterCustomerIndex = EditorGUILayout.Popup("인카운터 손님", encounterCustomerIndex, EncounterCustomerNames);
@@ -94,10 +103,17 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             if (GUILayout.Button("원본 Stage1 메모리 Play 시작"))
                 StartManual((ERestaurantFloorType)floor, unowned, prepareEncounterMemory,
                     EncounterCustomerIds[Mathf.Clamp(encounterCustomerIndex, 0, EncounterCustomerIds.Length - 1)],
-                    EncounterVisitOptions[Mathf.Clamp(encounterVisitIndex, 0, EncounterVisitOptions.Length - 1)]);
+                    EncounterVisitOptions[Mathf.Clamp(encounterVisitIndex, 0, EncounterVisitOptions.Length - 1)], prepareFairyMemory);
         }
         using (new EditorGUI.DisabledScope(!ready || !EditorApplication.isPlaying || EditorApplication.isPaused))
         {
+            EditorGUILayout.LabelField("3층 원본 GameView 관찰 (메모리 세션만)");
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("3층 왼쪽 놀이터")) MoveThirdFloorReviewCamera(RestaurantType.Kitchen);
+                if (GUILayout.Button("3층 오른쪽 지도")) MoveThirdFloorReviewCamera(RestaurantType.Hall);
+            }
+            DrawFairyReviewStatus();
             if (GUILayout.Button("1인 + 2인 대기열 준비")) PrepareCustomers();
             if (GUILayout.Button("다음 2인 팀 생성")) SpawnPair();
             if (ready && SessionState.GetBool(EncounterPrepKey, false))
@@ -124,6 +140,50 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         EditorGUILayout.EndScrollView();
         if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape) { StopManual(); Event.current.Use(); }
     }
+    private static void MoveThirdFloorReviewCamera(RestaurantType side)
+    {
+        Require(ready && EditorApplication.isPlaying && !EditorApplication.isPaused
+            && CustomerPartyManualPlayBootstrap.Active && memory != null
+            && ReferenceEquals(BackendManager.ExistingInstance, memory.Owner)
+            && !BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin, "Original memory-only Play session required");
+        // Navigation only. No unlock, ownership, economy, settings, or source Scene changes.
+        Find<CameraController>(SceneManager.GetActiveScene()).MoveCamera(ERestaurantFloorType.Floor3, side);
+    }
+    private static void DrawFairyReviewStatus()
+    {
+        if (!ready || !CustomerPartyManualPlayBootstrap.Active || memory == null
+            || !ReferenceEquals(BackendManager.ExistingInstance, memory.Owner)
+            || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin) return;
+        if ((fairyReviewHabitat == null || fairyReviewArea == null) && EditorApplication.timeSinceStartup >= nextFairyReviewLookup)
+        {
+            nextFairyReviewLookup = EditorApplication.timeSinceStartup + 1d;
+            var roots = SceneManager.GetActiveScene().GetRootGameObjects();
+            fairyReviewHabitat = roots.SelectMany(root => root.GetComponentsInChildren<EnhancementFairyHabitat>(true)).FirstOrDefault();
+            fairyReviewArea = roots.SelectMany(root => root.GetComponentsInChildren<ThirdFloorFairyPlayArea>(true)).FirstOrDefault();
+        }
+        if (fairyReviewHabitat != null)
+        {
+            EditorGUILayout.LabelField("표시 요정 수", fairyReviewHabitat.ActiveCount.ToString());
+        }
+        if (fairyReviewArea != null)
+        {
+            EditorGUILayout.LabelField("가구 시각 연출 연결", "등록=" + fairyReviewArea.IsRegistered
+                + " / 런타임 연결=" + fairyReviewArea.IsRuntimeBound);
+            EditorGUILayout.LabelField("최근 가구 터치", fairyReviewArea.EditorLastFurnitureTapDiagnostic,
+                EditorStyles.wordWrappedLabel);
+            foreach (var point in fairyReviewArea.Points ?? Array.Empty<FairyFurniturePoint>())
+            {
+                if (point == null) continue;
+                var visual = point.HintSprite;
+                var collider = point.TouchCollider;
+                EditorGUILayout.LabelField(point.Name ?? point.Kind.ToString(),
+                    "터치=" + point.TouchEnabled + " / 연출 중=" + fairyReviewArea.IsTouchAnimating(point)
+                    + " / 그림=" + (visual != null && visual.enabled && visual.gameObject.activeInHierarchy && visual.sprite != null)
+                    + " / Collider=" + (collider != null && collider.enabled && collider.gameObject.activeInHierarchy),
+                    EditorStyles.wordWrappedLabel);
+            }
+        }
+    }
     internal static bool CanStart(out string reason)
     {
         reason = null;
@@ -135,7 +195,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         return reason == null;
     }
     internal static void StartManual(ERestaurantFloorType selectedFloor, bool missingMenu,
-        bool prepareEncounter, string encounterCustomerId, int encounterVisitCount)
+        bool prepareEncounter, string encounterCustomerId, int encounterVisitCount, bool prepareFairies = false)
     {
         if (!CanStart(out string reason)) { status = reason; Debug.LogWarning(reason); return; }
         GachaReviewTestRunner.ReleaseCreationTargetBeforeManualPlay();
@@ -148,6 +208,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         SessionState.SetBool(ModeKey, missingMenu); SessionState.SetInt(FloorKey, (int)selectedFloor);
         SessionState.SetBool(StaffAiKey, staffAi); SessionState.SetBool(NaturalAiKey, staffAi && naturalAi);
         SessionState.SetBool(EncounterPrepKey, prepareEncounter);
+        SessionState.SetBool(FairyPrepKey, prepareFairies);
         SessionState.SetString(EncounterCustomerKey, encounterCustomerId);
         SessionState.SetInt(EncounterVisitsKey, encounterVisitCount);
         SessionState.SetBool(CustomerPartyManualPlayBootstrap.SessionKey, true);
@@ -172,7 +233,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         memory = new CustomerPartyOwnedMemory();
         memory.Initialize(true, SessionState.GetBool(StaffAiKey, false),
             SessionState.GetBool(EncounterPrepKey, false) ? SessionState.GetString(EncounterCustomerKey, "") : null,
-            SessionState.GetInt(EncounterVisitsKey, 0));
+            SessionState.GetInt(EncounterVisitsKey, 0), SessionState.GetBool(FairyPrepKey, false));
         Require(ReferenceEquals(BackendManager.ExistingInstance, memory.Owner) && memory.LoggedIn, "Memory owner not installed");
         UserInfo.SetGamerId("ORIGINAL-MANUAL-MEMORY");
         if (SessionState.GetBool(ModeKey, false)) ((Dictionary<string, int>)Field(typeof(UserInfo), "_giveRecipeLevelDic").GetValue(null)).Remove("FOOD04");
@@ -400,6 +461,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         finally
         {
             memory = null; controller = null; tables = null; settings = null; ready = prepared = guideBound = false;
+            fairyReviewHabitat = null; fairyReviewArea = null; nextFairyReviewLookup = 0d;
             MainScene.SuppressEditorDebugGrantsForTesting = false;
             EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(SessionState.GetString(PreviousStart, ""));
             Selection.objects = SessionState.GetIntArray("Panda.PartyManual.SelectionAll", new int[0])
@@ -407,6 +469,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             Selection.SetActiveObjectWithContext(EditorUtility.InstanceIDToObject(SessionState.GetInt("Panda.PartyManual.Selection", 0)),
                 EditorUtility.InstanceIDToObject(SessionState.GetInt("Panda.PartyManual.SelectionContext", 0)));
             SessionState.EraseBool(CustomerPartyManualPlayBootstrap.SessionKey); CustomerPartyManualPlayBootstrap.Clear();
+            SessionState.EraseBool(FairyPrepKey);
             if (reloadLocked) { reloadLocked = false; EditorApplication.UnlockReloadAssemblies(); }
             status = "테스트 종료. 메모리 계정은 폐기되었고 원래 편집 Scene으로 돌아왔습니다.";
             Debug.Log("PARTY_MANUAL_STOPPED: memory released; SDK initialized=" + BackEnd.Backend.IsInitialized);
