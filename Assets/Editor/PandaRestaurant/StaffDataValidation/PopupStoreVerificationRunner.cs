@@ -98,6 +98,7 @@ public static partial class PopupStoreVerificationRunner
     private static Report _report;
     private static readonly List<CaseResult> Cases = new List<CaseResult>();
     private static readonly List<LogRecord> Logs = new List<LogRecord>();
+    private static readonly List<string> PhysicsMetrics = new List<string>();
 
     [Serializable] private sealed class LogRecord { public string type, message, stackTrace; }
     [Serializable] private sealed class CaseResult
@@ -126,6 +127,7 @@ public static partial class PopupStoreVerificationRunner
         public Workspace before, after;
         public CaseResult[] tests;
         public LogRecord[] logs;
+        public string[] physicsMetrics;
     }
 
     static PopupStoreVerificationRunner()
@@ -1127,7 +1129,7 @@ public static partial class PopupStoreVerificationRunner
 
     private static void Run(string request)
     {
-        _running = true; _abort = false; Cases.Clear(); Logs.Clear();
+        _running = true; _abort = false; Cases.Clear(); Logs.Clear(); PhysicsMetrics.Clear();
         _editorThread = Thread.CurrentThread.ManagedThreadId;
         _report = new Report
         {
@@ -1143,7 +1145,8 @@ public static partial class PopupStoreVerificationRunner
                 && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b"
                 && request != "run-sound" && request != "run-entry" && request != "run-ui-performance"
                 && request != "run-floor3-art-feedback" && request != "run-floor3-art" && request != "run-fairy-house"
-                && request != "run-floor3-details" && request != "run-floor3-details-ui")
+                && request != "run-floor3-details" && request != "run-floor3-details-ui"
+                && request != "run-fairy-physics" && request != "run-fairy-physics-regression")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1182,7 +1185,7 @@ public static partial class PopupStoreVerificationRunner
             }
             catch (Exception error) { _report.error = (_report.error ?? "") + "\nWorkspace evidence: " + Unwrap(error); }
             Application.logMessageReceived -= CaptureLog;
-            _report.tests = Cases.ToArray(); _report.logs = Logs.ToArray();
+            _report.tests = Cases.ToArray(); _report.logs = Logs.ToArray(); _report.physicsMetrics = PhysicsMetrics.ToArray();
             _report.total = Cases.Count;
             _report.passed = Cases.Count(test => test.status == "Passed");
             _report.failed = Cases.Count(test => test.status == "Failed");
@@ -1206,7 +1209,13 @@ public static partial class PopupStoreVerificationRunner
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        var selected = request == "run-floor3-details-ui" ? new[] {
+        var selected = request == "run-fairy-physics" ? new[] { "EnhancementFairyPhysicsTests" }
+            : request == "run-fairy-physics-regression" ? new[] {
+                "EnhancementFairyPhysicsTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
+                "FairyBirthSequenceTests", "FairyBirthInputTests", "FairyBirthSoundTests", "ThirdFloorFairyHouseTests",
+                "ThirdFloorFairyPlayAreaTests", "ThirdFloorFairyAiHotfixTests", "ThirdFloorApprovedArtTests", "PresentationSoundTests"
+            }
+            : request == "run-floor3-details-ui" ? new[] {
                 "PopupStoreFinalGuideTests", "PopupStoreCleanPartsTests", "PopupStoreMainVisualTests"
             }
             : request == "run-floor3-details" ? new[] {
@@ -1271,7 +1280,7 @@ public static partial class PopupStoreVerificationRunner
             {
                 // This video/audio recording requires its dedicated evidence runner.
                 // Keep the actual birth/input assertions in this house regression group.
-                if ((request == "run-fairy-house" || request == "run-floor3-details") && fixtureName == "FairyBirthInputTests"
+                if ((request == "run-fairy-house" || request == "run-floor3-details" || request == "run-fairy-physics-regression") && fixtureName == "FairyBirthInputTests"
                     && method.Name == "Stage1_FiftyTapNormalSpeedVideoAndOriginalAudioEvidence") continue;
                 // This partial fixture also contains unrelated scene/content migrations.
                 // Select its existing memory-only mail and backend-economy contracts here.
@@ -1350,11 +1359,13 @@ public static partial class PopupStoreVerificationRunner
             Type type = typeof(UnityEngine.TestTools.LogAssert).Assembly.GetType("UnityEngine.TestTools.Logging.LogScope", true);
             _logScope = (IDisposable)Activator.CreateInstance(type, true);
         }
-        public void TestOutput(TestOutput output) { }
+        public void TestOutput(TestOutput output) { if (output != null) CapturePhysicsMetricOutput(output.Text); }
         public void TestFinished(ITestResult result)
         {
             RequireEditorThread();
             if (result.Test.IsSuite) return;
+            // TestContext.WriteLine may be buffered on the leaf result instead of arriving through TestOutput.
+            CapturePhysicsMetricOutput(result.Output);
             try
             {
                 if (_logScope != null) _logScope.GetType().GetMethod("EvaluateLogScope", BindingFlags.Instance | BindingFlags.Public)
@@ -1439,6 +1450,15 @@ public static partial class PopupStoreVerificationRunner
     private static bool Same(Workspace first, Workspace second) => JsonUtility.ToJson(first) == JsonUtility.ToJson(second);
     private static void CaptureLog(string message, string stackTrace, LogType type)
         => Logs.Add(new LogRecord { type = type.ToString(), message = message, stackTrace = stackTrace });
+    private static void CapturePhysicsMetricOutput(string output)
+    {
+        if (string.IsNullOrEmpty(output)) return;
+        foreach (string raw in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            string line = raw.Trim();
+            if (line.StartsWith("PHYSICS_", StringComparison.Ordinal) && !PhysicsMetrics.Contains(line)) PhysicsMetrics.Add(line);
+        }
+    }
     private static void MarkFailure(ITestResult result, string message)
     {
         if (result is TestResult mutable) mutable.SetResult(ResultState.Failure, (result.Message ?? "") + "\n" + message, result.StackTrace);

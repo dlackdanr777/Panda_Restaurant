@@ -356,7 +356,7 @@ public sealed partial class EnhancementFairyHabitat
         return Mathf.Abs(distance - _houseSettings.SafeEntranceSpread) < gap;
     }
 
-    private bool SpacingEligible(View view) => view.Brain != null && view.Root != null && view.Body != null
+    private bool SpacingEligible(View view) => !PhysicsOwns(view) && view.Brain != null && view.Root != null && view.Body != null
         && view.Root.gameObject.activeInHierarchy && view.Body.enabled && view.Body.sprite != null
         && view.HouseMotion == HouseMotion.None
         && !view.Replacing && view.ArrivalRemaining <= 0f && view.PriorityUntil <= _clock

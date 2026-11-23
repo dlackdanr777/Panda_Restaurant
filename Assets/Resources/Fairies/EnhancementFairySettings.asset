@@ -22,6 +22,33 @@ MonoBehaviour:
     width: 60
     height: 0
   SpriteHeight: 1.65
+  Physics:
+    Enabled: 1
+    Bounds:
+      serializedVersion: 2
+      x: -50
+      y: 7.85
+      width: 60
+      height: 13
+    DragThresholdPixels: 12
+    DragReferenceDpi: 160
+    DragFollowSpeed: 20
+    MaxDragHeight: 10
+    MaximumDragSeconds: 10
+    ThrowVelocityMultiplier: 1.1
+    MaxThrowSpeed: 18
+    Gravity: 22
+    FloorRestitution: 0.6
+    WallRestitution: 0.48
+    FairyRestitution: 0.55
+    AirDamping: 0.2
+    GroundFriction: 5
+    MaximumBounceCount: 3
+    MinimumSettlingSpeed: 0.3
+    MaximumPhysicalDuration: 6
+    AngularReactionLimit: 10
+    CollisionRadiusScale: 0.85
+    MaximumPhysicalFairies: 5
   TouchScale: {x: 1.05, y: 0.9}
   TouchPressSeconds: 0.09
   TouchReleaseSeconds: 0.13

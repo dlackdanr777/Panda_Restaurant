@@ -352,7 +352,7 @@ public sealed class FairyBirthInputTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public void Stage1_FairyPointerDragOrCancelDoesNotSquishOpenOrPlaySound(bool canceledTouch)
+    public void Stage1_FairyPointerDragOrCancelDoesNotStartCardFeedbackOrPlaySound(bool canceledTouch)
     {
         using (var host = new EnhancementFairyStage1Host())
         using (var sound = new FairyBirthSoundScope(host))
@@ -361,20 +361,34 @@ public sealed class FairyBirthInputTests
             var body = PrepareTouchFairy(host, sound, fonts);
             object view = TouchView(host, body);
             Vector2 point = host.Camera.WorldToScreenPoint(body.bounds.center);
+            Vector3 camera = host.Camera.transform.position;
+            string itemId = ((EnhancementFairyBrain)EnhancementFairyStage1Host.Get(view, "Brain")).ItemId;
+            Assert.That(host.Habitat.Settings.Physics.Enabled, Is.True, "This regression must exercise the enabled two-room physics path.");
             using (var background = new OwnedDragBackground(host, point))
             {
                 PointerDown(host, canceledTouch, point);
+                Assert.That(host.Habitat.PendingGestureItemId, Is.EqualTo(itemId));
+                Assert.That(EnhancementFairyStage1Host.Get(host.Habitat, "_touchView"), Is.Null);
                 if (canceledTouch) Touch(host, point, TouchPhase.Canceled);
                 else
                 {
                     Vector2 moved = point + Vector2.right * Mathf.Max(30f, DragThreshold(host) * 2f);
                     PointerMove(host, false, moved, true);
+                    Assert.That(host.Habitat.DraggedFairyItemId, Is.EqualTo(itemId));
+                    Assert.That(host.Habitat.TryGetPhysicsBody(itemId, out var physics), Is.True);
+                    Assert.That(physics.Mode, Is.EqualTo(EnhancementFairyPhysicsSolver.BodyMode.Dragging));
+                    Assert.That(EnhancementFairyStage1Host.Get(host.Habitat, "_touchView"), Is.Null,
+                        "Dragging must not start the separate item-card press animation.");
                     PointerMove(host, false, point, true);
                     PointerUp(host, false, point);
+                    Assert.That(physics.Mode, Is.EqualTo(EnhancementFairyPhysicsSolver.BodyMode.Physics));
                 }
             }
+            Assert.That(host.Habitat.PhysicalFairyCount, Is.EqualTo(canceledTouch ? 0 : 1));
+            Assert.That(host.Camera.transform.position, Is.EqualTo(camera), "A fairy-owned press must never pan the camera.");
             sound.Advance(.3f);
             Assert.That(host.Habitat.IsItemCardPending || host.Habitat.IsItemCardOpen, Is.False);
+            Assert.That(EnhancementFairyStage1Host.Get(host.Habitat, "_touchView"), Is.Null);
             Assert.That(sound.Plays, Is.Empty);
             Assert.That(TouchMultiplier(view, body), Is.EqualTo(Vector2.one));
         }
@@ -524,8 +538,13 @@ public sealed class FairyBirthInputTests
     {
         var brain = (EnhancementFairyBrain)EnhancementFairyStage1Host.Get(view, "Brain");
         float scale = (float)EnhancementFairyStage1Host.Get(view, "Scale") * (float)EnhancementFairyStage1Host.Get(view, "HouseScale");
-        return new Vector2(body.transform.localScale.x / (scale * (1f + brain.Squash)),
-            body.transform.localScale.y / (scale * (1f - brain.Squash)));
+        var physics = (EnhancementFairyPhysicsSolver.Body)EnhancementFairyStage1Host.Get(view, "PhysicsBody");
+        // Isolate the card-only multiplier from both normal AI and collision squash,
+        // including the collision reaction that can decay after physics returns to AI.
+        float baseSquash = physics != null && physics.Mode != EnhancementFairyPhysicsSolver.BodyMode.Autonomous
+            ? physics.Squash : brain.Squash + (physics?.Squash ?? 0f);
+        return new Vector2(body.transform.localScale.x / (scale * (1f + baseSquash)),
+            body.transform.localScale.y / (scale * (1f - baseSquash)));
     }
 
     private static void AssertMeshGroundContact(object view, SpriteRenderer body)
@@ -715,7 +734,10 @@ public sealed class FairyBirthInputTests
     internal static void PointerDown(EnhancementFairyStage1Host host, bool touch, Vector2 position)
     {
         if (touch) Touch(host, position, TouchPhase.Began); else Mouse(host, position, true, true, false);
-        Assert.That(EnhancementFairyStage1Host.Get(host.Controller, "_isDragging"), Is.True, "Production down must hit the owned default-physics background.");
+        bool cameraOwnsPointer = (bool)EnhancementFairyStage1Host.Get(host.Controller, "_isDragging");
+        bool fairyOwnsPointer = host.Controller.IsWorldPointerGestureActive;
+        Assert.That(cameraOwnsPointer ^ fairyOwnsPointer, Is.True,
+            "A production press must have exactly one owner: a pending fairy gesture or the owned default-physics background.");
         Assert.That(EnhancementFairyStage1Host.Get(host.Controller, "_isDraggingEnabled"), Is.False);
     }
 
