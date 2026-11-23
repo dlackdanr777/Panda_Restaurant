@@ -17,6 +17,7 @@ public sealed class EnhancementFairyBrain
     private int _hopCount;
     private bool _directedWalk;
     private float _directedWalkSpeed;
+    private bool _returningFromPhysics;
 
     public string ItemId { get; }
     public Vector2 GroundPosition { get; private set; }
@@ -35,7 +36,7 @@ public sealed class EnhancementFairyBrain
     {
         if (!IsFinite(target)) return;
         _target = Clamp(target);
-        if ((_target - GroundPosition).sqrMagnitude <= Mathf.Pow(Mathf.Max(.01f, _settings.ArrivalDistance), 2f))
+        if (!_returningFromPhysics && (_target - GroundPosition).sqrMagnitude <= Mathf.Pow(Mathf.Max(.01f, _settings.ArrivalDistance), 2f))
         { Rest(); return; }
         _directedWalk = true;
         float multiplier = float.IsNaN(speedMultiplier) || float.IsInfinity(speedMultiplier)
@@ -68,6 +69,7 @@ public sealed class EnhancementFairyBrain
     /// <summary>Presentation spawn point only; subsequent movement uses the original bounds and brain.</summary>
     public void PlaceForBirth(Vector2 ground)
     {
+        _returningFromPhysics = false;
         GroundPosition = Clamp(ground);
         _target = GroundPosition;
         VisualHeight = Tilt = Squash = 0f;
@@ -77,14 +79,28 @@ public sealed class EnhancementFairyBrain
     /// <summary>House doorway travel is a presentation override; autonomous bounds/settings stay unchanged.</summary>
     public void PlaceForHouse(Vector2 position)
     {
+        _returningFromPhysics = false;
         GroundPosition = position;
         _target = position;
         VisualHeight = Tilt = Squash = 0f;
         Rest();
     }
 
+    /// <summary>Keep the landed point, then walk into the unchanged AI bounds without a position snap.</summary>
+    public void ResumeAfterPhysics(Vector2 ground)
+    {
+        if (!IsFinite(ground)) return;
+        GroundPosition = ground;
+        _target = ground;
+        VisualHeight = Tilt = Squash = 0f;
+        _returningFromPhysics = !IsInsideGroundBounds(ground);
+        Rest();
+        if (_returningFromPhysics) BeginDirectedWalk(Clamp(ground));
+    }
+
     public void MoveForHouse(Vector2 position, float deltaTime)
     {
+        _returningFromPhysics = false;
         _directedWalk = false; // Birth/house/furniture overrides always take priority.
         if (Mathf.Abs(position.x - GroundPosition.x) > .002f) FacingLeft = position.x < GroundPosition.x;
         GroundPosition = position;
@@ -98,6 +114,9 @@ public sealed class EnhancementFairyBrain
     {
         if (deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
         float dt = Mathf.Min(deltaTime, 0.1f);
+        // A paused spacing walk or repeated pickup may interrupt the handoff. Only
+        // physics-origin positions outside the normal range resume this return.
+        if (_returningFromPhysics && !_directedWalk) BeginDirectedWalk(Clamp(GroundPosition));
         ElapsedSeconds += dt;
         _remaining -= dt;
         _actionElapsed += dt;
@@ -112,9 +131,10 @@ public sealed class EnhancementFairyBrain
             float speed = _directedWalk ? _directedWalkSpeed : Mathf.Max(0.1f, _settings.WalkSpeed) * _energy;
             var next = Vector2.MoveTowards(GroundPosition, _target, speed * dt);
             if (Mathf.Abs(next.x - GroundPosition.x) > 0.002f) FacingLeft = next.x < GroundPosition.x;
-            GroundPosition = Clamp(next);
+            GroundPosition = _returningFromPhysics ? next : Clamp(next);
+            if (_returningFromPhysics && IsInsideGroundBounds(GroundPosition)) _returningFromPhysics = false;
             float arrive = Mathf.Max(0.01f, _settings.ArrivalDistance);
-            if (Vector2.SqrMagnitude(GroundPosition - _target) < arrive * arrive) Rest();
+            if (!_returningFromPhysics && Vector2.SqrMagnitude(GroundPosition - _target) < arrive * arrive) Rest();
         }
 
         float wave = Mathf.Sin(ElapsedSeconds * (_settings.IdleBobRate + _energy) + _phase);
@@ -189,6 +209,8 @@ public sealed class EnhancementFairyBrain
     }
 
     private Vector2 Clamp(Vector2 p) => new Vector2(Mathf.Clamp(p.x, _bounds.xMin, _bounds.xMax), Mathf.Clamp(p.y, _bounds.yMin, _bounds.yMax));
+    private bool IsInsideGroundBounds(Vector2 p) => p.x >= _bounds.xMin && p.x <= _bounds.xMax
+        && p.y >= _bounds.yMin && p.y <= _bounds.yMax;
     private Vector2 ResolveTarget(Vector2 proposed)
     {
         if (TargetResolver == null) return proposed;

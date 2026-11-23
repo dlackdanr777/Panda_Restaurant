@@ -60,6 +60,8 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
         body.Enabled = body.Eligible = body.Finished = body.JustActivated = body.DragExpired = body.Settling = false;
         body.Velocity = Vector2.zero;
         body.Age = body.Angle = body.Squash = 0f;
+        body.BoundaryEntryCenter = Vector2.zero;
+        body.BoundaryEntryWeight = 0f;
         view.PhysicsCooldownUntil = 0f;
         view.PhysicsSessionStartedAt = float.NegativeInfinity;
 #if UNITY_EDITOR
@@ -93,12 +95,13 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
             || _arrivals.IsPending(view.Brain.ItemId) || !_owned.Contains(view.Brain.ItemId)) return false;
         var body = view.PhysicsBody;
         if (body == null) return false;
-        // The entire sprite must already fit: accepting an edge hit must never snap it inside a wall.
-        Vector2 center = IsPhysical(view) ? body.Position : new Vector2(view.Brain.GroundPosition.x,
-            _settings.Physics.SafeBounds.yMin + body.HalfExtents.y + view.Brain.VisualHeight);
+        // Input follows the displayed sprite. Conservative tilt/squash extents are
+        // movement constraints, not an inset that rejects visible edge fairies.
+        Vector2 center = transform.InverseTransformPoint(view.Body.bounds.center);
         Rect room = _settings.Physics.SafeBounds;
-        return center.x >= room.xMin + body.HalfExtents.x && center.x <= room.xMax - body.HalfExtents.x
-            && center.y >= room.yMin + body.HalfExtents.y - .01f && center.y <= room.yMax - body.HalfExtents.y;
+        return EnhancementFairyPhysicsSolver.Finite(center)
+            && center.x >= room.xMin && center.x <= room.xMax
+            && center.y >= room.yMin && center.y <= room.yMax;
     }
 
     private void SyncPhysicsBody(View view)
@@ -116,7 +119,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
             body.Radius = Mathf.Max(.12f, Mathf.Min(size.x, size.y) * .5f * _settings.Physics.SafeCollisionRadiusScale);
             body.Mass = Mathf.Clamp(body.Radius * body.Radius, .2f, 3f);
             body.Position = new Vector2(view.Brain.GroundPosition.x,
-                _settings.Physics.SafeBounds.yMin + body.HalfExtents.y + view.Brain.VisualHeight);
+                view.Brain.GroundPosition.y + body.HalfExtents.y + view.Brain.VisualHeight);
             body.Velocity = Vector2.zero;
         }
         body.Enabled = view.Root != null && view.Root.gameObject.activeInHierarchy && view.Body != null && view.Body.enabled;
@@ -356,7 +359,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
     private void FinishPhysicsView(View view)
     {
         var body = view.PhysicsBody;
-        if (view.Brain != null) view.Brain.PlaceForBirth(new Vector2(body.Position.x, _settings.SafeGroundArea.yMin));
+        if (view.Brain != null) view.Brain.ResumeAfterPhysics(new Vector2(body.Position.x, _settings.SafeGroundArea.yMin));
         body.Finished = body.JustActivated = body.DragExpired = false;
         view.PhysicsSessionStartedAt = float.NegativeInfinity;
 #if UNITY_EDITOR

@@ -34,6 +34,8 @@ public sealed class EnhancementFairyPhysicsSolver
         internal float SettleElapsed;
         internal float SettleAngle;
         internal float SettleSquash;
+        internal Vector2 BoundaryEntryCenter;
+        internal float BoundaryEntryWeight;
     }
 
     public const float FixedStepSeconds = 1f / 120f;
@@ -56,6 +58,7 @@ public sealed class EnhancementFairyPhysicsSolver
     {
         if (body == null || settings == null || !settings.Enabled || !body.Enabled || !body.Eligible) return;
         Sanitize(body, settings);
+        CaptureBoundaryEntry(body);
         body.Mode = BodyMode.Dragging;
         body.Velocity = Vector2.zero;
         body.DragTarget = body.Position;
@@ -108,6 +111,7 @@ public sealed class EnhancementFairyPhysicsSolver
                 body.Velocity = Vector2.zero;
                 body.Angle = body.AngularVelocity = body.Squash = 0f;
                 body.JustActivated = body.DragExpired = body.Settling = false;
+                ClearBoundaryEntry(body);
             }
             Reset();
             return;
@@ -143,6 +147,7 @@ public sealed class EnhancementFairyPhysicsSolver
                 body.Velocity = Vector2.zero;
                 body.Angle = body.AngularVelocity = body.Squash = 0f;
                 body.JustActivated = false;
+                ClearBoundaryEntry(body);
                 continue;
             }
             Sanitize(body, settings);
@@ -184,6 +189,10 @@ public sealed class EnhancementFairyPhysicsSolver
     private static void Advance(Body body, float dt, EnhancementFairyPhysicsSettings settings)
     {
         body.Age += dt;
+        // Visible AI sprites may begin close enough to a wall that their conservative
+        // physics extents overlap it. Recover at the existing follow rate, without a
+        // one-frame clamp or allowing the initial overlap to grow farther outward.
+        body.BoundaryEntryWeight *= Mathf.Exp(-settings.SafeDragFollowSpeed * dt);
         if (body.Mode == BodyMode.Dragging)
         {
             if (body.Age >= settings.SafeMaximumDragSeconds)
@@ -295,6 +304,7 @@ public sealed class EnhancementFairyPhysicsSolver
         for (int i = 0; i < count; i++)
             if (bodies[i] != null && bodies[i].Enabled && bodies[i].Mode != BodyMode.Autonomous) active++;
         if (active >= Mathf.Min(settings.SafeMaximumPhysicalFairies, collisionActivationLimit)) return;
+        CaptureBoundaryEntry(body);
         body.Mode = BodyMode.Physics;
         body.Age = body.QuietSeconds = body.AngularVelocity = 0f;
         body.BounceCount = 0;
@@ -311,6 +321,9 @@ public sealed class EnhancementFairyPhysicsSolver
 
     private static void BeginSettle(Body body)
     {
+        // The existing settle interpolation can finish any remaining entry correction,
+        // even when an unusually slow Inspector follow speed was selected.
+        ClearBoundaryEntry(body);
         body.Settling = true;
         body.SettleElapsed = 0f;
         body.SettleFrom = body.Position;
@@ -334,6 +347,7 @@ public sealed class EnhancementFairyPhysicsSolver
 
     private static void Finish(Body body, EnhancementFairyPhysicsSettings settings)
     {
+        ClearBoundaryEntry(body);
         body.Position = ClampCenter(body.Position, body, settings, false);
         body.Position.y = settings.SafeBounds.yMin + body.HalfExtents.y;
         body.Velocity = Vector2.zero;
@@ -346,16 +360,41 @@ public sealed class EnhancementFairyPhysicsSolver
     private static void CancelDisabled(Body body, EnhancementFairyPhysicsSettings settings)
     { Sanitize(body, settings); Finish(body, settings); }
 
+    private static void CaptureBoundaryEntry(Body body)
+    {
+        body.BoundaryEntryCenter = body.Position;
+        body.BoundaryEntryWeight = Finite(body.Position) ? 1f : 0f;
+    }
+
+    private static void ClearBoundaryEntry(Body body)
+    {
+        body.BoundaryEntryCenter = Vector2.zero;
+        body.BoundaryEntryWeight = 0f;
+    }
+
     public static Vector2 ClampCenter(Vector2 position, Body body, EnhancementFairyPhysicsSettings settings, bool dragging)
     {
         Rect room = settings.SafeBounds;
         float halfX = Mathf.Clamp(body.HalfExtents.x, .12f, room.width * .49f);
         float halfY = Mathf.Clamp(body.HalfExtents.y, .12f, room.height * .49f);
+        float minX = room.xMin + halfX;
+        float maxX = room.xMax - halfX;
         float minY = room.yMin + halfY;
         float maxY = room.yMax - halfY;
         if (dragging) maxY = Mathf.Min(maxY, minY + settings.SafeMaxDragHeight);
+        if (body.BoundaryEntryWeight > 0f && Finite(body.BoundaryEntryCenter))
+        {
+            float weight = Mathf.Clamp01(body.BoundaryEntryWeight);
+            Vector2 entry = body.BoundaryEntryCenter;
+            minX = Mathf.Lerp(minX, Mathf.Min(minX, entry.x), weight);
+            maxX = Mathf.Lerp(maxX, Mathf.Max(maxX, entry.x), weight);
+            minY = Mathf.Lerp(minY, Mathf.Min(minY, entry.y), weight);
+            // Compare against the current limit, rather than retaining a raw drag
+            // offset: releasing above MaxDragHeight must not lift the real ceiling.
+            maxY = Mathf.Lerp(maxY, Mathf.Max(maxY, entry.y), weight);
+        }
         if (!Finite(position)) position = new Vector2(room.center.x, minY);
-        return new Vector2(Mathf.Clamp(position.x, room.xMin + halfX, room.xMax - halfX), Mathf.Clamp(position.y, minY, maxY));
+        return new Vector2(Mathf.Clamp(position.x, minX, maxX), Mathf.Clamp(position.y, minY, maxY));
     }
 
     private static void Sanitize(Body body, EnhancementFairyPhysicsSettings settings)

@@ -26,14 +26,14 @@ MonoBehaviour:
     Enabled: 1
     Bounds:
       serializedVersion: 2
-      x: -50
+      x: -53.2
       y: 7.85
-      width: 60
-      height: 13
+      width: 66.85
+      height: 14.55
     DragThresholdPixels: 12
     DragReferenceDpi: 160
     DragFollowSpeed: 20
-    MaxDragHeight: 10
+    MaxDragHeight: 14.55
     MaximumDragSeconds: 10
     ThrowVelocityMultiplier: 1.1
     MaxThrowSpeed: 18

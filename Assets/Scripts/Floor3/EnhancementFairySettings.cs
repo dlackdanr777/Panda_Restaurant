@@ -12,7 +12,7 @@ public sealed class EnhancementFairySettings : ScriptableObject
     [Tooltip("Local ground coordinates on the existing Stage1 Floor3 root.")]
     public Rect GroundArea = new Rect(-50f, 7.85f, 60f, 0f);
     [Min(0.1f)] public float SpriteHeight = 1.65f;
-    [Header("Left playground drag and throw (presentation only)")]
+    [Header("Third-floor interior drag and throw (presentation only)")]
     public EnhancementFairyPhysicsSettings Physics = new EnhancementFairyPhysicsSettings();
     [Header("Fairy touch feedback (presentation only)")]
     public Vector2 TouchScale = new Vector2(1.05f, .90f);

@@ -6,12 +6,12 @@ using UnityEngine;
 public sealed class EnhancementFairyPhysicsSettings
 {
     public bool Enabled = true;
-    [Tooltip("Floor3-local connected interior across the left playground and right map room. Keep X inside the ordinary Ground Area for a seamless AI return.")]
-    public Rect Bounds = new Rect(-50f, 7.85f, 60f, 13f);
+    [Tooltip("Floor3-local inner walls, floor and ceiling across both rooms. Sprite size limits physical movement; visible sprite input is not inset by collision extents. Outside Ground Area, the existing brain walks back after landing.")]
+    public Rect Bounds = new Rect(-53.2f, 7.85f, 66.85f, 14.55f);
     [Min(1f)] public float DragThresholdPixels = 12f;
     [Min(1f)] public float DragReferenceDpi = 160f;
     [Min(.1f)] public float DragFollowSpeed = 20f;
-    [Min(.1f)] public float MaxDragHeight = 10f;
+    [Min(.1f)] public float MaxDragHeight = 14.55f;
     [Min(1f)] public float MaximumDragSeconds = 10f;
     [Min(0f)] public float ThrowVelocityMultiplier = 1.1f;
     [Min(.1f)] public float MaxThrowSpeed = 18f;
@@ -28,11 +28,11 @@ public sealed class EnhancementFairyPhysicsSettings
     [Range(.4f, 1.2f)] public float CollisionRadiusScale = .85f;
     [Range(1, 5)] public int MaximumPhysicalFairies = 5;
 
-    public Rect SafeBounds => new Rect(Safe(Bounds.x, -1000f, 1000f, -50f),
-        Safe(Bounds.y, -1000f, 1000f, 7.85f), Safe(Bounds.width, 3f, 100f, 60f),
-        Safe(Bounds.height, 3f, 50f, 13f));
+    public Rect SafeBounds => new Rect(Safe(Bounds.x, -1000f, 1000f, -53.2f),
+        Safe(Bounds.y, -1000f, 1000f, 7.85f), Safe(Bounds.width, 3f, 100f, 66.85f),
+        Safe(Bounds.height, 3f, 50f, 14.55f));
     public float SafeDragFollowSpeed => Safe(DragFollowSpeed, .1f, 50f, 20f);
-    public float SafeMaxDragHeight => Safe(MaxDragHeight, .1f, SafeBounds.height, 10f);
+    public float SafeMaxDragHeight => Safe(MaxDragHeight, .1f, SafeBounds.height, 14.55f);
     public float SafeMaximumDragSeconds => Safe(MaximumDragSeconds, 1f, 20f, 10f);
     public float SafeThrowMultiplier => Safe(ThrowVelocityMultiplier, 0f, 3f, 1.1f);
     public float SafeMaxThrowSpeed => Safe(MaxThrowSpeed, .1f, 30f, 18f);

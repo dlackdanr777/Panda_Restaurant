@@ -762,6 +762,200 @@ public sealed class EnhancementFairyPhysicsTests
         }
     }
 
+    [TestCase("left-wall-cushion", RestaurantType.Kitchen, -52f, 0f, 60)]
+    [TestCase("left-horse", RestaurantType.Kitchen, -44f, 0f, 60)]
+    [TestCase("left-house-rug", RestaurantType.Kitchen, -36.65f, 0f, 60)]
+    [TestCase("left-box", RestaurantType.Kitchen, -23.5f, 0f, 60)]
+    [TestCase("right-connection", RestaurantType.Hall, -18.5f, 0f, 60)]
+    [TestCase("right-map", RestaurantType.Hall, -2.8f, 0f, 60)]
+    [TestCase("right-high-shelf", RestaurantType.Hall, 6f, 12f, 60)]
+    [TestCase("right-door", RestaurantType.Hall, 12f, 0f, 60)]
+    [TestCase("right-wall", RestaurantType.Hall, 13f, 0f, 60)]
+    [TestCase("left-wall-cushion", RestaurantType.Kitchen, -52f, 0f, 30)]
+    [TestCase("right-wall", RestaurantType.Hall, 13f, 0f, 30)]
+    [TestCase("right-high-shelf", RestaurantType.Hall, 6f, 12f, 30)]
+    public void Stage1_InteriorLocationsKeepShortTapAndDragThenWalkBackWithoutBoundarySnaps(
+        string location, RestaurantType room, float x, float height, int fps)
+    {
+        using (var f = new StageFixture())
+        {
+            Rect aiBounds = f.Settings.SafeGroundArea, physicalBounds = f.Settings.Physics.SafeBounds;
+            Assert.That(aiBounds.xMin, Is.EqualTo(-50f)); Assert.That(aiBounds.xMax, Is.EqualTo(10f));
+            Assert.That(physicalBounds.xMin, Is.EqualTo(-53.2f).Within(.001f));
+            Assert.That(physicalBounds.xMax, Is.EqualTo(13.65f).Within(.001f));
+            Assert.That(physicalBounds.yMax, Is.EqualTo(22.4f).Within(.001f));
+            f.Host.Move(room); var brain = f.Brain; Vector3 camera = f.Host.Camera.transform.position;
+            // The production presentation placement deliberately accepts the visible room's ends.
+            // PlaceForBirth would silently clamp these test cases back into the old AI rectangle.
+            brain.PlaceForHouse(new Vector2(x, aiBounds.yMin + height)); f.Advance(.05f);
+            if (location == "left-wall-cushion" || location == "right-wall")
+            {
+                Bounds drawn = FairyMeshBoundsInFloor(f);
+                float shift = location == "left-wall-cushion"
+                    ? physicalBounds.xMin + .025f - drawn.min.x : physicalBounds.xMax - .025f - drawn.max.x;
+                x = brain.GroundPosition.x + shift;
+                brain.PlaceForHouse(new Vector2(x, aiBounds.yMin)); f.Advance(1f / 60f);
+                Assert.That(x < aiBounds.xMin || x > aiBounds.xMax, Is.True, "This must exercise the previously excluded visible edge.");
+            }
+            AssertVisible(f.Host.Camera, f.Sprite.bounds.center);
+            Vector2 point = f.Host.Camera.WorldToScreenPoint(f.Sprite.bounds.center);
+            Assert.That((bool)EnhancementFairyStage1Host.Invoke(f.Host.Habitat, "IsDirectFairyMeshHit", f.View, point), Is.True);
+            Assert.That((bool)EnhancementFairyStage1Host.Invoke(f.Host.Habitat, "PhysicsEligible", f.View), Is.True,
+                "A normal visible indoor fairy must not be rejected by the conservative capsule margin.");
+            f.Input(-1, point, TouchPhase.Began);
+            Assert.That(f.Host.Habitat.PendingGestureItemId, Is.EqualTo(f.Id));
+            f.Input(-1, point, TouchPhase.Ended); f.Advance(.3f);
+            Assert.That(f.Host.Habitat.IsItemCardOpen, Is.True, location + " short tap opens the existing card.");
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(1), "The existing short-tap bubble is preserved.");
+            Assert.That(f.Host.Habitat.PhysicalFairyCount, Is.Zero);
+            f.Host.Habitat.CloseItemCard();
+
+            brain.PlaceForHouse(new Vector2(x, aiBounds.yMin + height)); f.Advance(.3f);
+            point = f.Host.Camera.WorldToScreenPoint(f.Sprite.bounds.center);
+            Assert.That(f.Host.Habitat.TryGetPhysicsBody(f.Id, out Body body), Is.True);
+            Vector2 start = body.Position; Bounds originalVisual = FairyMeshBoundsInFloor(f);
+            Vector2 target = point + Vector2.up * Mathf.Max(18f, f.Settings.Physics.GetDragThreshold(Screen.dpi) + 2f);
+            using (var background = new FairyBirthInputTests.OwnedDragBackground(f.Host, point))
+            {
+                f.Input(-1, point, TouchPhase.Began);
+                Assert.That(f.Host.Habitat.PendingGestureItemId, Is.EqualTo(f.Id));
+                f.Input(-1, target, TouchPhase.Moved, 1f / fps);
+                Assert.That(f.Host.Habitat.DraggedFairyItemId, Is.EqualTo(f.Id));
+                Assert.That(Vector2.Distance(body.Position, start), Is.LessThan(.001f), "Capture itself must retain the exact current position.");
+                Assert.That(Vector3.Distance(FairyMeshBoundsInFloor(f).center, originalVisual.center), Is.LessThan(.001f));
+                f.InputFrame(-1, target, TouchPhase.Stationary, 1f / fps);
+                float firstStepDistance = Vector2.Distance(FairyMeshBoundsInFloor(f).center, originalVisual.center);
+                Assert.That(firstStepDistance, Is.LessThan(1.8f), "The first simulation frame must not jump from a shelf to the floor/old drag ceiling.");
+                AssertMeshInsideInterior(FairyMeshBoundsInFloor(f), physicalBounds);
+                for (int frame = 0; frame < fps / 2; frame++)
+                {
+                    f.InputFrame(-1, target, TouchPhase.Stationary, 1f / fps);
+                    AssertMeshInsideInterior(FairyMeshBoundsInFloor(f), physicalBounds);
+                }
+                if (height > 10f)
+                {
+                    Assert.That(body.Position.y, Is.GreaterThanOrEqualTo(start.y - .01f),
+                        "Holding a high indoor fairy must not pull it down to the former ten-unit drag cap.");
+                    Assert.That(FairyMeshBoundsInFloor(f).min.y, Is.GreaterThanOrEqualTo(originalVisual.min.y - .02f));
+                    target = f.Host.Camera.WorldToScreenPoint(f.Host.Floor.transform.TransformPoint(
+                        new Vector3(x, physicalBounds.yMax + 1f, 0f)));
+                    for (int frame = 0; frame < fps / 2; frame++)
+                    {
+                        f.InputFrame(-1, target, frame == 0 ? TouchPhase.Moved : TouchPhase.Stationary, 1f / fps);
+                        Assert.That(body.Position.y + body.HalfExtents.y, Is.LessThanOrEqualTo(physicalBounds.yMax + .002f),
+                            "Extending capture height must not extend the actual ceiling.");
+                        AssertMeshInsideInterior(FairyMeshBoundsInFloor(f), physicalBounds);
+                    }
+                    Assert.That(body.Position.y + body.HalfExtents.y, Is.EqualTo(physicalBounds.yMax).Within(.015f));
+                    Assert.That(FairyMeshBoundsInFloor(f).max.y, Is.LessThanOrEqualTo(physicalBounds.yMax + .015f));
+                }
+                Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera));
+                Assert.That(f.Host.Habitat.IsItemCardOpen || f.Host.Habitat.IsItemCardPending, Is.False);
+                Vector2 beforeRelease = body.Position;
+                f.Input(-1, target, TouchPhase.Ended, 0f);
+                Assert.That(body.Mode, Is.EqualTo(Mode.Physics));
+                Assert.That(Vector2.Distance(body.Position, beforeRelease), Is.LessThan(.001f), "Release must not reclamp the current pose.");
+                Assert.That(body.Velocity.magnitude, Is.LessThan(.001f), "A held pointer is a drop, not an artificial fling.");
+
+                bool handedOff = false; float handoffX = float.NaN, largestAiStep = 0f;
+                float maximumWalk = Mathf.Max(.1f, f.Settings.WalkSpeed)
+                    * Mathf.Max(.1f, f.Settings.CalmEnergy + 2f * f.Settings.PersonalityEnergyStep);
+                for (int frame = 0; frame < fps * 12; frame++)
+                {
+                    bool wasPhysical = body.Mode != Mode.Autonomous;
+                    float previousVisualX = FairyMeshBoundsInFloor(f).center.x;
+                    float previousBodyX = body.Position.x, previousAiX = brain.GroundPosition.x;
+                    f.Host.Habitat.AdvancePreview(1f / fps);
+                    Assert.That(EnhancementFairyPhysicsSolver.Finite(body.Position) && EnhancementFairyPhysicsSolver.Finite(body.Velocity), Is.True);
+                    Assert.That(body.Position.x, Is.InRange(physicalBounds.xMin, physicalBounds.xMax));
+                    Assert.That(body.Position.y, Is.InRange(physicalBounds.yMin, physicalBounds.yMax));
+                    if (wasPhysical || body.Mode != Mode.Autonomous)
+                        AssertMeshInsideInterior(FairyMeshBoundsInFloor(f), physicalBounds);
+                    if (wasPhysical && body.Mode == Mode.Autonomous)
+                    {
+                        handedOff = true; handoffX = brain.GroundPosition.x;
+                        Assert.That(Mathf.Abs(handoffX - previousBodyX), Is.LessThanOrEqualTo(maximumWalk / fps + .03f),
+                            "Finishing outside the old AI bounds must not clamp back to -50 or 10.");
+                        Assert.That(Mathf.Abs(FairyMeshBoundsInFloor(f).center.x - previousVisualX), Is.LessThan(.15f));
+                        Assert.That(brain.GroundPosition.y, Is.EqualTo(aiBounds.yMin).Within(.001f));
+                    }
+                    else if (!wasPhysical)
+                    {
+                        float step = Mathf.Abs(brain.GroundPosition.x - previousAiX);
+                        largestAiStep = Mathf.Max(largestAiStep, step);
+                        Assert.That(step, Is.LessThanOrEqualTo(maximumWalk / fps + .003f),
+                            "The unchanged brain must walk home at its usual speed, including its first post-physics frame.");
+                    }
+                }
+                Assert.That(handedOff, Is.True); Assert.That(f.Brain, Is.SameAs(brain));
+                Assert.That(brain.GroundPosition.x, Is.InRange(aiBounds.xMin - .001f, aiBounds.xMax + .001f));
+                Assert.That(f.Settings.SafeGroundArea, Is.EqualTo(aiBounds), "The ordinary AI travel rectangle must remain unchanged.");
+                AssertRestored(body, f.Settings.Physics);
+                Assert.That(f.Host.Habitat.IsItemCardOpen || f.Host.Habitat.IsItemCardPending, Is.False);
+                Assert.That(f.Sound.Plays.Count, Is.EqualTo(1), "Dragging adds no card or short-tap bubble.");
+                Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera)); f.AssertOwnership();
+                TestContext.WriteLine("PHYSICS_INTERIOR location=" + location + "; fps=" + fps + "; groundX=" + x
+                    + "; height=" + height + "; firstVisualStep=" + firstStepDistance + "; handoffX=" + handoffX
+                    + "; largestAiStep=" + largestAiStep + "; shortTap=1; dragCards=0");
+            }
+        }
+    }
+
+    [Test]
+    public void Stage1_TransparentFairyMeshCornerStillLetsTheAuthoredHorseReceiveItsTap()
+    {
+        using (var f = new StageFixture())
+        {
+            var area = f.Host.SceneComponents<ThirdFloorFairyPlayArea>().Single(value => value.isActiveAndEnabled);
+            EnhancementFairyStage1Host.Invoke(area, "BindToInitializedHabitat");
+            var horse = area.Points.Single(value => value.Kind == FairyFurnitureKind.RockingHorse);
+            float x = f.Host.Floor.transform.InverseTransformPoint(horse.TouchCollider.bounds.center).x;
+            f.Brain.PlaceForHouse(new Vector2(x, f.Settings.SafeGroundArea.yMin)); f.Advance(.05f);
+            Bounds bounds = f.Sprite.bounds; Vector2 pixel = Vector2.zero; bool found = false;
+            for (int row = 1; row < 20 && !found; row++)
+            for (int column = 1; column < 20 && !found; column++)
+            {
+                Vector3 world = new Vector3(Mathf.Lerp(bounds.min.x, bounds.max.x, column / 20f),
+                    Mathf.Lerp(bounds.min.y, bounds.max.y, row / 20f), bounds.center.z);
+                pixel = f.Host.Camera.WorldToScreenPoint(world);
+                found = horse.TouchCollider.OverlapPoint(world)
+                    && !(bool)EnhancementFairyStage1Host.Invoke(f.Host.Habitat, "IsDirectFairyMeshHit", f.View, pixel);
+            }
+            Assert.That(found, Is.True, "The case must use a real transparent mesh corner overlapping the authored horse collider.");
+            Vector3 camera = f.Host.Camera.transform.position;
+            f.Input(-1, pixel, TouchPhase.Began);
+            Assert.That(f.Host.Habitat.PendingGestureItemId, Is.Null.Or.Empty);
+            Assert.That(f.Host.Controller.IsWorldPointerGestureActive, Is.False);
+            f.Input(-1, pixel, TouchPhase.Ended);
+            Assert.That(area.IsTouchAnimating(horse), Is.True);
+            Assert.That(f.Host.Habitat.IsItemCardOpen || f.Host.Habitat.IsItemCardPending, Is.False);
+            Assert.That(f.Host.Habitat.PhysicalFairyCount, Is.Zero); Assert.That(f.Sound.Plays, Is.Empty);
+            Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera)); f.AssertOwnership();
+        }
+    }
+
+    private static Bounds FairyMeshBoundsInFloor(StageFixture f)
+    {
+        var bounds = new Bounds(); bool first = true;
+        foreach (Vector2 vertex in f.Sprite.sprite.vertices)
+        {
+            Vector3 local = new Vector3(f.Sprite.flipX ? -vertex.x : vertex.x, f.Sprite.flipY ? -vertex.y : vertex.y, 0f);
+            Vector3 point = f.Host.Floor.transform.InverseTransformPoint(f.Sprite.transform.TransformPoint(local));
+            if (first) { bounds = new Bounds(point, Vector3.zero); first = false; }
+            else bounds.Encapsulate(point);
+        }
+        Assert.That(first, Is.False); return bounds;
+    }
+
+    private static void AssertMeshInsideInterior(Bounds drawn, Rect room)
+    {
+        const float edgeTolerance = .03f;
+        Assert.That(drawn.min.x, Is.GreaterThanOrEqualTo(room.xMin - edgeTolerance), "The rendered mesh must stay inside the left wall.");
+        Assert.That(drawn.max.x, Is.LessThanOrEqualTo(room.xMax + edgeTolerance), "The rendered mesh must stay inside the right wall.");
+        Assert.That(drawn.min.y, Is.GreaterThanOrEqualTo(room.yMin - edgeTolerance), "The rendered mesh must not penetrate the floor.");
+        Assert.That(drawn.max.y, Is.LessThanOrEqualTo(room.yMax + edgeTolerance), "The rendered mesh must not penetrate the ceiling.");
+    }
+
     [Test]
     public void Stage1_RegrabbingEveryPointEightSecondsCannotPostponeAnAlreadyDueHouseReturnPastTheSessionBound()
     {
