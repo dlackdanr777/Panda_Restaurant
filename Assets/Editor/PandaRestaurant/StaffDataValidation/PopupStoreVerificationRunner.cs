@@ -1142,7 +1142,8 @@ public static partial class PopupStoreVerificationRunner
                 && request != "run-server01c" && request != "run-server01c-all"
                 && request != "run-server01e" && request != "run-server01e-all" && request != "run-final01b"
                 && request != "run-sound" && request != "run-entry" && request != "run-ui-performance"
-                && request != "run-floor3-art-feedback" && request != "run-floor3-art" && request != "run-fairy-house")
+                && request != "run-floor3-art-feedback" && request != "run-floor3-art" && request != "run-fairy-house"
+                && request != "run-floor3-details" && request != "run-floor3-details-ui")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1205,7 +1206,16 @@ public static partial class PopupStoreVerificationRunner
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        var selected = request == "run-fairy-house" ? new[] {
+        var selected = request == "run-floor3-details-ui" ? new[] {
+                "PopupStoreFinalGuideTests", "PopupStoreCleanPartsTests", "PopupStoreMainVisualTests"
+            }
+            : request == "run-floor3-details" ? new[] {
+                "EnhancementFairyTests", "EnhancementFairyStage1Tests", "FairyBirthSequenceTests", "FairyBirthInputTests", "FairyBirthSoundTests",
+                "ThirdFloorFairyHouseTests", "ThirdFloorFairyPlayAreaTests", "ThirdFloorFairyAiHotfixTests", "ThirdFloorApprovedArtTests",
+                "PresentationSoundTests", "PopupStoreFinalGuideTests", "PopupStoreCleanPartsTests", "PopupStoreMainVisualTests",
+                "PopupStoreMaterialTests", "PopupStoreSalesCounterTests", "PopupStorePackingTests", "PopupStoreUnorderedPackingTests"
+            }
+            : request == "run-fairy-house" ? new[] {
                 "ThirdFloorFairyHouseTests", "ThirdFloorFairyPlayAreaTests", "ThirdFloorFairyAiHotfixTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
                 "FairyBirthSequenceTests", "FairyBirthInputTests", "ThirdFloorApprovedArtTests"
             }
@@ -1261,7 +1271,7 @@ public static partial class PopupStoreVerificationRunner
             {
                 // This video/audio recording requires its dedicated evidence runner.
                 // Keep the actual birth/input assertions in this house regression group.
-                if (request == "run-fairy-house" && fixtureName == "FairyBirthInputTests"
+                if ((request == "run-fairy-house" || request == "run-floor3-details") && fixtureName == "FairyBirthInputTests"
                     && method.Name == "Stage1_FiftyTapNormalSpeedVideoAndOriginalAudioEvidence") continue;
                 // This partial fixture also contains unrelated scene/content migrations.
                 // Select its existing memory-only mail and backend-economy contracts here.

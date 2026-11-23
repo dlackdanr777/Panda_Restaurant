@@ -12,6 +12,23 @@ public sealed class EnhancementFairySettings : ScriptableObject
     [Tooltip("Local ground coordinates on the existing Stage1 Floor3 root.")]
     public Rect GroundArea = new Rect(-50f, 7.85f, 60f, 0f);
     [Min(0.1f)] public float SpriteHeight = 1.65f;
+    [Header("Fairy touch feedback (presentation only)")]
+    public Vector2 TouchScale = new Vector2(1.05f, .90f);
+    [Range(.01f, .3f)] public float TouchPressSeconds = .09f;
+    [Range(.01f, .3f)] public float TouchReleaseSeconds = .13f;
+    public AudioClip BubbleClip;
+    [Range(0f, 1f)] public float BubbleVolume = .35f;
+    [Range(.1f, 3f)] public float BubblePitch = 1f;
+    [Min(0f)] public float MinimumBubbleInterval = .12f;
+    [Range(1, 5)] public int MaxConcurrentBubbles = 2;
+    public float TouchDuration => SafeTouchPressSeconds + SafeTouchReleaseSeconds;
+    public float SafeTouchPressSeconds => SafeTouchValue(TouchPressSeconds, .01f, .3f, .09f);
+    public float SafeTouchReleaseSeconds => SafeTouchValue(TouchReleaseSeconds, .01f, .3f, .13f);
+    public Vector2 SafeTouchScale => new Vector2(SafeTouchValue(TouchScale.x, .8f, 1.2f, 1.05f),
+        SafeTouchValue(TouchScale.y, .8f, 1.2f, .9f));
+    private static float SafeTouchValue(float value, float min, float max, float fallback)
+        => float.IsNaN(value) || float.IsInfinity(value) ? fallback : Mathf.Clamp(value, min, max);
+    [Header("Ordinary movement")]
     [Min(0.1f)] public float WalkSpeed = 1.05f;
     [Min(0f)] public float HopHeight = 0.55f;
     [Min(0.1f)] public float RestMinSeconds = 1.8f;

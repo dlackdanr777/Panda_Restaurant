@@ -107,7 +107,9 @@ public sealed class PopupStoreCleanPartsTests
     public void FourByThreeBackgroundIsUsedAtFullResolutionAndConfiguredToCoverItsParent()
     {
         Assert.That(Hash(CurrentBackgroundPath), Is.EqualTo(CurrentBackgroundSha));
-        AssertImport(CurrentBackgroundPath, 1448, 1086);
+        // The current 4:3 replacement was already imported as Tight before Ver.02.
+        // Preserve that existing importer; UI Image does not use its sprite mesh.
+        AssertImport(CurrentBackgroundPath, 1448, 1086, SpriteMeshType.Tight);
         var root = Prefab();
         var background = root.transform.Find("Approved Front Background").GetComponent<Image>();
         Assert.That(AssetDatabase.GetAssetPath(background.sprite), Is.EqualTo(CurrentBackgroundPath));
@@ -118,24 +120,119 @@ public sealed class PopupStoreCleanPartsTests
         var trayEntry = entries.Single(entry => entry.Target == tray);
         Assert.That(trayEntry.FollowBackground, Is.True);
         Assert.That(trayEntry.BackgroundAnchorX, Is.EqualTo(.5f));
-        CollectionAssert.AreEqual(new[] { 1.3333334f, 1.7777778f, 2f },
+        CollectionAssert.AreEqual(new[] { 1.3333334f, 1.7777778f, 2f, 2.1666667f, 2.2222223f },
             trayEntry.AspectYPositions.Select(position => position.AspectRatio).ToArray());
-        CollectionAssert.AreEqual(new[] { -31f, -41f, -45f },
+        CollectionAssert.AreEqual(new[] { -120f, -160f, -160f, -160f, -160f },
             trayEntry.AspectYPositions.Select(position => position.Y).ToArray());
     }
 
-    [TestCase(2000, 1000, -45f)]
-    [TestCase(1440, 1080, -31f)]
-    [TestCase(1920, 1080, -41f)]
-    [TestCase(1280, 720, -41f)]
-    [TestCase(1600, 1000, -37f)]
-    [TestCase(1900, 1000, -43.2f)]
+    [TestCase(2000, 1000, -160f)]
+    [TestCase(1440, 1080, -120f)]
+    [TestCase(1920, 1080, -160f)]
+    [TestCase(1280, 720, -160f)]
+    [TestCase(1600, 1000, -144f)]
+    [TestCase(1900, 1000, -160f)]
+    [TestCase(2340, 1080, -160f)]
+    [TestCase(2400, 1080, -160f)]
+    [TestCase(1236, 557, -160f)]
     public void SalesCounterKeepsItsAspectSpecificYOverTheCoverBackground(int width, int height, float expectedY)
     {
         using (var host = new Host(width, height, false))
         {
             AssertBackgroundCoversViewport(host.Root, host.Rect);
             AssertTrayFollowsBackground(host.Root, expectedY);
+        }
+    }
+
+    [TestCase(1440, 1080)]
+    [TestCase(1920, 1080)]
+    [TestCase(2340, 1080)]
+    [TestCase(2400, 1080)]
+    [TestCase(1236, 557)]
+    public void LoweredCounterKeepsFiveSlotsAndCannotCoverOrInterceptMaterialAndActionControls(int width, int height)
+    {
+        using (var host = new Host(width, height, true))
+        {
+            var layout = host.Root.GetComponent<PopupStoreFinalGuideLayout>();
+            var tray = (RectTransform)host.Counter.transform;
+            var entries = Read<PopupStoreFinalGuideLayout.Entry[]>(layout, "_placements");
+            var neighbours = entries.Where(entry => entry.Target != tray).Select(entry => entry.Target).ToArray();
+            var neighbourBounds = neighbours.Select(target => Bounds(target, host.Rect)).ToArray();
+            var position = tray.anchoredPosition;
+            var scale = tray.localScale;
+            var slots = Read<Image[]>(host.Counter, "_slotIcons");
+            var slotBounds = slots.Select(icon => Bounds(icon.rectTransform, tray)).ToArray();
+
+            // A later refresh must keep the authored aspect placement, with no transform-only fix.
+            tray.anchoredPosition = Vector2.zero;
+            Assert.That(layout.ApplyLayout(), Is.True);
+            Assert.That(layout.ApplyLayout(), Is.True);
+            Assert.That(tray.anchoredPosition, Is.EqualTo(position));
+            Assert.That(tray.localScale, Is.EqualTo(scale));
+            Assert.That(tray.sizeDelta, Is.EqualTo(new Vector2(910, 175)));
+            CollectionAssert.AreEqual(neighbourBounds, neighbours.Select(target => Bounds(target, host.Rect)).ToArray());
+            CollectionAssert.AreEqual(slotBounds, slots.Select(icon => Bounds(icon.rectTransform, tray)).ToArray());
+
+            var trayBounds = Bounds(tray, host.Rect);
+            foreach (var list in host.Root.GetComponentsInChildren<PopupStoreMaterialList>(true))
+            {
+                var panelBounds = Bounds((RectTransform)list.transform, host.Rect);
+                Assert.That(trayBounds.yMin, Is.GreaterThan(panelBounds.yMax), list.name + " stays below the complete tray");
+                Assert.That(trayBounds.Overlaps(panelBounds), Is.False, list.name);
+                Assert.That(list.GetComponentInChildren<ScrollRect>(true).viewport.GetComponent<Image>().raycastTarget,
+                    Is.True, list.name + " preserves its existing material input area");
+            }
+            foreach (var button in new[] { Read<Button>(host.Counter, "_clearButton"),
+                Read<Button>(host.Root.GetComponent<PopupStorePacking>(), "_packButton") })
+                Assert.That(trayBounds.Overlaps(Bounds((RectTransform)button.transform, host.Rect)), Is.False, button.name);
+
+            var materials = host.Orders.GetDisplayedMaterials(2).ToArray();
+            Assert.That(materials, Has.Length.EqualTo(5));
+            foreach (var material in materials) Assert.That(host.Counter.TryAdd(material), Is.True);
+            Assert.That(host.Counter.TryAdd(materials[0]), Is.False, "The UI adjustment never raises the five-item capacity.");
+            foreach (var graphic in host.Counter.GetComponentsInChildren<Graphic>(true))
+                Assert.That(graphic.raycastTarget, Is.False, graphic.name + " cannot intercept a Canvas raycast");
+            for (int i = 0; i < slots.Length; i++)
+            {
+                Assert.That(slots[i].sprite, Is.SameAs(materials[i].Sprite));
+                AssertInside(Bounds(slots[i].rectTransform, tray), tray.rect, "slot " + i);
+            }
+            Read<Button>(host.Counter, "_clearButton").onClick.Invoke();
+            Assert.That(host.Counter.Count, Is.Zero);
+        }
+    }
+
+    [Test]
+    public void MobileCounterPlacementSurvivesTutorialAndAllSixRealPhaseTransitions()
+    {
+        using (var host = new PopupStorePhasePreviewIntegrationTests.Host(false, false))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var rect = (RectTransform)host.Root.transform;
+            rect.localScale = Vector3.one;
+            rect.sizeDelta = new Vector2(2400, 1080);
+            var layout = host.Root.GetComponent<PopupStoreFinalGuideLayout>();
+            var viewRoot = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Editor/PandaRestaurant/StaffDataValidation/UI/PopupStorePhasePreviewView.prefab"), host.Root.transform, false);
+            viewRoot.SetActive(false); fonts.BindBeforeActivation(viewRoot); viewRoot.SetActive(true);
+            var view = viewRoot.GetComponent<PopupStorePhasePreviewView>();
+            Assert.That(host.Preview.AttachView(view, Read<Button>(host.Root.GetComponent<UIPopupStore>(), "_closeButton")), Is.True);
+            Assert.That(view.IsTutorialVisible, Is.True);
+            Assert.That(layout.ApplyLayout(), Is.True);
+            AssertTrayAtAspect(host.Root, -160);
+            while (view.TryNext()) { AssertTrayAtAspect(host.Root, -160); }
+            Assert.That(view.TryPlay(), Is.True);
+            PopupStorePhasePreviewIntegrationTests.CompleteInitialPresentation(host.Preview, host.Clock);
+            for (int phase = 1; phase <= 6; phase++)
+            {
+                Assert.That(host.Preview.Session.CurrentPhase.PhaseNumber, Is.EqualTo(phase));
+                Assert.That(layout.ApplyLayout(), Is.True);
+                AssertTrayAtAspect(host.Root, -160);
+                host.ClearPhase();
+                AssertTrayAtAspect(host.Root, -160);
+                if (phase < 6) host.NextPhase();
+            }
+            host.AssertNoR1();
         }
     }
 
@@ -226,7 +323,7 @@ public sealed class PopupStoreCleanPartsTests
             var body = new[] { new Rect(315, 306, 215, 183), new Rect(722, 325, 223, 165), new Rect(1151, 295, 225, 192) };
             for (int i = 0; i < 3; i++)
                 PopupStoreFinalGuideTests.AssertGuideRect(h.Root.transform.Find("Customer Place " + (i + 1) + "/Approved Body Area").GetComponent<RectTransform>(), h.Rect, body[i], "original customer body area");
-            AssertTrayAtAspect(h.Root, -41f);
+            AssertTrayAtAspect(h.Root, -160f);
             PopupStoreFinalGuideTests.AssertGuideRect(h.Root.transform.Find("HUD/Close Button").GetComponent<RectTransform>(), h.Rect,
                 new Rect(1549, 19, 88, 84), "original X");
         }
@@ -696,7 +793,7 @@ public sealed class PopupStoreCleanPartsTests
         }
         return MappedImages(root, id).Select(i => i.sprite).ToArray();
     }
-    private static void AssertImport(string path, int width, int height)
+    private static void AssertImport(string path, int width, int height, SpriteMeshType meshType = SpriteMeshType.FullRect)
     {
         var importer = AssetImporter.GetAtPath(path) as TextureImporter; Assert.That(importer, Is.Not.Null);
         Assert.That(importer.textureType, Is.EqualTo(TextureImporterType.Sprite)); Assert.That(importer.spriteImportMode, Is.EqualTo(SpriteImportMode.Single));
@@ -704,7 +801,7 @@ public sealed class PopupStoreCleanPartsTests
         Assert.That(importer.spritePixelsPerUnit, Is.EqualTo(100)); Assert.That(importer.filterMode, Is.EqualTo(FilterMode.Bilinear));
         Assert.That(importer.textureCompression, Is.EqualTo(TextureImporterCompression.Uncompressed)); Assert.That(importer.maxTextureSize, Is.GreaterThanOrEqualTo(Math.Max(width, height)));
         Assert.That(importer.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
-        var settings = new TextureImporterSettings(); importer.ReadTextureSettings(settings); Assert.That(settings.spriteMeshType, Is.EqualTo(SpriteMeshType.FullRect));
+        var settings = new TextureImporterSettings(); importer.ReadTextureSettings(settings); Assert.That(settings.spriteMeshType, Is.EqualTo(meshType), path);
         var sprites = AssetDatabase.LoadAllAssetsAtPath(path).OfType<Sprite>().ToArray(); Assert.That(sprites, Has.Length.EqualTo(1));
         Assert.That(sprites[0].rect.size, Is.EqualTo(new Vector2(width, height)));
         string guid = AssetDatabase.AssetPathToGUID(path); Assert.That(guid.Length, Is.EqualTo(32)); Assert.That(AssetDatabase.GUIDToAssetPath(guid), Is.EqualTo(path));

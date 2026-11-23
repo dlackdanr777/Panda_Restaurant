@@ -22,6 +22,14 @@ MonoBehaviour:
     width: 60
     height: 0
   SpriteHeight: 1.65
+  TouchScale: {x: 1.05, y: 0.9}
+  TouchPressSeconds: 0.09
+  TouchReleaseSeconds: 0.13
+  BubbleClip: {fileID: 8300000, guid: c942ea85302b4695b7cfe32f1f55ef87, type: 3}
+  BubbleVolume: 0.35
+  BubblePitch: 1
+  MinimumBubbleInterval: 0.12
+  MaxConcurrentBubbles: 2
   WalkSpeed: 1.05
   HopHeight: 0.55
   RestMinSeconds: 1.8

@@ -107,8 +107,9 @@ public sealed class FairyBirthSequenceTests
     {
         using (var host = new EnhancementFairyStage1Host())
         {
-            var item = host.Catalog.First(EnhancementFairyCatalog.IsEligible);
-            host.Restore(new[] { new KeyValuePair<string, int>(item.Id, 1) });
+            var items = host.Catalog.Where(EnhancementFairyCatalog.IsEligible).Take(reason == "card" ? 2 : 1).ToArray();
+            var item = items[0];
+            host.Restore(items.Select(value => new KeyValuePair<string, int>(value.Id, 1)));
             EnhancementFairyAcquisitionEvents.PublishConfirmed("committed", item.Id);
             host.Move(ERestaurantFloorType.Floor3);
             host.Advance(1.5f);
@@ -130,7 +131,14 @@ public sealed class FairyBirthSequenceTests
                 Assert.That(EnhancementFairyStage1Host.Get(host.Controller, "_isDraggingEnabled"), Is.True);
             }
             if (reason == "offscreen") host.Camera.transform.position += Vector3.left * 120f;
-            if (reason == "card") Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(host.Bodies().Single().bounds.center)), Is.True);
+            if (reason == "card")
+            {
+                var ordinary = host.Bodies().Single(body => body.transform.parent.name == "Fairy " + items[1].Id);
+                Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(ordinary.bounds.center)), Is.True);
+                host.Advance(host.Habitat.Settings.TouchDuration + 1f / 30f);
+                Assert.That(host.Habitat.IsItemCardOpen, Is.True);
+                beforeElapsed = birth.Elapsed;
+            }
             if (reason == "ui") host.VerifyActualGachaOpenClose(() =>
             {
                 host.Advance(4f);

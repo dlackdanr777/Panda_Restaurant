@@ -1081,11 +1081,15 @@ MonoBehaviour:
     BackgroundAnchorX: 0.5
     AspectYPositions:
     - AspectRatio: 1.3333334
-      Y: -31
+      Y: -120
     - AspectRatio: 1.7777778
-      Y: -41
+      Y: -160
     - AspectRatio: 2
-      Y: -45
+      Y: -160
+    - AspectRatio: 2.1666667
+      Y: -160
+    - AspectRatio: 2.2222223
+      Y: -160
   - Target: {fileID: 200081}
     GuideRect:
       serializedVersion: 2

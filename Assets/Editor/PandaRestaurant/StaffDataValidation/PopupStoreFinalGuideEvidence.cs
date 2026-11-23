@@ -26,6 +26,9 @@ public static class PopupStoreFinalGuideEvidence
         public string[] textMetrics;
         public bool displayOnlyFillPreview;
         public float previewFill = -1;
+        public float counterAnchoredY, counterToMaterialPanelGapPixels;
+        public Rect counterPixelsTopLeft;
+        public bool counterCanInterceptRaycasts;
     }
 
     [Serializable] private sealed class Report
@@ -48,8 +51,9 @@ public static class PopupStoreFinalGuideEvidence
         var random = UnityEngine.Random.state;
         try
         {
-            foreach (var resolution in new[] { new Vector2Int(1920, 1080), new Vector2Int(1280, 720) })
-                RenderResolution(resolution, frames);
+            foreach (var resolution in new[] { new Vector2Int(1920, 1080), new Vector2Int(1280, 720),
+                new Vector2Int(1440, 1080), new Vector2Int(2340, 1080), new Vector2Int(1236, 557) })
+                RenderResolution(resolution, frames, resolution.x != 1920 && resolution.x != 1280);
             report.success = true;
         }
         catch (Exception exception)
@@ -76,7 +80,7 @@ public static class PopupStoreFinalGuideEvidence
         }
     }
 
-    private static void RenderResolution(Vector2Int resolution, List<Frame> frames)
+    private static void RenderResolution(Vector2Int resolution, List<Frame> frames, bool counterOnly)
     {
         object host = null;
         StaffGachaOfflineFonts fonts = null;
@@ -136,12 +140,14 @@ public static class PopupStoreFinalGuideEvidence
             Capture(root, camera, target, "start", frames);
 
             Call(host, "StartCustomers", 3, 90d);
+            CapturePreviousCounterPosition(root, camera, target, frames);
             Capture(root, camera, target, "none-empty-tray-orders-3-4-5", frames);
             var orders = root.GetComponent<PopupStoreOrderDisplay>();
             var counter = root.GetComponentInChildren<PopupStoreSalesCounter>(true);
             foreach (var material in orders.GetDisplayedMaterials(2))
                 if (!counter.TryAdd(material)) throw new InvalidOperationException("Could not fill the diagnostic tray with the existing five-material order.");
             Capture(root, camera, target, "none-full-tray-orders-3-4-5", frames);
+            if (counterOnly) return;
             counter.Clear();
             foreach (var material in orders.GetDisplayedMaterials(0))
                 if (!counter.TryAdd(material)) throw new InvalidOperationException("Could not fill three-slot evidence.");
@@ -179,6 +185,28 @@ public static class PopupStoreFinalGuideEvidence
             try { (host as IDisposable)?.Dispose(); }
             finally { fonts?.Dispose(); }
         }
+    }
+
+    private static void CapturePreviousCounterPosition(GameObject root, Camera camera, RenderTexture target, List<Frame> frames)
+    {
+        // Only the isolated in-memory instance receives the pre-Ver.02 values for an honest
+        // same-customer/same-resolution comparison. No source prefab or scene is restored.
+        var layout = root.GetComponent<PopupStoreFinalGuideLayout>();
+        var counter = root.GetComponentInChildren<PopupStoreSalesCounter>(true);
+        var entry = Read<PopupStoreFinalGuideLayout.Entry[]>(layout, "_placements")
+            .Single(item => item.Target == counter.transform);
+        var current = entry.AspectYPositions;
+        try
+        {
+            entry.AspectYPositions = new[]
+            {
+                new PopupStoreFinalGuideLayout.Entry.AspectYPosition { AspectRatio = 1.3333334f, Y = -31 },
+                new PopupStoreFinalGuideLayout.Entry.AspectYPosition { AspectRatio = 1.7777778f, Y = -41 },
+                new PopupStoreFinalGuideLayout.Entry.AspectYPosition { AspectRatio = 2, Y = -45 }
+            };
+            Capture(root, camera, target, "before-counter-lowering-empty-tray", frames);
+        }
+        finally { entry.AspectYPositions = current; layout.ApplyLayout(); }
     }
 
     private static void Capture(GameObject root, Camera camera, RenderTexture target, string state,
@@ -223,6 +251,13 @@ public static class PopupStoreFinalGuideEvidence
         var score = root.GetComponent<PopupStoreScore>();
         var orders = root.GetComponent<PopupStoreOrderDisplay>();
         var hud = root.GetComponent<PopupStoreCurrentGradeHud>();
+        var counter = root.GetComponentInChildren<PopupStoreSalesCounter>(true);
+        var rootRect = (RectTransform)root.transform;
+        var counterRect = (RectTransform)counter.transform;
+        Rect bounds = Bounds(counterRect, rootRect);
+        float pixelsPerUnit = target.height / rootRect.rect.height;
+        float highestPanel = root.GetComponentsInChildren<PopupStoreMaterialList>(true)
+            .Max(list => Bounds((RectTransform)list.transform, rootRect).yMax);
         frames.Add(new Frame
         {
             file = Path.GetFullPath(Folder + "/" + target.width + "x" + target.height + "-UI04-" + state + ".png"),
@@ -238,8 +273,21 @@ public static class PopupStoreFinalGuideEvidence
                 .Where(text => text.name == "Time" || text.name == "Score"
                     || text.transform.parent != null && text.transform.parent.name == "Clear Counter Button")
                 .Select(TextMetric).ToArray(),
-            displayOnlyFillPreview = previewFill >= 0, previewFill = previewFill
+            displayOnlyFillPreview = previewFill >= 0, previewFill = previewFill,
+            counterAnchoredY = counterRect.anchoredPosition.y,
+            counterPixelsTopLeft = new Rect((bounds.xMin - rootRect.rect.xMin) * pixelsPerUnit,
+                (rootRect.rect.yMax - bounds.yMax) * pixelsPerUnit, bounds.width * pixelsPerUnit, bounds.height * pixelsPerUnit),
+            counterToMaterialPanelGapPixels = (bounds.yMin - highestPanel) * pixelsPerUnit,
+            counterCanInterceptRaycasts = counter.GetComponentsInChildren<Graphic>(true).Any(graphic => graphic.raycastTarget)
         });
+    }
+
+    private static Rect Bounds(RectTransform child, RectTransform root)
+    {
+        var corners = new Vector3[4]; child.GetWorldCorners(corners);
+        var points = corners.Select(root.InverseTransformPoint).ToArray();
+        return Rect.MinMaxRect(points.Min(point => point.x), points.Min(point => point.y),
+            points.Max(point => point.x), points.Max(point => point.y));
     }
 
     private static string TextMetric(TMP_Text text)

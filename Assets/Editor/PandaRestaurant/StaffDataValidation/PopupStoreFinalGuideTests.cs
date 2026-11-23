@@ -174,6 +174,16 @@ public sealed class PopupStoreFinalGuideTests
                 var image = ImageFor(host.Root, id);
                 Assert.That(image.preserveAspect, Is.True, id);
                 Assert.That(image.type, Is.EqualTo(Image.Type.Simple), "Use source proportions instead of stretching curves or slots.");
+                if (id == "FG_Tray_FiveEmptySlots")
+                {
+                    // Its source pixels and size stay approved; its parent now follows the
+                    // Inspector's aspect placement instead of the original guide's absolute Y.
+                    var tray = (RectTransform)host.Counter.transform;
+                    Assert.That(image.rectTransform.parent, Is.SameAs(tray));
+                    Assert.That(image.rectTransform.anchoredPosition, Is.EqualTo(Vector2.zero));
+                    Assert.That(image.rectTransform.sizeDelta, Is.EqualTo(new Vector2(910, 175)));
+                    continue;
+                }
                 AssertGuideRect(image.rectTransform, host.Rect,
                     new Rect(part.place_png_top_left_guide[0], part.place_png_top_left_guide[1], part.png_size[0], part.png_size[1]), id);
             }
@@ -193,12 +203,12 @@ public sealed class PopupStoreFinalGuideTests
             foreach (var entry in entries) Assert.That(host.Counter.TryAdd(entry), Is.True);
             var icons = Read<Image[]>(host.Counter, "_slotIcons");
             CollectionAssert.AreEqual(entries.Select(entry => entry.Sprite).ToArray(), icons.Select(image => image.sprite).ToArray());
-            float[] x = { 512, 671, 835, 995, 1157 };
+            float[] x = { -325, -166, -2, 158, 320 };
             for (int i = 0; i < icons.Length; i++)
             {
-                var guide = ToGuide(Bounds(icons[i].rectTransform, host.Rect), host.Rect);
-                Assert.That(guide.center.x, Is.EqualTo(x[i]).Within(.25f));
-                Assert.That(guide.center.y, Is.EqualTo(607).Within(.25f));
+                var insideTray = Bounds(icons[i].rectTransform, (RectTransform)host.Counter.transform);
+                Assert.That(insideTray.center.x, Is.EqualTo(x[i]).Within(.25f));
+                Assert.That(insideTray.center.y, Is.EqualTo(6.5f).Within(.25f));
                 Assert.That(icons[i].preserveAspect, Is.True);
                 if (i > 0) Assert.That(Bounds(icons[i - 1].rectTransform, host.Rect).Overlaps(Bounds(icons[i].rectTransform, host.Rect)), Is.False);
             }

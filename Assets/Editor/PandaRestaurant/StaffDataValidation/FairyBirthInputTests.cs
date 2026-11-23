@@ -269,8 +269,12 @@ public sealed class FairyBirthInputTests
             using (var background = new OwnedDragBackground(host, point))
             {
                 PointerDown(host, touch, point); PointerUp(host, touch, point);
+                Assert.That(host.Habitat.IsItemCardPending, Is.True);
+                Assert.That(host.Habitat.IsItemCardOpen, Is.False);
+                sound.Advance(host.Habitat.Settings.TouchDuration + 1f / 60f);
                 Assert.That(host.Habitat.IsItemCardOpen, Is.True);
                 Assert.That(host.Controller.IsWorldInputBlocked, Is.True);
+                before = birth.Elapsed; // The original birth pauses only when the card actually opens.
                 sound.Advance(1f); birth.AssertPath();
                 Assert.That(birth.Elapsed, Is.EqualTo(before));
                 DismissActualItemCard(host);
@@ -283,6 +287,258 @@ public sealed class FairyBirthInputTests
             using (var background = new OwnedDragBackground(host))
             { PointerDown(host, touch, background.ScreenPosition); PointerUp(host, touch, background.ScreenPosition); }
         }
+    }
+
+    [TestCase(30)]
+    [TestCase(60)]
+    public void Stage1_FairyTouchComposesSquishAtTheFeetThenOpensOneExistingCard(int fps)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            object view = TouchView(host, body);
+            var brain = (EnhancementFairyBrain)EnhancementFairyStage1Host.Get(view, "Brain");
+            var ownership = UserInfo.GetGiveGachaItemCountDic().ToArray();
+            int poolSize = sound.Sound.GetComponentsInChildren<AudioSource>(true).Length;
+            for (int cycle = 0; cycle < 2; cycle++)
+            {
+                Vector2 point = host.Camera.WorldToScreenPoint(body.bounds.center);
+                Assert.That(host.Habitat.TryOpenItemCard(point), Is.True);
+                Assert.That(host.Habitat.IsItemCardPending, Is.True);
+                Assert.That(host.Habitat.IsItemCardOpen, Is.False);
+                Assert.That(host.Controller.IsWorldInputBlocked, Is.True);
+                Assert.That(host.Habitat.TryOpenItemCard(point), Is.False, "Repeated taps cannot create a second pending card or sound.");
+                float maxX = 1f, minY = 1f, elapsed = 0f;
+                while (!host.Habitat.IsItemCardOpen && elapsed < .4f)
+                {
+                    sound.Clock += 1d / fps;
+                    host.Habitat.AdvancePreview(1f / fps);
+                    elapsed += 1f / fps;
+                    Vector2 multiplier = TouchMultiplier(view, body);
+                    maxX = Mathf.Max(maxX, multiplier.x); minY = Mathf.Min(minY, multiplier.y);
+                    Assert.That(multiplier.x, Is.InRange(1f - .0001f, 1.05f + .0001f));
+                    Assert.That(multiplier.y, Is.InRange(.9f - .0001f, 1f + .0001f));
+                    AssertMeshGroundContact(view, body);
+                    Assert.That((Vector2)body.transform.parent.localPosition, Is.EqualTo(brain.GroundPosition),
+                        "Touch feedback must not move the fairy's ground root away from the existing brain.");
+                    if (elapsed + .0001f < host.Habitat.Settings.TouchDuration)
+                        Assert.That(host.Habitat.IsItemCardOpen, Is.False, "The card must not cover the press/release feedback.");
+                }
+                Assert.That(maxX, Is.GreaterThan(1.045f));
+                Assert.That(minY, Is.LessThan(.91f));
+                Assert.That(elapsed, Is.InRange(host.Habitat.Settings.TouchDuration - .0001f,
+                    host.Habitat.Settings.TouchDuration + 1f / fps + .0001f));
+                Assert.That(host.Habitat.IsItemCardPending, Is.False);
+                Assert.That(host.Habitat.IsItemCardOpen, Is.True);
+                Assert.That(TouchMultiplier(view, body), Is.EqualTo(Vector2.one));
+                Assert.That(sound.Plays.Count, Is.EqualTo(cycle + 1));
+                var played = sound.Plays.Last();
+                Assert.That(played.Clip, Is.SameAs(host.Habitat.Settings.BubbleClip));
+                Assert.That(played.Volume, Is.EqualTo(host.Habitat.Settings.BubbleVolume).Within(.0001f));
+                Assert.That(played.Pitch, Is.EqualTo(host.Habitat.Settings.BubblePitch).Within(.0001f));
+                Assert.That(sound.Pops.Length + sound.Voices.Length, Is.Zero, "Ordinary touches must not request acquisition sounds.");
+                Assert.That(host.Floor.GetComponentsInChildren<UIGachaCard>(true).Length, Is.EqualTo(1));
+                host.Habitat.CloseItemCard();
+                Assert.That(host.Controller.IsWorldInputBlocked, Is.False);
+                TestContext.WriteLine("FAIRY_TOUCH fps=" + fps + "; cycle=" + cycle + "; duration=" + elapsed
+                    + "; maximumX=" + maxX + "; minimumY=" + minY + "; restored=" + TouchMultiplier(view, body));
+            }
+            CollectionAssert.AreEquivalent(ownership, UserInfo.GetGiveGachaItemCountDic());
+            Assert.That(sound.Sound.GetComponentsInChildren<AudioSource>(true).Length, Is.EqualTo(poolSize));
+        }
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void Stage1_FairyPointerDragOrCancelDoesNotSquishOpenOrPlaySound(bool canceledTouch)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            object view = TouchView(host, body);
+            Vector2 point = host.Camera.WorldToScreenPoint(body.bounds.center);
+            using (var background = new OwnedDragBackground(host, point))
+            {
+                PointerDown(host, canceledTouch, point);
+                if (canceledTouch) Touch(host, point, TouchPhase.Canceled);
+                else
+                {
+                    Vector2 moved = point + Vector2.right * Mathf.Max(30f, DragThreshold(host) * 2f);
+                    PointerMove(host, false, moved, true);
+                    PointerMove(host, false, point, true);
+                    PointerUp(host, false, point);
+                }
+            }
+            sound.Advance(.3f);
+            Assert.That(host.Habitat.IsItemCardPending || host.Habitat.IsItemCardOpen, Is.False);
+            Assert.That(sound.Plays, Is.Empty);
+            Assert.That(TouchMultiplier(view, body), Is.EqualTo(Vector2.one));
+        }
+    }
+
+    [TestCase("close")]
+    [TestCase("floor")]
+    [TestCase("ui")]
+    [TestCase("disable")]
+    [TestCase("ownership")]
+    public void Stage1_PendingFairyTouchRestoresBeforeCancellationAndNeverOpensLater(string reason)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            object view = TouchView(host, body);
+            Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.True);
+            sound.Advance(.05f);
+            Assert.That(TouchMultiplier(view, body).y, Is.LessThan(1f));
+            if (reason == "close") host.Habitat.CloseItemCard();
+            if (reason == "floor") host.Move(ERestaurantFloorType.Floor2);
+            if (reason == "ui") host.VerifyActualGachaOpenClose();
+            if (reason == "disable") EnhancementFairyStage1Host.Invoke(host.Habitat, "OnDisable");
+            if (reason == "ownership") host.Restore(Array.Empty<KeyValuePair<string, int>>());
+            Assert.That(host.Habitat.IsItemCardPending, Is.False);
+            Assert.That(host.Habitat.IsItemCardOpen, Is.False);
+            Assert.That(host.Controller.IsWorldInputBlocked, Is.False);
+            if (reason != "ownership") Assert.That(TouchMultiplier(view, body), Is.EqualTo(Vector2.one));
+            if (reason == "floor") host.Move(ERestaurantFloorType.Floor3);
+            sound.Advance(.4f);
+            Assert.That(host.Habitat.IsItemCardPending || host.Habitat.IsItemCardOpen, Is.False);
+            Assert.That(sound.Plays.Count, Is.EqualTo(1), "Cancellation must not replay the bubble or open another card.");
+        }
+    }
+
+    [TestCase("_masterVolume")]
+    [TestCase("_soundEffectVolume")]
+    public void Stage1_MutedFairyTouchKeepsVisualAndCardWithoutAudio(string mutedField)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            EnhancementFairyStage1Host.Set(sound.Sound, mutedField, 0f);
+            Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.True);
+            sound.Advance(.05f);
+            Assert.That(TouchMultiplier(TouchView(host, body), body).y, Is.LessThan(1f));
+            sound.Advance(host.Habitat.Settings.TouchDuration);
+            Assert.That(host.Habitat.IsItemCardOpen, Is.True);
+            Assert.That(sound.Plays, Is.Empty);
+            EnhancementFairyStage1Host.Set(sound.Sound, mutedField, 1f);
+            sound.Advance(.2f);
+            Assert.That(sound.Plays, Is.Empty, "Unmuting cannot replay a muted touch.");
+        }
+    }
+
+    [Test]
+    public void Stage1_FairyBubbleIntervalLimitsOnlyAudioAndNotTheNextValidTouch()
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            var original = host.Habitat.Settings;
+            var settings = Object.Instantiate(original);
+            try
+            {
+                settings.MinimumBubbleInterval = .5f;
+                EnhancementFairyStage1Host.Set(host.Habitat, "_settings", settings);
+                for (int tap = 0; tap < 3; tap++)
+                {
+                    Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.True);
+                    Assert.That(host.Habitat.IsItemCardPending, Is.True);
+                    Assert.That(sound.Plays.Count, Is.EqualTo(tap < 2 ? 1 : 2));
+                    host.Habitat.CloseItemCard();
+                    sound.Advance(tap == 0 ? .1f : .5f);
+                }
+            }
+            finally
+            {
+                EnhancementFairyStage1Host.Set(host.Habitat, "_settings", original);
+                Object.DestroyImmediate(settings);
+            }
+        }
+    }
+
+    [Test]
+    public void Stage1_VisibleAcquisitionBirthCannotBeInterruptedByFairyTouch()
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        {
+            sound.Confirm(1); sound.StartFloor3();
+            sound.Advance(host.Habitat.Settings.TrailSeconds + host.Habitat.Settings.GatherSeconds + .2f);
+            var body = host.Bodies().Single();
+            Assert.That(body.color.a, Is.GreaterThan(.5f), "The candidate is visible but still completing acquisition.");
+            int before = sound.Plays.Count;
+            Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.False);
+            Assert.That(host.Habitat.IsItemCardPending || host.Habitat.IsItemCardOpen, Is.False);
+            Assert.That(sound.Plays.Count, Is.EqualTo(before));
+            sound.Advance(host.Habitat.Settings.BirthDuration);
+            AssertSingleCompletion(host, sound);
+        }
+    }
+
+    [TestCase("Emerging")]
+    [TestCase("Returning")]
+    [TestCase("Fading")]
+    public void Stage1_HousePresentationStatesRejectFairyTouchWithoutAudio(string motion)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            object view = TouchView(host, body);
+            var field = EnhancementFairyStage1Host.Field(view.GetType(), "HouseMotion");
+            field.SetValue(view, Enum.Parse(field.FieldType, motion));
+            Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.False);
+            Assert.That(host.Habitat.IsItemCardPending || host.Habitat.IsItemCardOpen, Is.False);
+            Assert.That(sound.Plays, Is.Empty);
+        }
+    }
+
+    private static SpriteRenderer PrepareTouchFairy(EnhancementFairyStage1Host host, FairyBirthSoundScope sound, StaffGachaOfflineFonts fonts)
+    {
+        foreach (var itemUi in host.SceneComponents<UIItemGacha>())
+        { itemUi.gameObject.SetActive(false); fonts.BindBeforeActivation(itemUi.gameObject); }
+        host.Restore(new[] { new KeyValuePair<string, int>(sound.Items[0].Id, 1) });
+        sound.StartFloor3();
+        var brain = host.Habitat.GetActiveBrain(0);
+        brain.PlaceForBirth(new Vector2(host.Floor.transform.InverseTransformPoint(host.Camera.transform.position).x,
+            host.Habitat.Settings.GroundArea.y));
+        sound.Advance(.05f);
+        return host.Bodies().Single();
+    }
+
+    private static object TouchView(EnhancementFairyStage1Host host, SpriteRenderer body)
+        => ((IList)EnhancementFairyStage1Host.Get(host.Habitat, "_views")).Cast<object>()
+            .Single(view => ReferenceEquals(EnhancementFairyStage1Host.Get(view, "Body"), body));
+
+    private static Vector2 TouchMultiplier(object view, SpriteRenderer body)
+    {
+        var brain = (EnhancementFairyBrain)EnhancementFairyStage1Host.Get(view, "Brain");
+        float scale = (float)EnhancementFairyStage1Host.Get(view, "Scale") * (float)EnhancementFairyStage1Host.Get(view, "HouseScale");
+        return new Vector2(body.transform.localScale.x / (scale * (1f + brain.Squash)),
+            body.transform.localScale.y / (scale * (1f - brain.Squash)));
+    }
+
+    private static void AssertMeshGroundContact(object view, SpriteRenderer body)
+    {
+        var brain = (EnhancementFairyBrain)EnhancementFairyStage1Host.Get(view, "Brain");
+        float lowest = float.PositiveInfinity;
+        foreach (var vertex in body.sprite.vertices)
+        {
+            Vector3 local = new Vector3(body.flipX ? -vertex.x : vertex.x, body.flipY ? -vertex.y : vertex.y, 0f);
+            lowest = Mathf.Min(lowest, body.transform.parent.InverseTransformPoint(body.transform.TransformPoint(local)).y);
+        }
+        Assert.That(lowest, Is.EqualTo(brain.VisualHeight + (float)EnhancementFairyStage1Host.Get(view, "HouseLift")).Within(.0001f),
+            "Squish/tilt/flip composition must preserve the lowest visible mesh point at its original ground height.");
     }
 
     [Test]
