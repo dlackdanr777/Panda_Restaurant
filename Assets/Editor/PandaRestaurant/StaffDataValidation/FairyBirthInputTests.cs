@@ -533,7 +533,7 @@ public sealed class FairyBirthInputTests
             Assert.That(f.Sound.Plays.Count, Is.EqualTo(1));
             var played = f.Sound.Plays.Single();
             Assert.That(played.Clip, Is.SameAs(f.Settings.WallCollisionClip));
-            Assert.That(played.Volume, Is.InRange(.001f, .30f));
+            Assert.That(played.Volume, Is.InRange(.001f, f.Settings.SafeWallCollisionVolume));
             Assert.That(played.Pitch, Is.EqualTo(f.Settings.WallCollisionPitch));
             Assert.That(played.Owner, Is.SameAs(EnhancementFairyStage1Host.Get(f.Views[0], "WallSoundOwner")));
             Assert.That(body.TryConsumeWallImpact(out _), Is.False, "The habitat drains the contact exactly once.");
@@ -541,6 +541,70 @@ public sealed class FairyBirthInputTests
             Assert.That(f.Sound.Plays.Count, Is.EqualTo(1), "Moving away from the wall must not repeat the contact.");
             f.AssertPoolUnchanged();
             CollectionAssert.AreEquivalent(ownership, UserInfo.GetGiveGachaItemCountDic());
+        }
+    }
+
+    [TestCase(30, false)] [TestCase(60, false)]
+    [TestCase(30, true)] [TestCase(60, true)]
+    public void Stage1_VerticalBoundaryDispatchesSamePooledClipAtRaisedVolume(int fps, bool ceiling)
+    {
+        using (var f = new WallSoundFixture())
+        {
+            var body = f.Arm(0, 1, 10f);
+            Rect room = f.Settings.Physics.SafeBounds;
+            body.Position = new Vector2(room.center.x, ceiling
+                ? room.yMax - body.HalfExtents.y - .001f : room.yMin + body.HalfExtents.y + .001f);
+            body.Velocity = Vector2.up * (ceiling ? 10f : -10f);
+            f.Sound.Advance(1f / fps);
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(1));
+            var played = f.Sound.Plays.Single();
+            Assert.That(played.Clip, Is.SameAs(f.Settings.WallCollisionClip));
+            Assert.That(f.Settings.WallCollisionVolume, Is.EqualTo(.30f * 1.15f).Within(.000001f));
+            Assert.That(played.Volume, Is.InRange(.345f * .65f, .345f));
+            Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False);
+            f.Sound.Advance(.05f);
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(1));
+            f.AssertPoolUnchanged();
+        }
+    }
+
+    [TestCase(30)] [TestCase(60)]
+    public void Stage1_RepeatedFloorBouncesRespectCooldownAndStopOnAiReturn(int fps)
+    {
+        using (var f = new WallSoundFixture())
+        {
+            var body = f.Arm(0, 1, 10f); Rect room = f.Settings.Physics.SafeBounds;
+            body.Position = new Vector2(room.center.x, room.yMin + body.HalfExtents.y + .5f);
+            body.Velocity = Vector2.down * 12f;
+            for (int i = 0; i < fps * 5; i++) f.Sound.Advance(1f / fps);
+            Assert.That(f.Sound.Plays.Count, Is.InRange(2, f.Settings.Physics.SafeMaximumBounceCount + 1));
+            for (int i = 1; i < f.Sound.Plays.Count; i++)
+                Assert.That(f.Sound.Plays[i].Time - f.Sound.Plays[i - 1].Time,
+                    Is.GreaterThanOrEqualTo(f.Settings.SafePerFairyWallSoundCooldown - .0001f));
+            Assert.That(body.Mode, Is.EqualTo(EnhancementFairyPhysicsSolver.BodyMode.Autonomous));
+            int count = f.Sound.Plays.Count;
+            f.Sound.Advance(.1f);
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(count), "Restored walking must remain silent.");
+            f.AssertPoolUnchanged();
+        }
+    }
+
+    [TestCase(false, "mute")] [TestCase(true, "mute")]
+    [TestCase(false, "drag")] [TestCase(true, "drag")]
+    [TestCase(false, "slow")] [TestCase(true, "slow")]
+    public void Stage1_VerticalBoundaryHonorsMuteDragAndMinimumSpeed(bool ceiling, string gate)
+    {
+        using (var f = new WallSoundFixture())
+        {
+            var body = f.Arm(0, 1, 10f); Rect room = f.Settings.Physics.SafeBounds;
+            body.Position = new Vector2(room.center.x, ceiling
+                ? room.yMax - body.HalfExtents.y - .001f : room.yMin + body.HalfExtents.y + .001f);
+            body.Velocity = Vector2.up * (ceiling ? 1f : -1f) * (gate == "slow" ? .5f : 10f);
+            if (gate == "mute") EnhancementFairyStage1Host.Set(f.Sound.Sound, "_effectVolume", 0f);
+            if (gate == "drag") body.Mode = EnhancementFairyPhysicsSolver.BodyMode.Dragging;
+            f.Sound.Advance(1f / 60f);
+            Assert.That(f.Sound.Plays, Is.Empty);
+            f.AssertPoolUnchanged();
         }
     }
 
@@ -591,13 +655,23 @@ public sealed class FairyBirthInputTests
         }
     }
 
-    [Test]
-    public void Stage1_FivePhysicalFairiesKeepTwoWallVoicesAndCancelOnlyTheirOwnSource()
+    [TestCase(false)] [TestCase(true)]
+    public void Stage1_FivePhysicalFairiesKeepTwoWallVoicesAndCancelOnlyTheirOwnSource(bool mixedSurfaces)
     {
         using (var f = new WallSoundFixture(5))
         {
             f.Settings.GlobalWallSoundCooldown = 0f; // Exercise the concurrent cap independently of the normal global throttle.
-            for (int i = 0; i < 5; i++) f.Arm(i, i % 2 == 0 ? -1 : 1, 10f);
+            for (int i = 0; i < 5; i++)
+            {
+                var body = f.Arm(i, i % 2 == 0 ? -1 : 1, 10f);
+                if (mixedSurfaces && i > 0)
+                {
+                    Rect room = f.Settings.Physics.SafeBounds; bool ceiling = i % 2 == 1;
+                    body.Position = new Vector2(room.center.x + i * 3f, ceiling
+                        ? room.yMax - body.HalfExtents.y - .001f : room.yMin + body.HalfExtents.y + .001f);
+                    body.Velocity = Vector2.up * (ceiling ? 10f : -10f);
+                }
+            }
             f.Sound.Advance(1f / 60f);
             Assert.That(f.Host.Habitat.PhysicalFairyCount, Is.EqualTo(5));
             Assert.That(f.Sound.Plays.Count, Is.EqualTo(2));

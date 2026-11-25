@@ -30,17 +30,18 @@ public sealed class EnhancementFairySettings : ScriptableObject
         SafeTouchValue(TouchScale.y, .8f, 1.2f, .9f));
     private static float SafeTouchValue(float value, float min, float max, float fallback)
         => float.IsNaN(value) || float.IsInfinity(value) ? fallback : Mathf.Clamp(value, min, max);
-    [Header("Fairy left/right wall collision sound (presentation only)")]
+    [Header("Fairy wall / floor / ceiling collision sound (presentation only)")]
+    // Keep serialized Wall... names so existing Inspector values and clip references survive.
     public bool WallCollisionSoundEnabled = true;
     public AudioClip WallCollisionClip;
-    [Range(0f, 1f)] public float WallCollisionVolume = .30f;
+    [Range(0f, 1f)] public float WallCollisionVolume = .345f;
     [Range(.1f, 3f)] public float WallCollisionPitch = 1f;
-    [Tooltip("Only an actual outward left/right wall impact at this speed can play. No drag, floor or ceiling sound.")]
+    [Tooltip("Minimum normal speed for a real wall, floor or ceiling impact. Dragging and position correction stay silent.")]
     [Min(0f)] public float MinimumWallImpactSpeed = 2.5f;
     [Min(0f)] public float PerFairyWallSoundCooldown = .20f;
     [Min(0f)] public float GlobalWallSoundCooldown = .10f;
     [Range(1, 5)] public int MaximumConcurrentWallSounds = 2;
-    public float SafeWallCollisionVolume => SafeTouchValue(WallCollisionVolume, 0f, 1f, .30f);
+    public float SafeWallCollisionVolume => SafeTouchValue(WallCollisionVolume, 0f, 1f, .345f);
     public float SafeWallCollisionPitch => SafeTouchValue(WallCollisionPitch, .1f, 3f, 1f);
     public float SafeMinimumWallImpactSpeed => SafeTouchValue(MinimumWallImpactSpeed, 0f, 30f, 2.5f);
     public float SafePerFairyWallSoundCooldown => SafeTouchValue(PerFairyWallSoundCooldown, 0f, 10f, .20f);

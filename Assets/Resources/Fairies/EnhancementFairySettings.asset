@@ -59,7 +59,7 @@ MonoBehaviour:
   MaxConcurrentBubbles: 2
   WallCollisionSoundEnabled: 1
   WallCollisionClip: {fileID: 8300000, guid: c47e9e21632a4fb586dc7b52642e2d12, type: 3}
-  WallCollisionVolume: 0.3
+  WallCollisionVolume: 0.345
   WallCollisionPitch: 1
   MinimumWallImpactSpeed: 2.5
   PerFairyWallSoundCooldown: 0.2

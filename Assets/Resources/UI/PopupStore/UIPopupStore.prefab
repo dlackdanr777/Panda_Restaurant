@@ -1165,7 +1165,7 @@ MonoBehaviour:
   _cues:
   - Cue: 0
     Clip: {fileID: 8300000, guid: 924be5a011bb21e448fc2086f911e9fe, type: 3}
-    Volume: 0.45
+    Volume: 0.54
     MinimumInterval: 0.07
     MaximumDuration: 0
   - Cue: 1

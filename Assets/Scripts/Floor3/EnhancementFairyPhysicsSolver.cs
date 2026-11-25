@@ -7,13 +7,21 @@ using UnityEngine;
 public sealed class EnhancementFairyPhysicsSolver
 {
     public enum BodyMode { Autonomous, Dragging, Physics }
+    public enum BoundarySurface { None, LeftWall, RightWall, Floor, Ceiling }
 
     /// <summary>Presentation-only contact data. The solver does not choose or play any audio.</summary>
     public readonly struct WallImpact
     {
         public readonly float Speed;
         public readonly int Side;
-        internal WallImpact(float speed, int side) { Speed = speed; Side = side; }
+        public readonly BoundarySurface Surface;
+        internal WallImpact(float speed, int side)
+            : this(speed, side < 0 ? BoundarySurface.LeftWall : BoundarySurface.RightWall) { }
+        internal WallImpact(float speed, BoundarySurface surface)
+        {
+            Speed = speed; Surface = surface;
+            Side = surface == BoundarySurface.LeftWall ? -1 : surface == BoundarySurface.RightWall ? 1 : 0;
+        }
     }
 
     public sealed class Body
@@ -46,8 +54,12 @@ public sealed class EnhancementFairyPhysicsSolver
         internal float BoundaryEntryWeight;
         private WallImpact _wallImpact;
 
-        /// <summary>Consumes at most the strongest real side-wall impact from the most recent Step.</summary>
+        /// <summary>Compatibility for side-wall callers; drains the same single boundary contact slot.</summary>
         public bool TryConsumeWallImpact(out WallImpact impact)
+            => TryConsumeBoundaryImpact(out impact) && impact.Side != 0;
+
+        /// <summary>Consumes only the strongest real wall/floor/ceiling impact from the most recent Step.</summary>
+        public bool TryConsumeBoundaryImpact(out WallImpact impact)
         {
             impact = _wallImpact;
             ClearWallImpact();
@@ -57,8 +69,11 @@ public sealed class EnhancementFairyPhysicsSolver
         public void ClearWallImpact() { _wallImpact = default; }
 
         internal void RecordWallImpact(float speed, int side)
+            => RecordBoundaryImpact(speed, side < 0 ? BoundarySurface.LeftWall : BoundarySurface.RightWall);
+
+        internal void RecordBoundaryImpact(float speed, BoundarySurface surface)
         {
-            if (speed > _wallImpact.Speed) _wallImpact = new WallImpact(speed, side);
+            if (speed > _wallImpact.Speed) _wallImpact = new WallImpact(speed, surface);
         }
     }
 
@@ -247,8 +262,9 @@ public sealed class EnhancementFairyPhysicsSolver
         body.Velocity *= Mathf.Exp(-settings.SafeAirDamping * dt);
         body.Velocity = ClampVelocity(body.Velocity, settings);
         float previousX = body.Position.x;
+        float previousY = body.Position.y;
         body.Position += body.Velocity * dt;
-        ResolveBounds(body, settings, true, previousX);
+        ResolveBounds(body, settings, true, previousX, previousY);
         float floor = settings.SafeBounds.yMin + body.HalfExtents.y;
         bool grounded = body.Position.y <= floor + .003f && Mathf.Abs(body.Velocity.y) < .05f;
         if (grounded)
@@ -262,7 +278,7 @@ public sealed class EnhancementFairyPhysicsSolver
     }
 
     private static void ResolveBounds(Body body, EnhancementFairyPhysicsSettings settings, bool bounce,
-        float previousX = float.NaN)
+        float previousX = float.NaN, float previousY = float.NaN)
     {
         Vector2 clamped = ClampCenter(body.Position, body, settings, false);
         if (body.Position.x < clamped.x && body.Velocity.x < 0f || body.Position.x > clamped.x && body.Velocity.x > 0f)
@@ -280,10 +296,14 @@ public sealed class EnhancementFairyPhysicsSolver
             body.Velocity.x = -body.Velocity.x * settings.SafeWallRestitution;
         }
         if (body.Position.y > clamped.y && body.Velocity.y > 0f)
+        {
+            RecordVerticalBoundaryImpact(body, settings, bounce, previousY, BoundarySurface.Ceiling);
             body.Velocity.y = -body.Velocity.y * settings.SafeWallRestitution;
+        }
         if (body.Position.y < clamped.y && body.Velocity.y < 0f)
         {
             float impactSpeed = -body.Velocity.y;
+            RecordVerticalBoundaryImpact(body, settings, bounce, previousY, BoundarySurface.Floor);
             if (bounce && impactSpeed > settings.SafeMinimumSettlingSpeed * 1.5f)
                 Impact(body, impactSpeed, body.Velocity.x, settings);
             if (bounce && body.BounceCount < settings.SafeMaximumBounceCount
@@ -296,6 +316,19 @@ public sealed class EnhancementFairyPhysicsSolver
             else body.Velocity.y = 0f;
         }
         body.Position = clamped;
+    }
+
+    private static void RecordVerticalBoundaryImpact(Body body, EnhancementFairyPhysicsSettings settings,
+        bool bounce, float previousY, BoundarySurface surface)
+    {
+        if (!bounce || body.Mode != BodyMode.Physics || body.Settling) return;
+        Rect room = settings.SafeBounds;
+        float halfY = Mathf.Clamp(body.HalfExtents.y, .12f, room.height * .49f);
+        float floor = room.yMin + halfY, ceiling = room.yMax - halfY;
+        // Initial overlap recovery and pair separation are not physical boundary arrivals.
+        if (surface == BoundarySurface.Floor && previousY >= floor && body.Position.y < floor
+            || surface == BoundarySurface.Ceiling && previousY <= ceiling && body.Position.y > ceiling)
+            body.RecordBoundaryImpact(Mathf.Abs(body.Velocity.y), surface);
     }
 
     private static void ResolvePair(Body a, Body b, Body[] bodies, int count,

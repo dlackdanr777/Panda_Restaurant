@@ -345,7 +345,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
             View view = _views[i];
             var body = view.PhysicsBody;
             if (body == null) continue;
-            if (body.TryConsumeWallImpact(out var wallImpact)) PlayWallCollision(view, wallImpact);
+            if (body.TryConsumeBoundaryImpact(out var wallImpact)) PlayWallCollision(view, wallImpact);
 #if UNITY_EDITOR
             if (body.JustActivated && body.Mode == EnhancementFairyPhysicsSolver.BodyMode.Physics) _observedCollisionActivations++;
             if (body.BounceCount > view.ObservedPhysicsBounces) _observedBounces += body.BounceCount - view.ObservedPhysicsBounces;
@@ -423,7 +423,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
             || body == null || !body.Enabled || body.Mode != EnhancementFairyPhysicsSolver.BodyMode.Physics
             || body.Settling || body.Finished || view.HouseMotion != HouseMotion.None
             || !IsVisible || !isActiveAndEnabled || !_owned.Contains(view.Brain.ItemId)
-            || (impact.Side != -1 && impact.Side != 1) || !EnhancementFairyPhysicsSolver.Finite(impact.Speed)
+            || impact.Surface == EnhancementFairyPhysicsSolver.BoundarySurface.None || !EnhancementFairyPhysicsSolver.Finite(impact.Speed)
             || impact.Speed < _settings.SafeMinimumWallImpactSpeed
             || _clock < view.NextWallSoundAt || _clock < _nextWallSoundAt) return false;
         var sound = SoundManager.TryGetExistingInstance();
