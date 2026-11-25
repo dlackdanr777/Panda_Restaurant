@@ -74,6 +74,9 @@ public sealed class ThirdFloorApprovedArtTests
 
             var button = art.GetComponentInChildren<ThirdFloorApprovedMapButton>(true);
             Assert.That(button, Is.Not.Null);
+            Assert.That((bool)Field(typeof(ThirdFloorApprovedMapButton), "_enableClickSound").GetValue(button), Is.True);
+            Assert.That((float)Field(typeof(ThirdFloorApprovedMapButton), "_clickSoundVolume").GetValue(button), Is.EqualTo(1f));
+            Assert.That((float)Field(typeof(ThirdFloorApprovedMapButton), "_clickSoundPitch").GetValue(button), Is.EqualTo(1f));
             Assert.That(button.transform.parent, Is.SameAs(right.transform));
             var legacyTouch = (SpriteTouchEvent)Field(typeof(ThirdFloorApprovedMapButton), "_legacyMapTouch").GetValue(button);
             Assert.That(legacyTouch, Is.SameAs(Field(typeof(Floor3Controller), "_touchEvent").GetValue(floor)));
@@ -258,7 +261,7 @@ public sealed class ThirdFloorApprovedArtTests
     [Test]
     public void CompletedTapUsesExistingFloor3ControllerAndMapNavigationOnceThenCanReenter()
     {
-        using (var host = new MapHost())
+        using (var host = new MapHost(withSound: true))
         {
             Vector3 roomScale = host.Room.transform.localScale;
             var pointer = host.Pointer();
@@ -268,11 +271,18 @@ public sealed class ThirdFloorApprovedArtTests
             host.Button.OnPointerClick(pointer);
             host.Button.OnPointerClick(pointer);
             Assert.That(host.Navigation.Count, Is.Zero, "The approved frame gets its own visible press/release before opening.");
+            Assert.That(host.SoundPlays, Is.Empty, "Audio waits for the final input recheck and map dispatch.");
             host.Advance(.25f);
             Assert.That(host.Navigation.Count, Is.EqualTo(1));
             Assert.That(host.Navigation.FirstView, Is.SameAs(host.Floor));
             Assert.That(host.Floor.VisibleState, Is.EqualTo(VisibleState.Appearing));
             Assert.That(host.Opened, Is.EqualTo(1));
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(1), "The real legacy map callbacks must not add a second sound.");
+            Assert.That(host.SoundPlays[0].Clip, Is.SameAs(Resources.Load<AudioClip>("Audio/ButtonClickSound")));
+            Assert.That(host.SoundPlays[0].Owner, Is.SameAs(host.Button));
+            Assert.That(host.SoundPlays[0].Type, Is.EqualTo(EffectType.None));
+            host.Tap(host.Pointer());
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(1), "An already open map rejects both input and sound.");
             Assert.That(host.LegacyFrame.GetComponent<TweenTransformScale>(), Is.Not.Null);
             Assert.That(host.Room.GetComponent<TweenData>(), Is.Null);
             Assert.That(host.Room.transform.localScale, Is.EqualTo(roomScale));
@@ -286,6 +296,7 @@ public sealed class ThirdFloorApprovedArtTests
             host.Tap(host.Pointer());
             Assert.That(host.Navigation.FirstView, Is.SameAs(host.Floor));
             Assert.That(host.Opened, Is.EqualTo(2));
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(2), "Closing and reopening restores one sound per map entry.");
         }
     }
 
@@ -301,7 +312,7 @@ public sealed class ThirdFloorApprovedArtTests
     [TestCase("disabled")]
     public void InterruptedGesturesDoNotOpenMapAndNextValidTapRecovers(string interruption)
     {
-        using (var host = new MapHost())
+        using (var host = new MapHost(withSound: true))
         {
             var pointer = host.Pointer();
             host.Button.OnPointerDown(pointer);
@@ -323,6 +334,7 @@ public sealed class ThirdFloorApprovedArtTests
             host.Advance(1f);
             Assert.That(host.Navigation.Count, Is.Zero, interruption);
             Assert.That(host.Opened, Is.Zero, interruption);
+            Assert.That(host.SoundPlays, Is.Empty, "Rejected or cancelled input must stay silent: " + interruption);
             Assert.That(host.LegacyFrame.GetComponent<TweenData>(), Is.Null, "Cancelled input must never reach the old press callbacks.");
             host.AssertVisualsRestored();
 
@@ -333,6 +345,7 @@ public sealed class ThirdFloorApprovedArtTests
             host.SetButtonEnabled(true);
             host.Tap(host.Pointer());
             Assert.That(host.Opened, Is.EqualTo(1));
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(1));
         }
     }
 
@@ -370,7 +383,7 @@ public sealed class ThirdFloorApprovedArtTests
     [Test]
     public void InstantCompletedClickStillShowsFeedbackAndRapidClicksOpenOnlyOnce()
     {
-        using (var host = new MapHost())
+        using (var host = new MapHost(withSound: true))
         {
             host.Tap(host.Pointer(), false);
             for (int i = 0; i < 10; i++) host.Tap(host.Pointer(), false);
@@ -379,6 +392,7 @@ public sealed class ThirdFloorApprovedArtTests
             Assert.That(host.Opened, Is.Zero);
             host.Advance(.21f);
             Assert.That(host.Opened, Is.EqualTo(1));
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(1));
             Assert.That(host.Navigation.Count, Is.EqualTo(1));
             host.AssertVisualsRestored();
         }
@@ -392,7 +406,7 @@ public sealed class ThirdFloorApprovedArtTests
     [TestCase("cancel")]
     public void DelayedOpeningRevalidatesInputAndScreenState(string interruption)
     {
-        using (var host = new MapHost())
+        using (var host = new MapHost(withSound: true))
         {
             host.Tap(host.Pointer(), false);
             host.Advance(.04f);
@@ -407,6 +421,7 @@ public sealed class ThirdFloorApprovedArtTests
             }
             host.Advance(.4f);
             Assert.That(host.Opened, Is.Zero, interruption);
+            Assert.That(host.SoundPlays, Is.Empty, "A transition during feedback must cancel its pending sound.");
             Assert.That(host.Navigation.Count, Is.Zero);
             Assert.That(host.LegacyFrame.GetComponent<TweenData>(), Is.Null);
             host.AssertVisualsRestored();
@@ -417,13 +432,14 @@ public sealed class ThirdFloorApprovedArtTests
             host.SetButtonEnabled(true);
             host.Tap(host.Pointer());
             Assert.That(host.Opened, Is.EqualTo(1), "A cancellation must not leave the button locked.");
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(1));
         }
     }
 
     [Test]
     public void IdleHintWaitsSwingsBrieflyRestoresExactlyAndSchedulesRandomInterval()
     {
-        using (var host = new MapHost(idleHints: true))
+        using (var host = new MapHost(idleHints: true, withSound: true))
         {
             host.Advance(.49f);
             host.AssertVisualsRestored();
@@ -440,7 +456,57 @@ public sealed class ThirdFloorApprovedArtTests
             Assert.That((bool)Field(typeof(ThirdFloorApprovedMapButton), "_hintSwinging").GetValue(host.Button), Is.False);
             Assert.That((float)Field(typeof(ThirdFloorApprovedMapButton), "_hintRemaining").GetValue(host.Button), Is.InRange(8f, 15f));
             Assert.That(host.Opened, Is.Zero);
+            Assert.That(host.SoundPlays, Is.Empty, "Automatic map hints must never request click audio.");
             Assert.That(host.Room.GetComponent<TweenData>(), Is.Null);
+        }
+    }
+
+    [TestCase("master")]
+    [TestCase("effects")]
+    [TestCase("button-disabled")]
+    [TestCase("volume-zero")]
+    [TestCase("missing-clip")]
+    public void MapAudioHonoursMuteAndOptionalSoundSettingsWithoutBlockingMap(string silence)
+    {
+        using (var host = new MapHost(withSound: true))
+        {
+            if (silence == "master") Set(host.Sound, "_masterVolume", 0f);
+            if (silence == "effects") Set(host.Sound, "_soundEffectVolume", 0f);
+            if (silence == "button-disabled") Set(host.Button, "_enableClickSound", false);
+            if (silence == "volume-zero") Set(host.Button, "_clickSoundVolume", 0f);
+            if (silence == "missing-clip") Set(host.Sound, "_clips", null);
+            host.Tap(host.Pointer());
+            Assert.That(host.Opened, Is.EqualTo(1));
+            Assert.That(host.SoundPlays, Is.Empty, silence);
+        }
+    }
+
+    [Test]
+    public void MapAudioUsesTheExistingPoolAndInspectorVolumeAndPitch()
+    {
+        using (var host = new MapHost(withSound: true))
+        {
+            int sourcesBefore = host.Sound.GetComponentsInChildren<AudioSource>(true).Length;
+            Set(host.Button, "_clickSoundVolume", .6f);
+            Set(host.Button, "_clickSoundPitch", 1.2f);
+            host.Tap(host.Pointer());
+            Assert.That(host.SoundPlays.Count, Is.EqualTo(1));
+            Assert.That(host.SoundPlays[0].Volume, Is.EqualTo(.6f).Within(.0001f));
+            Assert.That(host.SoundPlays[0].Pitch, Is.EqualTo(1.2f).Within(.0001f));
+            Assert.That(host.Sound.GetComponentsInChildren<AudioSource>(true).Length, Is.EqualTo(sourcesBefore));
+            Assert.That(host.Button.GetComponentsInChildren<AudioSource>(true), Is.Empty);
+        }
+    }
+
+    [Test]
+    public void MapOpeningWithoutASoundManagerDoesNotCreateOne()
+    {
+        using (var host = new MapHost())
+        {
+            Assert.That(SoundManager.TryGetExistingInstance(), Is.Null);
+            host.Tap(host.Pointer());
+            Assert.That(host.Opened, Is.EqualTo(1));
+            Assert.That(SoundManager.TryGetExistingInstance(), Is.Null);
         }
     }
 
@@ -528,9 +594,12 @@ public sealed class ThirdFloorApprovedArtTests
             Set(host.Button, "_pressDuration", -1f);
             Set(host.Button, "_releaseDuration", float.NaN);
             Set(host.Button, "_mapOpenDelay", -1f);
+            Set(host.Button, "_clickSoundVolume", float.NaN);
+            Set(host.Button, "_clickSoundPitch", float.PositiveInfinity);
             typeof(ThirdFloorApprovedMapButton).GetMethod("OnValidate", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(host.Button, null);
             foreach (string name in new[] { "_firstVisibleHintDelay", "_hintIntervalMin", "_hintIntervalMax",
-                "_hintDuration", "_hintRotationDegrees", "_pressScale", "_pressDuration", "_releaseDuration", "_mapOpenDelay" })
+                "_hintDuration", "_hintRotationDegrees", "_pressScale", "_pressDuration", "_releaseDuration", "_mapOpenDelay",
+                "_clickSoundVolume", "_clickSoundPitch" })
             {
                 float value = (float)Field(typeof(ThirdFloorApprovedMapButton), name).GetValue(host.Button);
                 Assert.That(float.IsNaN(value) || float.IsInfinity(value), Is.False, name);
@@ -687,6 +756,8 @@ public sealed class ThirdFloorApprovedArtTests
     private sealed class MapHost : Host
     {
         private readonly object _previousActions;
+        private readonly object _previousSoundManager;
+        private double _soundClock;
         private readonly UnityEngine.Random.State _previousRandom = UnityEngine.Random.state;
         private readonly EventSystem _events;
         private readonly Texture2D _frameTexture;
@@ -700,16 +771,43 @@ public sealed class ThirdFloorApprovedArtTests
         internal readonly Transform IdlePivot, PressVisual;
         internal readonly Quaternion IdleRestRotation;
         internal readonly Vector3 PressRestScale;
+        internal readonly SoundManager Sound;
+        internal readonly List<SoundManager.EffectPlaybackDiagnostic> SoundPlays = new List<SoundManager.EffectPlaybackDiagnostic>();
         internal int Opened;
 
-        internal MapHost(bool idleHints = false)
+        internal MapHost(bool idleHints = false, bool withSound = false)
         {
             _previousActions = Field(typeof(DataBind), "_unityActionBindDic").GetValue(null);
+            _previousSoundManager = Field(typeof(SoundManager), "_instance").GetValue(null);
             try
             {
                 Assert.That(UserInfo.IsTutorialStart, Is.False, "Run in the approved isolated Editor context.");
                 Assert.That(PopupManager.IsCustomerEncounterPresentationBlocked, Is.False);
                 Field(typeof(DataBind), "_unityActionBindDic").SetValue(null, new DataBindContainer<UnityAction>());
+                // Keep the actual SoundManager pool dispatch while avoiding Awake, account settings and native audio.
+                Field(typeof(SoundManager), "_instance").SetValue(null, null);
+                if (withSound)
+                {
+                    Sound = Create("inactive-existing-map-sound-pool").AddComponent<SoundManager>();
+                    Sound.SuppressNativePlaybackForTests = true;
+                    Sound.EffectClockForTests = () => _soundClock;
+                    Sound.EffectPlaybackRequested += play => SoundPlays.Add(play);
+                    var clip = Resources.Load<AudioClip>("Audio/ButtonClickSound");
+                    Assert.That(clip, Is.Not.Null);
+                    var clips = new AudioClip[(int)SoundEffectType.Length];
+                    clips[(int)SoundEffectType.ButtonClickSound] = clip;
+                    Set(Sound, "_clips", clips);
+                    var pool = new List<AudioSource>();
+                    for (int i = 0; i < 2; i++)
+                    {
+                        var source = Create("existing-map-pool-voice-" + i).AddComponent<AudioSource>();
+                        source.transform.SetParent(Sound.transform, false);
+                        source.playOnAwake = false;
+                        pool.Add(source);
+                    }
+                    Set(Sound, "_effectAudioDic", new Dictionary<EffectType, List<AudioSource>> { { EffectType.None, pool } });
+                    Field(typeof(SoundManager), "_instance").SetValue(null, Sound);
+                }
                 Camera = Create("inactive-camera").AddComponent<CameraController>();
                 Main = Create("inactive-main-scene").AddComponent<MainScene>();
                 Set(Main, "_currentFloor", ERestaurantFloorType.Floor3);
@@ -810,6 +908,7 @@ public sealed class ThirdFloorApprovedArtTests
             for (float elapsed = 0f; elapsed < seconds;)
             {
                 float dt = Mathf.Min(step, seconds - elapsed);
+                _soundClock += dt;
                 tick.Invoke(Button, new object[] { dt });
                 elapsed += dt;
             }
@@ -835,6 +934,7 @@ public sealed class ThirdFloorApprovedArtTests
             if (_fixtureSprite != null) Object.DestroyImmediate(_fixtureSprite);
             if (_frameTexture != null) Object.DestroyImmediate(_frameTexture);
             Field(typeof(DataBind), "_unityActionBindDic").SetValue(null, _previousActions);
+            Field(typeof(SoundManager), "_instance").SetValue(null, _previousSoundManager);
             UnityEngine.Random.state = _previousRandom;
         }
     }

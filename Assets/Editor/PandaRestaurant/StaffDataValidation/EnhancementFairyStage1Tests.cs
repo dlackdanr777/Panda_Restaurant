@@ -115,6 +115,9 @@ public sealed class EnhancementFairyStage1Tests
             Assert.That(host.Habitat.IsItemCardOpen, Is.False);
             EnhancementFairyStage1Host.Invoke(host.Controller, "BeginWorldTap", position);
             Assert.That(EnhancementFairyStage1Host.Invoke(host.Controller, "CompleteWorldTap", position), Is.True);
+            Assert.That(host.Habitat.IsItemCardPending, Is.True);
+            Assert.That(host.Habitat.IsItemCardOpen, Is.False);
+            host.Advance(host.Habitat.Settings.TouchDuration + 1f / 30f);
             Assert.That(host.Habitat.IsItemCardOpen, Is.True);
             Assert.That(host.Controller.IsWorldInputBlocked, Is.True);
             var popup = (GachaResultCardPopup)EnhancementFairyStage1Host.Get(host.Habitat, "_itemPopup");

@@ -22,6 +22,49 @@ MonoBehaviour:
     width: 60
     height: 0
   SpriteHeight: 1.65
+  Physics:
+    Enabled: 1
+    Bounds:
+      serializedVersion: 2
+      x: -53.2
+      y: 7.85
+      width: 66.85
+      height: 14.55
+    DragThresholdPixels: 12
+    DragReferenceDpi: 160
+    DragFollowSpeed: 20
+    MaxDragHeight: 14.55
+    MaximumDragSeconds: 10
+    ThrowVelocityMultiplier: 1.1
+    MaxThrowSpeed: 18
+    Gravity: 22
+    FloorRestitution: 0.6
+    WallRestitution: 0.48
+    FairyRestitution: 0.55
+    AirDamping: 0.2
+    GroundFriction: 5
+    MaximumBounceCount: 3
+    MinimumSettlingSpeed: 0.3
+    MaximumPhysicalDuration: 6
+    AngularReactionLimit: 10
+    CollisionRadiusScale: 0.85
+    MaximumPhysicalFairies: 5
+  TouchScale: {x: 1.05, y: 0.9}
+  TouchPressSeconds: 0.09
+  TouchReleaseSeconds: 0.13
+  BubbleClip: {fileID: 8300000, guid: c942ea85302b4695b7cfe32f1f55ef87, type: 3}
+  BubbleVolume: 0.3
+  BubblePitch: 0.9
+  MinimumBubbleInterval: 0.12
+  MaxConcurrentBubbles: 2
+  WallCollisionSoundEnabled: 1
+  WallCollisionClip: {fileID: 8300000, guid: c47e9e21632a4fb586dc7b52642e2d12, type: 3}
+  WallCollisionVolume: 0.3
+  WallCollisionPitch: 1
+  MinimumWallImpactSpeed: 2.5
+  PerFairyWallSoundCooldown: 0.2
+  GlobalWallSoundCooldown: 0.1
+  MaximumConcurrentWallSounds: 2
   WalkSpeed: 1.05
   HopHeight: 0.55
   RestMinSeconds: 1.8

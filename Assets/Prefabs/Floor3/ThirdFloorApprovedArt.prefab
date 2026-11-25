@@ -373,6 +373,9 @@ MonoBehaviour:
   _pressDuration: 0.08
   _releaseDuration: 0.12
   _mapOpenDelay: 0.2
+  _enableClickSound: 1
+  _clickSoundVolume: 1
+  _clickSoundPitch: 1
 --- !u!1001 &1001600
 PrefabInstance:
   m_ObjectHideFlags: 0

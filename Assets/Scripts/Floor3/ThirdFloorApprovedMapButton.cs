@@ -36,6 +36,11 @@ public sealed class ThirdFloorApprovedMapButton : MonoBehaviour, IPointerDownHan
     [SerializeField, Min(0f), Tooltip("Minimum delay after a completed tap. The frame always finishes restoring before opening the map.")]
     private float _mapOpenDelay = .2f;
 
+    [Header("Accepted map click sound")]
+    [SerializeField] private bool _enableClickSound = true;
+    [SerializeField, Range(0f, 1f)] private float _clickSoundVolume = 1f;
+    [SerializeField, Range(.5f, 2f)] private float _clickSoundPitch = 1f;
+
     private const int NoPointer = int.MinValue;
     private enum PressPhase { None, Pressing, Held, Releasing }
     private int _pointerId = NoPointer;
@@ -275,6 +280,12 @@ public sealed class ThirdFloorApprovedMapButton : MonoBehaviour, IPointerDownHan
         _dispatchingMap = true;
         try
         {
+            // The legacy SpriteTouchEvent / Floor3Controller / UIFloor3 path has no click audio.
+            // Dispatch only after the delayed input recheck; hints and cancelled taps stay silent.
+            var sound = _enableClickSound ? SoundManager.TryGetExistingInstance() : null;
+            if (sound != null)
+                sound.PlayPresentationEffect(EffectType.None, sound.GetEffectClip(SoundEffectType.ButtonClickSound),
+                    _clickSoundVolume, _clickSoundPitch, this, 1);
             // Retain Floor3Controller's existing subscriptions and ShowFloor3UI DataBind route.
             // Its original press tween affects only the hidden legacy frame.
             _legacyMapTouch.OnPointerDown(click);
@@ -380,6 +391,8 @@ public sealed class ThirdFloorApprovedMapButton : MonoBehaviour, IPointerDownHan
         _pressDuration = Safe(_pressDuration, .08f, .01f, 1f);
         _releaseDuration = Safe(_releaseDuration, .12f, .01f, 1f);
         _mapOpenDelay = Safe(_mapOpenDelay, .2f, 0f, 2f);
+        _clickSoundVolume = Safe(_clickSoundVolume, 1f, 0f, 1f);
+        _clickSoundPitch = Safe(_clickSoundPitch, 1f, .5f, 2f);
     }
 
     private static float Safe(float value, float fallback, float minimum, float maximum)

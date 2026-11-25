@@ -232,8 +232,9 @@ internal sealed class FairyBirthSoundScope : IDisposable
     internal double Clock;
     private readonly object _oldPool;
     private readonly List<GameObject> _sources = new List<GameObject>();
-    internal SoundManager.EffectPlaybackDiagnostic[] Pops => Plays.Where(p => p.Clip == Host.Habitat.Settings.BirthPopClip).ToArray();
-    internal SoundManager.EffectPlaybackDiagnostic[] Voices => Plays.Where(p => p.Clip != Host.Habitat.Settings.BirthPopClip).ToArray();
+    private readonly HashSet<object> _popOwners = new HashSet<object>(), _voiceOwners = new HashSet<object>();
+    internal SoundManager.EffectPlaybackDiagnostic[] Pops => Plays.Where(p => _popOwners.Contains(p.Owner)).ToArray();
+    internal SoundManager.EffectPlaybackDiagnostic[] Voices => Plays.Where(p => _voiceOwners.Contains(p.Owner)).ToArray();
 
     internal FairyBirthSoundScope(EnhancementFairyStage1Host host)
     {
@@ -262,6 +263,8 @@ internal sealed class FairyBirthSoundScope : IDisposable
     }
     internal void BindHabitat()
     {
+        _popOwners.Add(EnhancementFairyStage1Host.Get(Host.Habitat, "_popSoundOwner"));
+        _voiceOwners.Add(EnhancementFairyStage1Host.Get(Host.Habitat, "_voiceSoundOwner"));
         EnhancementFairyStage1Host.Set(Host.Habitat, "_birthRandom", new System.Random(84));
         EnhancementFairyStage1Host.Set(Host.Habitat, "_birthSoundRandom", new System.Random(193));
     }

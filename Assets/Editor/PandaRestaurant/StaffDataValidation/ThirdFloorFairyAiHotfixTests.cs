@@ -91,6 +91,8 @@ public sealed class ThirdFloorFairyAiHotfixTests
                 {
                     EnhancementFairyStage1Host.Invoke(host.Controller, "ProcessMouseInputFrame", pixel, true, true, false);
                     EnhancementFairyStage1Host.Invoke(host.Controller, "ProcessMouseInputFrame", pixel, false, false, true);
+                    Assert.That(host.Habitat.IsItemCardPending, Is.True, host.Controller.EditorLastWorldTapDiagnostic + "; " + evidence);
+                    host.Advance(host.Habitat.Settings.TouchDuration + 1f / 30f);
                     Assert.That(host.Habitat.IsItemCardOpen, Is.True, host.Controller.EditorLastWorldTapDiagnostic + "; " + evidence);
                     Assert.That(area.Points.Any(area.IsTouchAnimating), Is.False);
                     host.Habitat.CloseItemCard();

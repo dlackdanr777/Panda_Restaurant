@@ -359,6 +359,10 @@ public sealed class PopupStoreApprovedUiTests
                 float scale = Mathf.Pow(2, Mathf.Lerp(logWidth, logHeight, scaler.matchWidthOrHeight));
                 scaler.enabled = false;
                 Root.GetComponent<Canvas>().renderMode = RenderMode.WorldSpace;
+                // ScreenSpace Canvas normally resolves the prefab's serialized zero root
+                // scale. This synchronous world-space geometry fixture has no Canvas frame,
+                // so normalize only its memory instance, as the evidence renderer does.
+                Root.transform.localScale = Vector3.one;
                 Rect = Root.GetComponent<RectTransform>();
                 Rect.sizeDelta = new Vector2(width / scale, height / scale);
                 Counter = Root.GetComponentInChildren<PopupStoreSalesCounter>(true);
@@ -385,6 +389,9 @@ public sealed class PopupStoreApprovedUiTests
             var guide = Root.GetComponent("PopupStoreFinalGuideLayout");
             Assert.That(guide, Is.Not.Null);
             Assert.That(guide.GetType().GetMethod("ApplyLayout").Invoke(guide, null), Is.EqualTo(true));
+            // Order fitting reads world-space content corners. Refit after the synchronous
+            // host resolves Canvas scale/guide placement, matching the evidence renderer.
+            Assert.That(Root.GetComponent<PopupStoreOrderDisplay>().Refresh(), Is.True);
             Canvas.ForceUpdateCanvases();
             foreach (var list in Lists) Scroll(list).Rebuild(CanvasUpdate.PostLayout);
         }

@@ -19,16 +19,62 @@ public class CameraController : MonoBehaviour
     private readonly HashSet<object> _worldInputBlocks = new HashSet<object>();
     private Vector2 _tapStartPosition;
     private bool _tapCandidate;
+    private IWorldPointerGestureHandler _worldPointerGestureHandler;
+    private IWorldPointerGestureHandler _activeWorldPointerGesture;
+    private IWorldPointerGestureHandler _tapOnlyWorldPointerOwner;
+    private int _worldPointerId;
+    private bool _worldPointerWasConsumed;
+    private bool _waitForAllTouchesReleased;
+    private PointerEventData _uiPointerEventData;
+    private EventSystem _uiPointerEventSystem;
+    private readonly List<RaycastResult> _uiPointerResults = new List<RaycastResult>(16);
 #if UNITY_EDITOR
     // Read-only evidence for the last real input gesture; no per-frame logging or test initialization.
     public string EditorLastWorldTapDiagnostic { get; private set; } = "No pointer gesture observed";
 #endif
     public bool IsWorldInputBlocked => _worldInputBlocks.Count > 0;
+    public bool IsWorldPointerGestureActive => _activeWorldPointerGesture != null;
+
+    // A single world gesture consumer extends the existing camera pointer path.
+    // It owns only presses it accepts; all other presses retain the normal camera/tap behavior.
+    public void RegisterWorldPointerGestureHandler(IWorldPointerGestureHandler handler)
+    {
+        if (ReferenceEquals(_worldPointerGestureHandler, handler)) return;
+        if (_activeWorldPointerGesture != null || _tapOnlyWorldPointerOwner != null) CancelWorldPointerGesture();
+        _worldPointerGestureHandler = handler;
+    }
+
+    public void UnregisterWorldPointerGestureHandler(IWorldPointerGestureHandler handler)
+    {
+        if (!ReferenceEquals(_worldPointerGestureHandler, handler)) return;
+        CancelWorldPointerGesture(handler);
+        _worldPointerGestureHandler = null;
+    }
+
+    public void CancelWorldPointerGesture(IWorldPointerGestureHandler handler = null)
+    {
+        if (handler != null && !ReferenceEquals(_activeWorldPointerGesture, handler)
+            && !ReferenceEquals(_tapOnlyWorldPointerOwner, handler)) return;
+        IWorldPointerGestureHandler active = _activeWorldPointerGesture;
+        bool owned = active != null || _tapOnlyWorldPointerOwner != null;
+        _activeWorldPointerGesture = null;
+        _tapOnlyWorldPointerOwner = null;
+        if (owned) _worldPointerWasConsumed = true;
+        _tapCandidate = false;
+        _isDragging = _isDraggingEnabled = false;
+        // Detach before the callback: cleanup may itself release a camera input block.
+        active?.Cancel();
+    }
+
     public void SetWorldInputBlocked(object owner, bool blocked)
     {
         if (owner == null) return;
         _tapCandidate = false;
-        if (blocked) _worldInputBlocks.Add(owner);
+        if (blocked)
+        {
+            _worldInputBlocks.Add(owner);
+            CancelWorldPointerGesture();
+        }
         else _worldInputBlocks.Remove(owner);
     }
 
@@ -95,6 +141,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(ERestaurantFloorType floor, RestaurantType moveType)
     {
+        CancelWorldPointerGesture();
         OnPreviewFloorHandler?.Invoke(floor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
@@ -115,6 +162,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(ERestaurantFloorType floor)
     {
+        CancelWorldPointerGesture();
         OnPreviewFloorHandler?.Invoke(floor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
@@ -134,6 +182,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(RestaurantType moveType)
     {
+        CancelWorldPointerGesture();
         OnPreviewFloorHandler?.Invoke(CurrentFloor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
@@ -217,12 +266,16 @@ public class CameraController : MonoBehaviour
 #endif
 
         if (_isMoveAction)
+        {
+            CancelWorldPointerGesture();
             return;
+        }
 
 
         //DOTO: GetOpenViewCount로 인해 렉이 생길 수 있으니 테스트 해봐야할듯합니다.
         if(UserInfo.IsTutorialStart || _navigationCoordinator.GetOpenViewCount() != 0 || IsWorldInputBlocked)
         {
+            CancelWorldPointerGesture();
             _tapCandidate = false;
             if(!_isStopAction)
             {
@@ -244,6 +297,25 @@ public class CameraController : MonoBehaviour
         HandleMouseInput();
 #else
         HandleTouchInput();
+#endif
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (!hasFocus) CancelWorldPointerGesture();
+    }
+
+    private void OnApplicationPause(bool paused)
+    {
+        if (paused) CancelWorldPointerGesture();
+    }
+
+    private void OnDisable()
+    {
+        CancelWorldPointerGesture();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        RestorePresentationParticleStates();
+        _cameraComparisonRoutine = null;
 #endif
     }
 
@@ -368,12 +440,6 @@ public class CameraController : MonoBehaviour
 
         _cameraComparisonRoutine = null;
         Debug.Log("[PERF-CAMERA-01A] A/B comparison completed.");
-    }
-
-    private void OnDisable()
-    {
-        RestorePresentationParticleStates();
-        _cameraComparisonRoutine = null;
     }
 
     private void RestorePresentationParticleStates()
@@ -527,20 +593,74 @@ public class CameraController : MonoBehaviour
     // 📌 터치 입력 처리
     private void HandleTouchInput()
     {
-        if (Input.touchCount != 1) { _tapCandidate = false; return; }
+        if (Input.touchCount != 1)
+        {
+            if (Input.touchCount > 1) _waitForAllTouchesReleased = true;
+            else _waitForAllTouchesReleased = false;
+            CancelWorldPointerGesture();
+            return;
+        }
+        // After a second finger joins, neither remaining finger may resume the gesture.
+        if (_waitForAllTouchesReleased) return;
         Touch touch = Input.GetTouch(0);
-        ProcessTouchInputFrame(touch.position, touch.phase);
+        ProcessPointerInputFrame(touch.fingerId, touch.position, touch.phase, Time.unscaledTime);
     }
 
     // Platform polling and input processing share this path with isolated frame replay.
     private void ProcessTouchInputFrame(Vector2 position, TouchPhase phase)
     {
-        Vector2 touchWorldPos = _cam.ScreenToWorldPoint(position);
+        ProcessPointerInputFrame(0, position, phase, Time.unscaledTime);
+    }
+
+    public void ProcessPointerInputFrame(int pointerId, Vector2 position, TouchPhase phase, float unscaledTime)
+    {
+        bool blocked = _isMoveAction || UserInfo.IsTutorialStart || IsWorldInputBlocked
+            || (_navigationCoordinator != null && _navigationCoordinator.GetOpenViewCount() != 0);
+        if (blocked)
+        {
+            CancelWorldPointerGesture();
+            return;
+        }
+
+        if ((_activeWorldPointerGesture != null || _tapOnlyWorldPointerOwner != null)
+            && pointerId != _worldPointerId)
+        {
+            CancelWorldPointerGesture();
+            return;
+        }
+
         switch (phase)
         {
             case TouchPhase.Began:
+                CancelWorldPointerGesture();
+                _worldPointerWasConsumed = false;
+                _worldPointerId = pointerId;
+                if (IsPointerOverUI(position)) return;
+
+                IWorldPointerGestureHandler candidate = _worldPointerGestureHandler;
+                if (candidate != null && candidate.TryBegin(pointerId, position, unscaledTime))
+                {
+                    _worldPointerWasConsumed = true;
+                    _activeWorldPointerGesture = candidate;
+#if UNITY_EDITOR
+                    EditorLastWorldTapDiagnostic = "world gesture accepted; pointer=" + pointerId;
+#endif
+                    return;
+                }
                 BeginWorldTap(position);
-                if (IsPointerOverUI(position) || !IsTouchingDraggableSprite(touchWorldPos))
+                // Cooldown/protected fairies and authored props are still interactive
+                // targets. Keep their ordinary completed-tap route, but never reinterpret
+                // a failed pickup or a prop swipe as dragging the background camera.
+                if (candidate != null && candidate.BlocksCameraDrag(position))
+                {
+                    _tapOnlyWorldPointerOwner = candidate;
+#if UNITY_EDITOR
+                    EditorLastWorldTapDiagnostic = "world target reserved for tap; camera drag excluded; pointer=" + pointerId;
+#endif
+                    return;
+                }
+                Vector2 worldPosition = _cam.ScreenToWorldPoint(position);
+                if (!IsTouchingDraggableSprite(worldPosition))
                 {
                     _isDragging = false;
                     return;
@@ -551,12 +671,35 @@ public class CameraController : MonoBehaviour
                 break;
 
             case TouchPhase.Moved:
+            case TouchPhase.Stationary:
+                if (_worldPointerWasConsumed)
+                {
+                    if (IsPointerOverUI(position)) CancelWorldPointerGesture();
+                    else _activeWorldPointerGesture?.Move(pointerId, position, unscaledTime);
+                    return;
+                }
+                if (phase == TouchPhase.Stationary) break;
                 TrackWorldTap(position);
                 if (_isDragging) ProcessDrag(position);
                 break;
 
             case TouchPhase.Ended:
             case TouchPhase.Canceled:
+                if (_worldPointerWasConsumed)
+                {
+                    IWorldPointerGestureHandler active = _activeWorldPointerGesture;
+                    _activeWorldPointerGesture = null;
+                    _tapCandidate = false;
+                    _isDragging = _isDraggingEnabled = false;
+                    // Keep the consumed latch until a new Began so a late release can never become a tap.
+                    if (phase == TouchPhase.Ended && !IsPointerOverUI(position))
+                        active?.End(pointerId, position, unscaledTime);
+                    else active?.Cancel();
+                    return;
+                }
+                // Release tap-only ownership before dispatch: a valid tap may open
+                // UI and cancel input without recursively cancelling this completed press.
+                _tapOnlyWorldPointerOwner = null;
                 CompletePointerInput(position, phase == TouchPhase.Ended);
                 break;
         }
@@ -570,29 +713,9 @@ public class CameraController : MonoBehaviour
 
     private void ProcessMouseInputFrame(Vector2 position, bool down, bool held, bool up)
     {
-        if (down)
-        {
-            BeginWorldTap(position);
-            Vector2 mouseWorldPos = _cam.ScreenToWorldPoint(position);
-            if (IsPointerOverUI(position) || !IsTouchingDraggableSprite(mouseWorldPos))
-            {
-                _isDragging = false; // ❌ 드래그 시작 X
-                return;
-            }
-
-            _startTouchPos = position;
-            _startCamPos = _cam.transform.position;
-            _isDragging = true;
-        }
-
-        if (held)
-        {
-            TrackWorldTap(position);
-            if (_isDragging) ProcessDrag(position);
-        }
-
-        if (up)
-            CompletePointerInput(position, true);
+        if (down) ProcessPointerInputFrame(-1, position, TouchPhase.Began, Time.unscaledTime);
+        if (held) ProcessPointerInputFrame(-1, position, TouchPhase.Moved, Time.unscaledTime);
+        if (up) ProcessPointerInputFrame(-1, position, TouchPhase.Ended, Time.unscaledTime);
     }
 
     private void CompletePointerInput(Vector2 position, bool allowTap)
@@ -688,15 +811,17 @@ public class CameraController : MonoBehaviour
     private bool IsPointerOverUI(Vector2 screenPosition)
     {
         if (EventSystem.current == null) return false;
-        PointerEventData eventData = new PointerEventData(EventSystem.current)
+        if (_uiPointerEventData == null || _uiPointerEventSystem != EventSystem.current)
         {
-            position = screenPosition
-        };
+            _uiPointerEventSystem = EventSystem.current;
+            _uiPointerEventData = new PointerEventData(_uiPointerEventSystem);
+        }
+        _uiPointerEventData.Reset();
+        _uiPointerEventData.position = screenPosition;
+        _uiPointerResults.Clear();
+        EventSystem.current.RaycastAll(_uiPointerEventData, _uiPointerResults);
 
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, results);
-
-        foreach (var result in results)
+        foreach (var result in _uiPointerResults)
         {
             if (((1 << result.gameObject.layer) & _ignoredLayer) != 0)
             {
@@ -706,7 +831,7 @@ public class CameraController : MonoBehaviour
             return true;
         }
 
-        return IsPointerOverNonInteractableUI(eventData);
+        return IsPointerOverNonInteractableUI(_uiPointerEventData);
     }
 
     private void BeginWorldTap(Vector2 position)
@@ -755,10 +880,11 @@ public class CameraController : MonoBehaviour
     {
         foreach (GraphicRaycaster gr in _graphicRaycasters)
         {
-            List<RaycastResult> results = new List<RaycastResult>();
-            gr.Raycast(eventData, results);
+            if (gr == null || !gr.isActiveAndEnabled) continue;
+            _uiPointerResults.Clear();
+            gr.Raycast(eventData, _uiPointerResults);
 
-            foreach (var result in results)
+            foreach (var result in _uiPointerResults)
             {
                 if (((1 << result.gameObject.layer) & _ignoredLayer) != 0)
                 {
