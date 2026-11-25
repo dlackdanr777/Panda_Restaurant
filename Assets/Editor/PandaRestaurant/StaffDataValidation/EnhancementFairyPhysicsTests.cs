@@ -60,6 +60,110 @@ public sealed class EnhancementFairyPhysicsTests
         Assert.That(Mathf.Abs(body.Angle), Is.LessThanOrEqualTo(settings.AngularReactionLimit));
     }
 
+    [TestCase(30, -1)] [TestCase(60, -1)] [TestCase(120, -1)]
+    [TestCase(30, 1)] [TestCase(60, 1)] [TestCase(120, 1)]
+    public void WallImpactReportsPreReflectionSpeedAndSideExactlyOnceAtAllFrameRates(int fps, int side)
+    {
+        var settings = SolverSettings(); settings.AirDamping = 0f;
+        var solver = new EnhancementFairyPhysicsSolver();
+        float wall = side < 0 ? settings.Bounds.xMin + .65f : settings.Bounds.xMax - .65f;
+        var body = MakeBody(1, new Vector2(wall - side * .01f, 6f)); var bodies = new[] { body };
+        solver.BeginDrag(body, settings); solver.Release(body, Vector2.right * (side * 8f), settings);
+        float incoming = Mathf.Abs(body.Velocity.x);
+        solver.Step(bodies, 1, 1f / fps, settings);
+        Assert.That(body.TryConsumeWallImpact(out var impact), Is.True);
+        Assert.That(impact.Side, Is.EqualTo(side)); Assert.That(impact.Speed, Is.EqualTo(incoming).Within(.0001f));
+        Assert.That(body.Velocity.x * side, Is.LessThan(0f));
+        Assert.That(Mathf.Abs(body.Velocity.x), Is.EqualTo(incoming * settings.SafeWallRestitution).Within(.0001f),
+            "Reporting the impact must not change the existing wall restitution.");
+        Assert.That(body.TryConsumeWallImpact(out _), Is.False, "One physical hit cannot be consumed twice.");
+        solver.Step(bodies, 1, 1f / fps, settings);
+        Assert.That(body.TryConsumeWallImpact(out _), Is.False, "Moving inward after reflection is silent.");
+    }
+
+    [Test]
+    public void MultipleWallHitsInOneCatchUpStepKeepOnlyTheStrongestContact()
+    {
+        var settings = SolverSettings(); settings.Bounds = new Rect(-1.5f, 0f, 3f, 12f);
+        settings.AirDamping = 0f; settings.Gravity = .1f; settings.WallRestitution = .9f;
+        var solver = new EnhancementFairyPhysicsSolver(); var body = MakeBody(1, new Vector2(0f, 6f));
+        body.HalfExtents = new Vector2(1.4f, .85f); body.Mode = Mode.Physics; body.Velocity = Vector2.right * 15f;
+        solver.Step(new[] { body }, 1, .25f, settings);
+        Assert.That(body.TryConsumeWallImpact(out var impact), Is.True);
+        Assert.That(impact.Side, Is.EqualTo(1)); Assert.That(impact.Speed, Is.EqualTo(15f).Within(.0001f));
+        Assert.That(Mathf.Abs(body.Velocity.x), Is.LessThan(15f * settings.SafeWallRestitution * settings.SafeWallRestitution),
+            "The narrow test room causes multiple real reflections in the same catch-up Step.");
+        Assert.That(body.TryConsumeWallImpact(out _), Is.False, "Contact storage is one bounded slot, not a delayed queue.");
+    }
+
+    [TestCase("floor")] [TestCase("ceiling")] [TestCase("drag")]
+    [TestCase("outside-outward")] [TestCase("outside-inward")] [TestCase("entry-recovery")]
+    [TestCase("autonomous")]
+    public void NonWallMotionAndBoundaryRecoveryDoNotProduceWallImpact(string motion)
+    {
+        var settings = SolverSettings(); var solver = new EnhancementFairyPhysicsSolver();
+        float wall = settings.Bounds.xMax - .65f;
+        var body = MakeBody(1, new Vector2(0f, 6f)); body.Mode = Mode.Physics;
+        switch (motion)
+        {
+            case "floor": body.Position.y = .86f; body.Velocity = Vector2.down * 10f; break;
+            case "ceiling": body.Position.y = settings.Bounds.yMax - .86f; body.Velocity = Vector2.up * 10f; break;
+            case "drag":
+                body.Position.x = wall - .01f; solver.BeginDrag(body, settings);
+                solver.SetDragTarget(body, new Vector2(100f, 6f), settings); break;
+            case "outside-outward": body.Position.x = wall + .1f; body.Velocity = Vector2.right * 5f; break;
+            case "outside-inward": body.Position.x = wall + .1f; body.Velocity = Vector2.left * .1f; break;
+            case "entry-recovery":
+                body.Position.x = wall + .1f; solver.BeginDrag(body, settings);
+                solver.Release(body, Vector2.zero, settings); break;
+            case "autonomous": body.Mode = Mode.Autonomous; body.Position.x = wall + .1f; break;
+        }
+        solver.Step(new[] { body }, 1, 1f / 60f, settings);
+        Assert.That(body.TryConsumeWallImpact(out _), Is.False, motion);
+        if (motion == "floor") Assert.That(body.BounceCount, Is.EqualTo(1));
+        if (motion == "ceiling") Assert.That(body.Velocity.y, Is.LessThan(0f));
+        if (motion == "outside-outward") Assert.That(body.Velocity.x, Is.LessThan(0f), "The pre-existing correction reflection stays unchanged but silent.");
+    }
+
+    [Test]
+    public void PairOverlapCorrectionAtTheWallDoesNotBecomeAWallImpact()
+    {
+        var settings = SolverSettings(); var solver = new EnhancementFairyPhysicsSolver();
+        float wall = settings.Bounds.xMax - .65f;
+        var a = MakeBody(1, new Vector2(wall - .01f, 6f)); a.Mode = Mode.Physics;
+        var b = MakeBody(2, new Vector2(wall - .3f, 6f)); b.Mode = Mode.Physics;
+        var bodies = new[] { a, b };
+        solver.Step(bodies, 2, 1f / 120f, settings);
+        Assert.That(a.Position.x, Is.EqualTo(wall).Within(.0001f), "Pair separation actually pushed the right body into the wall clamp.");
+        Assert.That(a.TryConsumeWallImpact(out _), Is.False); Assert.That(b.TryConsumeWallImpact(out _), Is.False);
+    }
+
+    [TestCase("next-frame")] [TestCase("zero-delta")] [TestCase("begin-drag")]
+    [TestCase("cancel")] [TestCase("body-disabled")] [TestCase("settings-disabled")]
+    [TestCase("finish")] [TestCase("autonomous-reuse")] [TestCase("clear")]
+    public void PendingWallImpactCannotSurviveNewFramesOrBodyLifecycleChanges(string transition)
+    {
+        var settings = SolverSettings(); var solver = new EnhancementFairyPhysicsSolver();
+        var body = MakeBody(1, new Vector2(settings.Bounds.xMax - .66f, 6f)); var bodies = new[] { body };
+        solver.BeginDrag(body, settings); solver.Release(body, Vector2.right * 8f, settings);
+        solver.Step(bodies, 1, 1f / 120f, settings);
+        Assert.That(body.Velocity.x, Is.LessThan(0f), "A real reflection has generated an unconsumed event.");
+        switch (transition)
+        {
+            case "next-frame": solver.Step(bodies, 1, 1f / 120f, settings); break;
+            case "zero-delta": solver.Step(bodies, 1, 0f, settings); break;
+            case "begin-drag": solver.BeginDrag(body, settings); break;
+            case "cancel": solver.Cancel(body, settings); break;
+            case "body-disabled": body.Enabled = false; solver.Step(bodies, 1, 1f / 120f, settings); break;
+            case "settings-disabled": settings.Enabled = false; solver.Step(bodies, 1, 1f / 120f, settings); break;
+            case "finish": body.Age = settings.SafeMaximumPhysicalDuration; solver.Step(bodies, 1, .25f, settings);
+                solver.Step(bodies, 1, .25f, settings); Assert.That(body.Mode, Is.EqualTo(Mode.Autonomous)); break;
+            case "autonomous-reuse": body.Mode = Mode.Autonomous; solver.Step(bodies, 1, 1f / 120f, settings); break;
+            case "clear": body.ClearWallImpact(); break;
+        }
+        Assert.That(body.TryConsumeWallImpact(out _), Is.False, transition);
+    }
+
     [Test]
     public void FixedStepsKeepThirtySixtyAndOneTwentyHzTrajectoriesConsistent()
     {

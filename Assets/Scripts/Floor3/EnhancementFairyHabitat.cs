@@ -643,6 +643,7 @@ public sealed partial class EnhancementFairyHabitat : MonoBehaviour
         // A new demo account must not inherit an in-flight puff or protected slot from the former one.
         while (_views.Count > 0) Release(_views.Count - 1);
         _clock = _rotationClock = 0f;
+        _nextWallSoundAt = float.NegativeInfinity;
         _nextBirthAt = 0f;
         _cursor = _rotationSlot = 0;
         _arrivals.Clear();

@@ -13,6 +13,7 @@ public class UIFloor3 : MobileUIView
     [SerializeField] private Button _popupStoreButton;
     [SerializeField] private UIPopupStore _popupStoreView;
     private bool _openingPopupStore;
+    public string LastPopupStoreEntryError { get; private set; }
 
     [Space]
     [Header("Animations")]
@@ -51,11 +52,19 @@ public class UIFloor3 : MobileUIView
             || _uiNav.CheckActiveView(UIPopupStore.ViewName)) return;
 
         _openingPopupStore = true;
+        LastPopupStoreEntryError = null;
         try
         {
             var ready = _popupStoreView;
             var lifetime = ready.GetComponent<PopupStoreSessionLifetime>();
-            if (lifetime != null && !lifetime.TryPrepareForEntry(out ready)) return;
+            if (lifetime != null && !lifetime.TryPrepareForEntry(out ready))
+            {
+                LastPopupStoreEntryError = lifetime.LastError ?? "Popup session is not ready for entry.";
+#if UNITY_EDITOR
+                Debug.LogWarning("POPUP_STORE_ENTRY_BLOCKED: " + LastPopupStoreEntryError, this);
+#endif
+                return;
+            }
             // Keep the map's runtime reference paired with the replacement registration.
             _popupStoreView = ready;
             if (_popupStoreView == null || !_popupStoreView.IsBoundTo(_uiNav)) return;

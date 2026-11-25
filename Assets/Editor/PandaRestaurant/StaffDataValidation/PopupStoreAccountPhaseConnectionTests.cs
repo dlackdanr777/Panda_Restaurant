@@ -267,6 +267,86 @@ public sealed class PopupStoreAccountPhaseConnectionTests
         }
     }
 
+    [TestCase(false)] [TestCase(true)]
+    public void ActualMapButtonReentersAfterThreeAccountAbandonsWithoutReplayingOrHidingExhaustion(bool closeMapBetweenVisits)
+    {
+        using (var h = new Harness(dailyLimit: 3))
+        {
+            var identities = new System.Collections.Generic.HashSet<string>();
+            for (int visit = 0; visit < 3; visit++)
+            {
+                Assert.That(identities.Add(h.Root.GetComponent<PopupStoreGradeSession>().SessionId), Is.True);
+                h.Start();
+                if (visit > 0) h.Clock.AdvanceTime(1);
+                Assert.That(h.View.TryRequestExit(), Is.True);
+                var exit = h.Root.GetComponent<PopupStoreExitConfirmation>();
+                Assert.That(exit.IsVisible, Is.True);
+                if (visit == 1)
+                {
+                    Assert.That(exit.TryContinue(), Is.True);
+                    Assert.That(h.View.TryRequestExit(), Is.True);
+                }
+                Assert.That(exit.TryConfirmAbandon(), Is.True);
+                Assert.That(h.Phase.TickCleanup(), Is.True);
+                h.Panel.TickResult(1); h.Panel.TickResult(1);
+                Assert.That(h.Panel.TryConfirm(), Is.True);
+                h.Bridge.Complete(0);
+                Assert.That(h.Navigation.FirstView, Is.SameAs(h.Map));
+                Assert.That(h.Root.GetComponent<PopupStoreSessionLifetime>().IsRetired, Is.True);
+                Assert.That(h.Phase.RewardPresentation.BeginCount, Is.Zero);
+                Assert.That(h.Bridge.Claims, Is.EqualTo(visit + 1));
+                if (closeMapBetweenVisits)
+                {
+                    h.Navigation.PopNoAnime("AdmissionMap");
+                    h.Navigation.PushNoAnime("AdmissionMap");
+                }
+                h.ReenterThroughMapButton();
+                Assert.That(h.Controller.Host.LocalStartCount, Is.EqualTo(visit + 1));
+                Assert.That(h.Controller.Host.Access.Remaining, Is.EqualTo(2 - visit));
+                Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.NotStarted));
+                Assert.That(h.Phase.Session.TotalScore, Is.Zero);
+                Assert.That(h.Root.GetComponent<PopupStorePacking>().CommittedReceipts, Is.Empty);
+                Assert.That(h.Root.GetComponent<CanvasGroup>().interactable, Is.True);
+                Assert.That(h.Root.GetComponentsInChildren<PopupStorePhasePreviewView>(true), Has.Length.EqualTo(1));
+            }
+            while (h.Tutorial.TryNext()) { }
+            Assert.That(h.Controller.Host.LastError, Is.Null.Or.Empty,
+                "Fresh admission diagnostics: transaction=" + h.Controller.Host.Transaction?.State
+                + "; authorityReady=" + h.Phase.AccountAuthorityReady + "; phaseError=" + h.Phase.LastError
+                + "; accountStatus=" + h.Phase.AccountStatus);
+            Assert.That(h.Tutorial.TryPlay(), Is.False);
+            Assert.That(Read<TMPro.TMP_Text>(h.Tutorial, "_ticketStatusText").text, Is.EqualTo("이용권 0/3"));
+            Assert.That(h.Bridge.Prepares, Is.EqualTo(3));
+            Assert.That(h.Navigation.Count, Is.EqualTo(2));
+        }
+    }
+
+    [Test]
+    public void ActualMapButtonReentersAfterConfirmedAccountCompletionWithFreshSessionAndOneClaim()
+    {
+        using (var h = new Harness())
+        {
+            h.CResult();
+            string oldId = h.Root.GetComponent<PopupStoreGradeSession>().SessionId;
+            Assert.That(h.Panel.TryConfirm(), Is.True);
+            h.Bridge.Complete(3);
+            var reward = h.Phase.RewardPresentation;
+            reward.Tick(reward.RiseDuration, true);
+            Assert.That(reward.TryOpen(), Is.True);
+            reward.Tick(reward.OpeningDuration, true);
+            Assert.That(reward.TryConfirm(), Is.True);
+            h.ReenterThroughMapButton();
+            Assert.That(h.Root.GetComponent<PopupStoreGradeSession>().SessionId, Is.Not.EqualTo(oldId));
+            Assert.That(h.Phase.Session.TotalScore, Is.Zero);
+            Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.NotStarted));
+            Assert.That(h.Bridge.Claims, Is.EqualTo(1));
+            Assert.That(h.Controller.Host.LocalStartCount, Is.EqualTo(1));
+            Assert.That(h.Controller.Host.Access.Remaining, Is.Zero);
+            Assert.That(h.Phase.RewardPresentation.BeginCount, Is.Zero);
+            Assert.That(h.Tutorial.IsTutorialVisible, Is.True);
+        }
+    }
+
     [Test]
     public void RestartRecoveryUsesStoredFactsWithoutCreatingPhaseOrNewReceipt()
     {
@@ -321,11 +401,11 @@ public sealed class PopupStoreAccountPhaseConnectionTests
         public int Prepares, Claims;
         private Action<PopupStoreAccountClaimResult> _pending;
         private string _session;
-        internal Bridge(PopupStoreAccountRecoverySnapshot recovery, bool ticketsExhausted = false)
+        internal Bridge(PopupStoreAccountRecoverySnapshot recovery, bool ticketsExhausted = false, int dailyLimit = 1)
         {
             Recovery = recovery;
             var store = new PopupStoreBusinessStartFakeStore(() => PopupStoreApprovedTestSession.AuthorityTime,
-                new PopupStoreBusinessAccessPolicy("DEV01E-UI-test", 1));
+                new PopupStoreBusinessAccessPolicy("DEV01E-UI-test", dailyLimit));
             store.RegisterAccount("ui-account"); var session = store.OpenSession("ui-account");
             if (ticketsExhausted)
                 Assert.That(store.Submit(session, new PopupStoreBusinessStartRequest("ui-account", "earlier-start",
@@ -346,9 +426,10 @@ public sealed class PopupStoreAccountPhaseConnectionTests
     private sealed class Harness : IDisposable
     {
         internal readonly GameObject Scope;
-        internal readonly UIPopupStore View;
+        internal UIPopupStore View;
         internal readonly MobileUINavigation Navigation;
-        internal readonly PopupStoreAdmissionMapView Map;
+        internal readonly UIFloor3 Map;
+        internal readonly Button Entry;
         internal readonly Bridge Bridge;
         private PopupStoreAccountPhaseConfiguration _configuration;
         private readonly StaffGachaOfflineFonts _fonts = new StaffGachaOfflineFonts();
@@ -358,7 +439,7 @@ public sealed class PopupStoreAccountPhaseConnectionTests
         internal PopupStoreBusinessClock Clock => Root.GetComponent<PopupStoreBusinessClock>();
         internal PopupStoreStartController Controller => Root.GetComponent<PopupStoreStartController>();
         internal PopupStoreResultPanel Panel => Root.GetComponent<PopupStoreResultPanel>();
-        internal Harness(bool bind = true, PopupStoreAccountRecoverySnapshot recovery = null, bool ticketsExhausted = false)
+        internal Harness(bool bind = true, PopupStoreAccountRecoverySnapshot recovery = null, bool ticketsExhausted = false, int dailyLimit = 1)
         {
             Scope = new GameObject("account-phase-isolated-contract-test"); Scope.SetActive(false);
             try
@@ -370,7 +451,13 @@ public sealed class PopupStoreAccountPhaseConnectionTests
                 var navObject = new GameObject("account-phase-navigation", typeof(RectTransform)); navObject.transform.SetParent(Scope.transform, false);
                 Navigation = navObject.AddComponent<MobileUINavigation>();
                 var mapObject = new GameObject("account-phase-map", typeof(RectTransform), typeof(Canvas)); mapObject.transform.SetParent(Scope.transform, false);
-                Map = mapObject.AddComponent<PopupStoreAdmissionMapView>();
+                Map = mapObject.AddComponent<UIFloor3>();
+                var entryObject = new GameObject("actual-map-entry", typeof(RectTransform), typeof(Image), typeof(Button));
+                entryObject.transform.SetParent(mapObject.transform, false);
+                Entry = entryObject.GetComponent<Button>();
+                Write(Map, "_buttons", new[] { Entry });
+                Write(Map, "_popupStoreButton", Entry);
+                Write(Map, "_popupStoreView", View);
                 Write(Navigation, "_uiViews", new[] { new MobileViewDicStruct { Name = "AdmissionMap", UIView = Map },
                     new MobileViewDicStruct { Name = UIPopupStore.ViewName, UIView = View } });
                 Invoke(Navigation, "Init"); Scope.SetActive(true); Navigation.PushNoAnime("AdmissionMap"); Navigation.Push(UIPopupStore.ViewName);
@@ -387,7 +474,7 @@ public sealed class PopupStoreAccountPhaseConnectionTests
                 Assert.That(Root.GetComponent<PopupStoreRewardSession>().Refresh(), Is.True);
                 Assert.That(Panel.Refresh(), Is.True); Assert.That(Root.GetComponent<PopupStoreExitConfirmation>().Refresh(), Is.True);
                 if (!bind) return;
-                Bridge = new Bridge(recovery, ticketsExhausted);
+                Bridge = new Bridge(recovery, ticketsExhausted, dailyLimit);
                 PopupStoreAccountPhaseBootstrap.BridgeFactory = _ => Bridge;
                 _configuration = Object.Instantiate(Configuration()); Write(_configuration, "_enableAccountMode", true);
                 Assert.That(PopupStoreAccountPhaseBootstrap.TryPrepare(View, _configuration, out var error), Is.True, error);
@@ -401,6 +488,41 @@ public sealed class PopupStoreAccountPhaseConnectionTests
         }
         internal void Start()
         { while (Tutorial.TryNext()) { } Assert.That(Tutorial.TryPlay(), Is.True); PopupStorePhasePreviewIntegrationTests.CompleteInitialPresentation(Phase, Clock); }
+        internal void ReenterThroughMapButton()
+        {
+            var previous = View;
+            var lifetime = previous.GetComponent<PopupStoreSessionLifetime>();
+            Assert.That(Navigation.FirstView, Is.SameAs(Map));
+            Assert.That(lifetime.IsRetired, Is.True);
+            Assert.That(previous.gameObject.activeSelf, Is.False);
+            // This already closed graph is about to be destroyed by the real entry path.
+            // Non-ExecuteInEditMode controllers do not receive OnDestroy in this synchronous
+            // fixture. Dispatch its production cleanup before DestroyImmediate invalidates
+            // the native components, so the shared admission host cannot retain a dead UI
+            // listener. Ordinary Play dispatches this callback itself; no runtime guard changes.
+            Invoke(previous.GetComponent<PopupStoreStartController>(), "OnDestroy");
+            Entry.onClick.Invoke();
+            Assert.That(Navigation.FirstView, Is.InstanceOf<UIPopupStore>(), lifetime != null ? lifetime.LastError : null);
+            View = (UIPopupStore)Navigation.FirstView;
+            Assert.That(View, Is.Not.SameAs(previous));
+            // A second click must not publish another popup or replace the newly active graph.
+            Entry.onClick.Invoke();
+            Assert.That(Navigation.FirstView, Is.SameAs(View));
+            Assert.That(Navigation.Count, Is.EqualTo(2));
+            Assert.That(Read<UIPopupStore>(Map, "_popupStoreView"), Is.SameAs(View));
+            // These two runtime lifecycle hooks explicitly skip synchronous EditMode:
+            // CustomerEntrance.OnEnable starts its visible session only while playing,
+            // and PackingPresentation starts it on the following Play Update.
+            // Dispatch only those hooks after the real map replacement/opening assertions.
+            Assert.That(Root.GetComponent<PopupStoreCustomerEntrance>().BeginVisibleSession(), Is.True);
+            Assert.That(Root.GetComponent<PopupStorePackingPresentation>().BeginVisibleSession(), Is.True);
+            if (Phase == null)
+                Assert.That(PopupStoreAccountPhaseBootstrap.TryPrepare(View, _configuration, out var error), Is.True, error);
+            Controller.OnViewShown();
+            Assert.That(Phase, Is.Not.Null);
+            Assert.That(Phase.IsAccountMode, Is.True);
+            Assert.That(Tutorial.IsTutorialVisible, Is.True);
+        }
         internal void CResult()
         {
             Start(); var entrance = Root.GetComponent<PopupStoreCustomerEntrance>();

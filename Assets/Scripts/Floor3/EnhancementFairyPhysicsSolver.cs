@@ -8,6 +8,14 @@ public sealed class EnhancementFairyPhysicsSolver
 {
     public enum BodyMode { Autonomous, Dragging, Physics }
 
+    /// <summary>Presentation-only contact data. The solver does not choose or play any audio.</summary>
+    public readonly struct WallImpact
+    {
+        public readonly float Speed;
+        public readonly int Side;
+        internal WallImpact(float speed, int side) { Speed = speed; Side = side; }
+    }
+
     public sealed class Body
     {
         public int Id;
@@ -36,6 +44,22 @@ public sealed class EnhancementFairyPhysicsSolver
         internal float SettleSquash;
         internal Vector2 BoundaryEntryCenter;
         internal float BoundaryEntryWeight;
+        private WallImpact _wallImpact;
+
+        /// <summary>Consumes at most the strongest real side-wall impact from the most recent Step.</summary>
+        public bool TryConsumeWallImpact(out WallImpact impact)
+        {
+            impact = _wallImpact;
+            ClearWallImpact();
+            return Enabled && Mode == BodyMode.Physics && !Settling && !Finished && impact.Speed > 0f;
+        }
+
+        public void ClearWallImpact() { _wallImpact = default; }
+
+        internal void RecordWallImpact(float speed, int side)
+        {
+            if (speed > _wallImpact.Speed) _wallImpact = new WallImpact(speed, side);
+        }
     }
 
     public const float FixedStepSeconds = 1f / 120f;
@@ -57,6 +81,7 @@ public sealed class EnhancementFairyPhysicsSolver
     public void BeginDrag(Body body, EnhancementFairyPhysicsSettings settings)
     {
         if (body == null || settings == null || !settings.Enabled || !body.Enabled || !body.Eligible) return;
+        body.ClearWallImpact();
         Sanitize(body, settings);
         CaptureBoundaryEntry(body);
         body.Mode = BodyMode.Dragging;
@@ -99,6 +124,9 @@ public sealed class EnhancementFairyPhysicsSolver
     {
         if (bodies == null || settings == null) return;
         count = Mathf.Clamp(count, 0, bodies.Length);
+        // Contacts belong to this presentation frame, including frames with no fixed tick.
+        // Multiple substeps coalesce in each body's single slot rather than growing a queue.
+        for (int i = 0; i < count; i++) bodies[i]?.ClearWallImpact();
         if (!settings.Enabled)
         {
             for (int i = 0; i < count; i++)
@@ -147,6 +175,7 @@ public sealed class EnhancementFairyPhysicsSolver
                 body.Velocity = Vector2.zero;
                 body.Angle = body.AngularVelocity = body.Squash = 0f;
                 body.JustActivated = false;
+                body.ClearWallImpact();
                 ClearBoundaryEntry(body);
                 continue;
             }
@@ -217,8 +246,9 @@ public sealed class EnhancementFairyPhysicsSolver
         body.Velocity.y -= settings.SafeGravity * dt;
         body.Velocity *= Mathf.Exp(-settings.SafeAirDamping * dt);
         body.Velocity = ClampVelocity(body.Velocity, settings);
+        float previousX = body.Position.x;
         body.Position += body.Velocity * dt;
-        ResolveBounds(body, settings, true);
+        ResolveBounds(body, settings, true, previousX);
         float floor = settings.SafeBounds.yMin + body.HalfExtents.y;
         bool grounded = body.Position.y <= floor + .003f && Mathf.Abs(body.Velocity.y) < .05f;
         if (grounded)
@@ -231,11 +261,21 @@ public sealed class EnhancementFairyPhysicsSolver
         if (body.QuietSeconds > .12f) BeginSettle(body);
     }
 
-    private static void ResolveBounds(Body body, EnhancementFairyPhysicsSettings settings, bool bounce)
+    private static void ResolveBounds(Body body, EnhancementFairyPhysicsSettings settings, bool bounce,
+        float previousX = float.NaN)
     {
         Vector2 clamped = ClampCenter(body.Position, body, settings, false);
         if (body.Position.x < clamped.x && body.Velocity.x < 0f || body.Position.x > clamped.x && body.Velocity.x > 0f)
         {
+            // Boundary-entry recovery and pair overlap correction can also clamp/reflect X.
+            // Only travel from inside the ordinary wall to outside it is an audible contact.
+            Rect room = settings.SafeBounds;
+            float halfX = Mathf.Clamp(body.HalfExtents.x, .12f, room.width * .49f);
+            float left = room.xMin + halfX, right = room.xMax - halfX;
+            if (bounce && body.Mode == BodyMode.Physics && !body.Settling
+                && (body.Velocity.x < 0f && previousX >= left && body.Position.x < left
+                    || body.Velocity.x > 0f && previousX <= right && body.Position.x > right))
+                body.RecordWallImpact(Mathf.Abs(body.Velocity.x), body.Velocity.x < 0f ? -1 : 1);
             if (bounce) Impact(body, Mathf.Abs(body.Velocity.x), body.Velocity.x, settings);
             body.Velocity.x = -body.Velocity.x * settings.SafeWallRestitution;
         }
@@ -304,6 +344,7 @@ public sealed class EnhancementFairyPhysicsSolver
         for (int i = 0; i < count; i++)
             if (bodies[i] != null && bodies[i].Enabled && bodies[i].Mode != BodyMode.Autonomous) active++;
         if (active >= Mathf.Min(settings.SafeMaximumPhysicalFairies, collisionActivationLimit)) return;
+        body.ClearWallImpact();
         CaptureBoundaryEntry(body);
         body.Mode = BodyMode.Physics;
         body.Age = body.QuietSeconds = body.AngularVelocity = 0f;
@@ -321,6 +362,7 @@ public sealed class EnhancementFairyPhysicsSolver
 
     private static void BeginSettle(Body body)
     {
+        body.ClearWallImpact();
         // The existing settle interpolation can finish any remaining entry correction,
         // even when an unusually slow Inspector follow speed was selected.
         ClearBoundaryEntry(body);
@@ -347,6 +389,7 @@ public sealed class EnhancementFairyPhysicsSolver
 
     private static void Finish(Body body, EnhancementFairyPhysicsSettings settings)
     {
+        body.ClearWallImpact();
         ClearBoundaryEntry(body);
         body.Position = ClampCenter(body.Position, body, settings, false);
         body.Position.y = settings.SafeBounds.yMin + body.HalfExtents.y;

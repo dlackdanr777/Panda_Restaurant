@@ -8,6 +8,9 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
         public EnhancementFairyPhysicsSolver.Body PhysicsBody;
         public float PhysicsCooldownUntil;
         public float PhysicsSessionStartedAt = float.NegativeInfinity;
+        public readonly object WallSoundOwner = new object();
+        public float NextWallSoundAt = float.NegativeInfinity;
+        public float WallSoundEndsAt = float.NegativeInfinity;
 #if UNITY_EDITOR
         public int ObservedPhysicsBounces;
 #endif
@@ -27,6 +30,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
     private ThirdFloorApprovedArt _physicsApprovedArt;
     private bool _cleaningPhysics;
     private bool _gestureDidDrag;
+    private float _nextWallSoundAt = float.NegativeInfinity;
 #if UNITY_EDITOR
     private int _observedDrags, _observedThrows, _observedCollisionActivations, _observedBounces, _observedPhysicsReturns, _observedPeakPhysics;
     private Vector2 _observedReleaseVelocity;
@@ -53,8 +57,11 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
 
     private void InitializePhysics(View view)
     {
+        StopWallSound(view);
         if (view.PhysicsBody == null) view.PhysicsBody = new EnhancementFairyPhysicsSolver.Body();
         var body = view.PhysicsBody;
+        body.ClearWallImpact();
+        view.NextWallSoundAt = float.NegativeInfinity;
         body.Id = view.Root.GetInstanceID();
         body.Mode = EnhancementFairyPhysicsSolver.BodyMode.Autonomous;
         body.Enabled = body.Eligible = body.Finished = body.JustActivated = body.DragExpired = body.Settling = false;
@@ -338,6 +345,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
             View view = _views[i];
             var body = view.PhysicsBody;
             if (body == null) continue;
+            if (body.TryConsumeWallImpact(out var wallImpact)) PlayWallCollision(view, wallImpact);
 #if UNITY_EDITOR
             if (body.JustActivated && body.Mode == EnhancementFairyPhysicsSolver.BodyMode.Physics) _observedCollisionActivations++;
             if (body.BounceCount > view.ObservedPhysicsBounces) _observedBounces += body.BounceCount - view.ObservedPhysicsBounces;
@@ -358,6 +366,7 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
 
     private void FinishPhysicsView(View view)
     {
+        StopWallSound(view);
         var body = view.PhysicsBody;
         if (view.Brain != null) view.Brain.ResumeAfterPhysics(new Vector2(body.Position.x, _settings.SafeGroundArea.yMin));
         body.Finished = body.JustActivated = body.DragExpired = false;
@@ -371,6 +380,8 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
 
     private void CancelPhysicsView(View view)
     {
+        StopWallSound(view);
+        view.PhysicsBody?.ClearWallImpact();
         if (ReferenceEquals(view, _gestureView))
         {
             _gestureView = null;
@@ -400,7 +411,44 @@ public sealed partial class EnhancementFairyHabitat : IWorldPointerGestureHandle
         _cameraController?.CancelWorldPointerGesture(this);
         foreach (var view in _views) CancelPhysicsView(view);
         _physics.Reset();
+        _nextWallSoundAt = float.NegativeInfinity;
         _cleaningPhysics = false;
+    }
+
+    // Sound is presentation only. Consuming an impact never changes the solver's motion.
+    private bool PlayWallCollision(View view, EnhancementFairyPhysicsSolver.WallImpact impact)
+    {
+        var body = view.PhysicsBody;
+        if (_settings?.Physics == null || view.Brain == null || !_settings.WallCollisionSoundEnabled || _settings.WallCollisionClip == null
+            || body == null || !body.Enabled || body.Mode != EnhancementFairyPhysicsSolver.BodyMode.Physics
+            || body.Settling || body.Finished || view.HouseMotion != HouseMotion.None
+            || !IsVisible || !isActiveAndEnabled || !_owned.Contains(view.Brain.ItemId)
+            || (impact.Side != -1 && impact.Side != 1) || !EnhancementFairyPhysicsSolver.Finite(impact.Speed)
+            || impact.Speed < _settings.SafeMinimumWallImpactSpeed
+            || _clock < view.NextWallSoundAt || _clock < _nextWallSoundAt) return false;
+        var sound = SoundManager.TryGetExistingInstance();
+        if (sound == null || sound.IsEffectAudioMuted) return false;
+        int playing = 0;
+        foreach (var active in _views)
+            if (active.WallSoundEndsAt > _clock) playing++;
+        if (playing >= _settings.SafeMaximumConcurrentWallSounds) return false;
+        float strength = Mathf.InverseLerp(_settings.SafeMinimumWallImpactSpeed,
+            Mathf.Max(_settings.SafeMinimumWallImpactSpeed + .01f, _settings.Physics.SafeMaxThrowSpeed), impact.Speed);
+        float volume = _settings.SafeWallCollisionVolume * Mathf.Lerp(.65f, 1f, strength);
+        float pitch = _settings.SafeWallCollisionPitch;
+        if (sound.PlayPresentationEffect(EffectType.None, _settings.WallCollisionClip, volume, pitch,
+            view.WallSoundOwner, 1) == null) return false;
+        view.WallSoundEndsAt = _clock + _settings.WallCollisionClip.length / pitch;
+        view.NextWallSoundAt = _clock + _settings.SafePerFairyWallSoundCooldown;
+        _nextWallSoundAt = _clock + _settings.SafeGlobalWallSoundCooldown;
+        return true;
+    }
+
+    private void StopWallSound(View view)
+    {
+        if (float.IsNegativeInfinity(view.WallSoundEndsAt)) return;
+        SoundManager.TryGetExistingInstance()?.StopPresentationEffects(view.WallSoundOwner);
+        view.WallSoundEndsAt = float.NegativeInfinity;
     }
 
     private void OnApplicationPause(bool paused) { if (paused) CancelAllPhysics(); }

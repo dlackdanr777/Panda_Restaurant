@@ -342,6 +342,8 @@ public static partial class PopupStoreVerificationRunner
     [Serializable] private sealed class PausePlayReport
     {
         public string startedUtc, finishedUtc, error, receiptId, orderId, customerId;
+        public string unrelatedAnimationError;
+        public bool flowSucceeded;
         public int slotIndex, observedFrames, ownerId;
         public bool waitingFrozen, deliveryFrozen, inputsBlocked, deliveredAndReleased, releasedIdentity, stopping, success, workspaceUnchanged;
         public bool sessionLifetime, abandonedWithoutResult, freshAfterAbandon, completedDeliveryReleased, completedFresh;
@@ -378,8 +380,9 @@ public static partial class PopupStoreVerificationRunner
         object previousStaff = staff.GetValue(null), previousNatural = natural.GetValue(null);
         try
         {
-            staff.SetValue(null, true); natural.SetValue(null, false);
-            CustomerPartyStage1Preview.StartManual(ERestaurantFloorType.Floor1, false, false, null, 0);
+            // This popup probe needs the existing isolated Floor3 setup, not the unrelated staff-AI tutorial setup.
+            staff.SetValue(null, false); natural.SetValue(null, false);
+            CustomerPartyStage1Preview.StartManual(ERestaurantFloorType.Floor1, false, false, null, 0, true);
         }
         catch (Exception error) { FinishPausePlayReview(Unwrap(error).Message); }
         finally { staff.SetValue(null, previousStaff); natural.SetValue(null, previousNatural); }
@@ -392,6 +395,10 @@ public static partial class PopupStoreVerificationRunner
     private static void CapturePausePlayLog(string message, string stack, LogType type)
     {
         if (!SessionState.GetBool(PausePlayKey, false) || _pausePlayReport == null || _pausePlayReport.stopping) return;
+        // Preserve this unrelated startup error in the report, and keep overall success false.
+        // It must not prevent observing the popup's actual PlayerLoop and destruction callbacks.
+        if (message == "'Gacha UI' AnimationEvent 'SetStep' on animation 'Idle_Gacha' has no receiver! Are you missing a component?")
+        { _pausePlayReport.unrelatedAnimationError = message; return; }
         if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)
             _pausePlayReport.error = (_pausePlayReport.error ?? "") + "\n" + message;
         if (!string.IsNullOrEmpty(_pausePlayReport.receiptId)
@@ -423,11 +430,12 @@ public static partial class PopupStoreVerificationRunner
             }
             _pausePlayReport.after = ReadWorkspace();
             _pausePlayReport.workspaceUnchanged = Same(_pausePlayReport.before, _pausePlayReport.after);
-            _pausePlayReport.success = string.IsNullOrEmpty(_pausePlayReport.error) && _pausePlayReport.waitingFrozen
+            _pausePlayReport.flowSucceeded = string.IsNullOrEmpty(_pausePlayReport.error) && _pausePlayReport.waitingFrozen
                 && _pausePlayReport.deliveryFrozen && _pausePlayReport.inputsBlocked && _pausePlayReport.deliveredAndReleased
                 && (!_pausePlayReport.sessionLifetime || (_pausePlayReport.abandonedWithoutResult && _pausePlayReport.freshAfterAbandon
                     && _pausePlayReport.completedDeliveryReleased && _pausePlayReport.completedFresh))
                 && _pausePlayReport.workspaceUnchanged && !BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin;
+            _pausePlayReport.success = _pausePlayReport.flowSucceeded && string.IsNullOrEmpty(_pausePlayReport.unrelatedAnimationError);
             _pausePlayReport.finishedUtc = DateTime.UtcNow.ToString("O");
             Directory.CreateDirectory(DirectoryPath);
             File.WriteAllText(DirectoryPath + (_pausePlayReport.sessionLifetime ? "/session-play-result.json" : "/pause-play-result.json"), JsonUtility.ToJson(_pausePlayReport, true));
@@ -1146,7 +1154,8 @@ public static partial class PopupStoreVerificationRunner
                 && request != "run-sound" && request != "run-entry" && request != "run-ui-performance"
                 && request != "run-floor3-art-feedback" && request != "run-floor3-art" && request != "run-fairy-house"
                 && request != "run-floor3-details" && request != "run-floor3-details-ui"
-                && request != "run-fairy-physics" && request != "run-fairy-physics-regression")
+                && request != "run-fairy-physics" && request != "run-fairy-physics-regression"
+                && request != "run-reentry")
                 throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
@@ -1209,7 +1218,11 @@ public static partial class PopupStoreVerificationRunner
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        var selected = request == "run-fairy-physics" ? new[] { "EnhancementFairyPhysicsTests" }
+        var selected = request == "run-reentry" ? new[] {
+                "PopupStoreAccountPhaseConnectionTests", "PopupStoreSessionLifetimeTests", "PopupStoreNavigationTests",
+                "PopupStoreAdmissionTests", "PopupStoreExitConfirmationTests"
+            }
+            : request == "run-fairy-physics" ? new[] { "EnhancementFairyPhysicsTests" }
             : request == "run-fairy-physics-regression" ? new[] {
                 "EnhancementFairyPhysicsTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
                 "FairyBirthSequenceTests", "FairyBirthInputTests", "FairyBirthSoundTests", "ThirdFloorFairyHouseTests",
