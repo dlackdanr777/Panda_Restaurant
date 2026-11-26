@@ -65,6 +65,9 @@ public sealed class EnhancementFairyPhysicsSolver
     public const float FixedStepSeconds = 1f / 120f;
     private const float SettleSeconds = .3f;
     private float _accumulator;
+#if UNITY_EDITOR
+    public int EditorLastPairChecks { get; private set; }
+#endif
 
     public void Reset() { _accumulator = 0f; }
 
@@ -122,6 +125,9 @@ public sealed class EnhancementFairyPhysicsSolver
     public void Step(Body[] bodies, int count, float deltaTime, EnhancementFairyPhysicsSettings settings,
         int reservedCollisionSlots = 0)
     {
+#if UNITY_EDITOR
+        EditorLastPairChecks = 0;
+#endif
         if (bodies == null || settings == null) return;
         count = Mathf.Clamp(count, 0, bodies.Length);
         // Contacts belong to this presentation frame, including frames with no fixed tick.
@@ -159,7 +165,7 @@ public sealed class EnhancementFairyPhysicsSolver
         }
     }
 
-    private static void SimulateFixed(Body[] bodies, int count, EnhancementFairyPhysicsSettings settings,
+    private void SimulateFixed(Body[] bodies, int count, EnhancementFairyPhysicsSettings settings,
         int collisionActivationLimit)
     {
         int active = 0;
@@ -186,6 +192,7 @@ public sealed class EnhancementFairyPhysicsSolver
             if (++active > settings.SafeMaximumPhysicalFairies) { Finish(body, settings); continue; }
             fastest = Mathf.Max(fastest, body.Velocity.magnitude);
         }
+        if (active == 0) return;
         // The maximum distance in a microstep is smaller than the smallest eligible collision radius.
         // This also covers small sprites when designers increase the throw-speed Inspector setting.
         int microsteps = Mathf.Clamp(Mathf.CeilToInt(2f * Mathf.Max(fastest, settings.SafeMaxThrowSpeed)
@@ -209,6 +216,9 @@ public sealed class EnhancementFairyPhysicsSolver
                     {
                         Body b = bodies[j];
                         if (b == null || !b.Enabled) continue;
+#if UNITY_EDITOR
+                        EditorLastPairChecks++;
+#endif
                         ResolvePair(a, b, bodies, count, settings, pass == 0, collisionActivationLimit);
                     }
                 }

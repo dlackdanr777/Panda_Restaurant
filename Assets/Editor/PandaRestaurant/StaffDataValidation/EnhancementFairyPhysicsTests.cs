@@ -279,6 +279,49 @@ public sealed class EnhancementFairyPhysicsTests
     }
 
     [Test]
+    public void IdleBodiesSkipPairChecksWhileSquashAndDisabledCleanupContinue()
+    {
+        var settings = SolverSettings(); var solver = new EnhancementFairyPhysicsSolver();
+        var bodies = new Body[24];
+        for (int i = 0; i < bodies.Length; i++) bodies[i] = MakeBody(i, new Vector2(i, .85f));
+        bodies[0].Squash = .12f;
+        bodies[1].Mode = Mode.Physics;
+        bodies[1].Enabled = false;
+        bodies[1].Squash = .1f;
+        solver.Step(bodies, bodies.Length, 1f / 60f, settings);
+        Assert.That(solver.EditorLastPairChecks, Is.Zero);
+        Assert.That(bodies[0].Squash, Is.GreaterThan(0f).And.LessThan(.12f));
+        Assert.That(bodies[1].Mode, Is.EqualTo(Mode.Autonomous));
+        Assert.That(bodies[1].Finished, Is.True);
+        Assert.That(bodies[1].Squash, Is.Zero);
+        for (int i = 0; i < 120; i++) solver.Step(bodies, bodies.Length, 1f / 60f, settings);
+        Assert.That(bodies[0].Squash, Is.LessThan(.00001f));
+        solver.BeginDrag(bodies[0], settings);
+        solver.Release(bodies[0], Vector2.right * 4f, settings);
+        solver.Step(bodies, bodies.Length, 1f / 60f, settings);
+        Assert.That(solver.EditorLastPairChecks, Is.GreaterThan(0));
+    }
+
+    [TestCase(30)] [TestCase(60)] [TestCase(120)]
+    public void LongIdleDoesNotAccumulateCatchUpBeforeFirstThrow(int fps)
+    {
+        var settings = SolverSettings();
+        var idle = new EnhancementFairyPhysicsSolver(); var reference = new EnhancementFairyPhysicsSolver();
+        var a = MakeBody(1, new Vector2(0f, 4f)); var b = MakeBody(1, a.Position);
+        var idleBodies = new[] { a }; var referenceBodies = new[] { b };
+        for (int i = 0; i < fps * 30; i++) idle.Step(idleBodies, 1, 1f / fps, settings);
+        idle.BeginDrag(a, settings); idle.Release(a, Vector2.right * 4f, settings);
+        reference.BeginDrag(b, settings); reference.Release(b, Vector2.right * 4f, settings);
+        for (int i = 0; i < fps; i++)
+        {
+            idle.Step(idleBodies, 1, 1f / fps, settings);
+            reference.Step(referenceBodies, 1, 1f / fps, settings);
+            Assert.That(Vector2.Distance(a.Position, b.Position), Is.LessThan(.0001f));
+            Assert.That(Vector2.Distance(a.Velocity, b.Velocity), Is.LessThan(.0001f));
+        }
+    }
+
+    [Test]
     public void TwentyFourDisplayedBodiesWithFivePhysicalUseReusedStorageWithoutPerStepAllocations()
     {
         var settings = SolverSettings(); settings.Bounds = new Rect(-20f, 0f, 40f, 12f);
