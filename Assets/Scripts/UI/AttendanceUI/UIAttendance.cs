@@ -1,7 +1,6 @@
 using Muks.MobileUI;
 using Muks.BackEnd;
 using System;
-using System.Linq;
 using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine;
@@ -43,8 +42,23 @@ public class UIAttendance : MobileUIView
 
     private List<UIAttendanceSlot> _slotList = new List<UIAttendanceSlot>();
 
-    // 마지막으로 슬롯에 채워 넣은 주차의 시작일(1, 8, 15...). 주차가 바뀔 때만 슬롯 보상 데이터를 다시 채움
-    private int _slotDataBaseStartDay = -1;
+    private struct SlotDisplay
+    {
+        public UIAttendanceSlot Slot;
+        public AttendanceData Data;
+        public MoneyType MoneyType;
+        public int RewardValue, Day, State;
+        public bool Bound, Visible, Special;
+    }
+
+    private SlotDisplay[] _slotDisplays = Array.Empty<SlotDisplay>();
+    private bool _buttonDisplayValid, _adDisplayValid, _gaugeDisplayValid;
+    private bool _lastButtonDisplay, _lastAdDisplay;
+    private float _lastGaugeDisplay, _lastGaugeWidth;
+#if UNITY_EDITOR
+    private int _editorSlotDataApplications, _editorSlotStateApplications;
+    private int _editorButtonApplications, _editorAdApplications, _editorGaugeApplications;
+#endif
 
     private BackendManager _attendanceOwner;
     private GameDataRestoreQuery _adQuery;
@@ -78,32 +92,53 @@ public class UIAttendance : MobileUIView
     private void RefreshSlotRewardData(int todayDay)
     {
         int baseStartDay = ((todayDay - 1) / 7) * 7 + 1;
-        if (baseStartDay == _slotDataBaseStartDay)
-            return;
-
-        _slotDataBaseStartDay = baseStartDay;
-        List<AttendanceData> dataList = AttendanceDataManager.Instance.GetRewardDataList(todayDay);
-
-        for (int i = 0, cnt = _slotList.Count; i < cnt; i++)
+        var rewards = AttendanceDataManager.Instance.GetRewardDic();
+        if (_slotDisplays.Length != _slotList.Count) Array.Resize(ref _slotDisplays, _slotList.Count);
+        int sourceDay = baseStartDay;
+        for (int i = 0; i < _slotList.Count; i++)
         {
-            if (i >= dataList.Count)
+            var slot = _slotList[i];
+            var display = _slotDisplays[i];
+            AttendanceData data = null;
+            bool found = false;
+            while (sourceDay < baseStartDay + 7)
             {
-                _slotList[i].gameObject.SetActive(false);
-                continue;
+                if (rewards.TryGetValue(sourceDay++, out data)) { found = true; break; }
             }
-
-            _slotList[i].gameObject.SetActive(true);
-            if (i == cnt - 1)
+            int day = baseStartDay + i;
+            bool special = i == _slotList.Count - 1;
+            bool changed = !display.Bound || display.Slot != slot || display.Visible != found
+                || display.Day != day || display.Special != special || !ReferenceEquals(display.Data, data)
+                || (data != null && (display.MoneyType != data.MoneyType || display.RewardValue != data.RewardValue));
+            if (slot.gameObject.activeSelf != found) slot.gameObject.SetActive(found);
+            if (changed)
             {
-                _slotList[i].SetDataToSpecial(dataList[i]);
+                display.Slot = slot;
+                display.Data = data;
+                display.Day = day;
+                display.Visible = found;
+                display.Special = special;
+                display.Bound = true;
+                display.State = -1;
+                if (data != null) { display.MoneyType = data.MoneyType; display.RewardValue = data.RewardValue; }
+                if (found)
+                {
+                    if (special) slot.SetDataToSpecial(data);
+                    else slot.SetData(day, data);
+#if UNITY_EDITOR
+                    _editorSlotDataApplications++;
+#endif
+                }
             }
-            else
-            {
-                _slotList[i].SetData(baseStartDay + i, dataList[i]);
-            }
+            _slotDisplays[i] = display;
         }
     }
 
+    private void InvalidateDisplay()
+    {
+        Array.Clear(_slotDisplays, 0, _slotDisplays.Length);
+        _buttonDisplayValid = _adDisplayValid = _gaugeDisplayValid = false;
+    }
 
     public override void Show()
     {
@@ -114,6 +149,7 @@ public class UIAttendance : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
+        InvalidateDisplay();
         UpdateUI();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -230,41 +266,65 @@ public class UIAttendance : MobileUIView
 
     private void BindConfirmedState(int todayDay, bool checkAttendance, bool canClaim)
     {
-        int lastDay = AttendanceDataManager.Instance.GetRewardDic().Keys.DefaultIfEmpty(1).Max();
-        bool hasReward = AttendanceDataManager.Instance.GetRewardDic().ContainsKey(todayDay);
-        if (!hasReward && todayDay > lastDay) { todayDay = lastDay; checkAttendance = false; }
+        var rewards = AttendanceDataManager.Instance.GetRewardDic();
+        bool hasReward = rewards.ContainsKey(todayDay);
+        if (!hasReward)
+        {
+            int lastDay = 1;
+            bool any = false;
+            foreach (int day in rewards.Keys)
+            {
+                if (!any || day > lastDay) lastDay = day;
+                any = true;
+            }
+            if (todayDay > lastDay) { todayDay = lastDay; checkAttendance = false; }
+        }
         int todaySlotIndex = (todayDay - 1) % 7;
-
         RefreshSlotRewardData(todayDay);
 
-        // UI 갱신: 현재 주의 슬롯만 업데이트
         for (int i = 0; i < _slotList.Count; i++)
         {
-            if (i < todaySlotIndex)
-            {
-                _slotList[i].SetChecked(); // 이미 출석한 슬롯 표시
-            }
-            else if (i == todaySlotIndex)
-            {
-                if (checkAttendance)
-                {
-                    _slotList[i].SetTotaySlotUnChecked();
-                }
-                else
-                {
-                    _slotList[i].SetTotaySlotChecked();
-                }
-            }
-            else
-            {
-                _slotList[i].SetUnchecked(); // 출석하지 않은 슬롯 표시
-            }
+            int state = i < todaySlotIndex ? 0 : i > todaySlotIndex ? 1 : checkAttendance ? 2 : 3;
+            var display = _slotDisplays[i];
+            if (display.State == state) continue;
+            if (state == 0) _slotList[i].SetChecked();
+            else if (state == 1) _slotList[i].SetUnchecked();
+            else if (state == 2) _slotList[i].SetTotaySlotUnChecked();
+            else _slotList[i].SetTotaySlotChecked();
+            display.State = state;
+            _slotDisplays[i] = display;
+#if UNITY_EDITOR
+            _editorSlotStateApplications++;
+#endif
         }
 
         canClaim = canClaim && checkAttendance && hasReward;
-        _attendanceButton.interactable = canClaim;
-        _adButton.Interactable(canClaim && !_adEarned);
+        if (!_buttonDisplayValid || _lastButtonDisplay != canClaim || _attendanceButton.interactable != canClaim)
+        {
+            _attendanceButton.interactable = canClaim;
+            _lastButtonDisplay = canClaim; _buttonDisplayValid = true;
+#if UNITY_EDITOR
+            _editorButtonApplications++;
+#endif
+        }
+        bool canWatchAd = canClaim && !_adEarned;
+        if (!_adDisplayValid || _lastAdDisplay != canWatchAd)
+        {
+            _adButton.Interactable(canWatchAd);
+            _lastAdDisplay = canWatchAd; _adDisplayValid = true;
+#if UNITY_EDITOR
+            _editorAdApplications++;
+#endif
+        }
         float loadingBarGauge = AttendanceProgress.Fill(todayDay, !checkAttendance);
-        _loadingBar.SetFillAmount(loadingBarGauge);
+        float gaugeWidth = ((RectTransform)_loadingBar.transform).rect.width;
+        if (!_gaugeDisplayValid || _lastGaugeDisplay != loadingBarGauge || _lastGaugeWidth != gaugeWidth)
+        {
+            _loadingBar.SetFillAmount(loadingBarGauge);
+            _lastGaugeDisplay = loadingBarGauge; _lastGaugeWidth = gaugeWidth; _gaugeDisplayValid = true;
+#if UNITY_EDITOR
+            _editorGaugeApplications++;
+#endif
+        }
     }
 }

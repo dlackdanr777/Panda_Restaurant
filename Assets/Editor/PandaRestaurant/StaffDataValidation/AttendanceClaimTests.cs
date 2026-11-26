@@ -3,6 +3,9 @@ using System;
 using Muks.BackEnd;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
 
 public partial class StaffStageMigrationCollectionTests
 {
@@ -85,6 +88,102 @@ public partial class StaffStageMigrationCollectionTests
             Assert.That(AttendanceProgress.Fill(8, false), Is.Zero);
         }
         finally { fixture.Manager.InvalidateGameDataRestore(); }
+    }
+
+    [Test]
+    public void Attendance_UnchangedBindingsSkipUiApplicationsAndReopenInvalidates()
+    {
+        using (var wallet = new EconomyUserInfoScope())
+        using (var host = new EnhancementFairyStage1Host())
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            host.PreparePhase3Attendance(fonts, new DateTime(2026, 10, 2, 13, 0, 0), 1);
+            var view = host.SceneComponents<UIAttendance>()[0];
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            string[] counters = { "_editorSlotDataApplications", "_editorSlotStateApplications",
+                "_editorButtonApplications", "_editorAdApplications", "_editorGaugeApplications" };
+            int[] initial = Array.ConvertAll(counters, name => (int)EnhancementFairyStage1Host.Get(view, name));
+            for (int i = 0; i < 10; i++) host.BindAndAssertPhase3Attendance(1, true, true);
+            for (int i = 0; i < counters.Length; i++)
+                Assert.That(EnhancementFairyStage1Host.Get(view, counters[i]), Is.EqualTo(initial[i]), counters[i]);
+            var bar = (UILoadingBar)EnhancementFairyStage1Host.Get(view, "_loadingBar");
+            var barRect = (RectTransform)bar.transform;
+            barRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, barRect.rect.width + 20f);
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            Assert.That((int)EnhancementFairyStage1Host.Get(view, "_editorGaugeApplications"), Is.EqualTo(initial[4] + 1));
+            EnhancementFairyStage1Host.Invoke(view, "InvalidateDisplay");
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            for (int i = 0; i < counters.Length; i++)
+                Assert.That((int)EnhancementFairyStage1Host.Get(view, counters[i]), Is.GreaterThan(initial[i]), counters[i]);
+        }
+    }
+
+    [Test]
+    public void Attendance_RewardChangesAndRecreatedSlotsRebindWithinSameWeek()
+    {
+        using (var wallet = new EconomyUserInfoScope())
+        using (var host = new EnhancementFairyStage1Host())
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            host.PreparePhase3Attendance(fonts, new DateTime(2026, 10, 2, 13, 0, 0), 1);
+            var view = host.SceneComponents<UIAttendance>()[0];
+            var slots = (List<UIAttendanceSlot>)EnhancementFairyStage1Host.Get(view, "_slotList");
+            var rewards = AttendanceDataManager.Instance.GetRewardDic();
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            var replacement = new AttendanceData(MoneyType.Dia, 31);
+            rewards[1] = replacement;
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            Assert.That(EnhancementFairyStage1Host.Get(slots[0], "_data"), Is.SameAs(replacement));
+            Assert.That(((TMPro.TextMeshProUGUI)EnhancementFairyStage1Host.Get(slots[0], "_giftCountText")).text,
+                Is.EqualTo(Utility.ConvertToMoney(31)));
+            EnhancementFairyStage1Host.Set(replacement, "_rewardValue", 52);
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            Assert.That(((TMPro.TextMeshProUGUI)EnhancementFairyStage1Host.Get(slots[0], "_giftCountText")).text,
+                Is.EqualTo(Utility.ConvertToMoney(52)));
+            var old = slots[0];
+            slots[0] = UnityEngine.Object.Instantiate((UIAttendanceSlot)EnhancementFairyStage1Host.Get(view, "_slotPrefab"),
+                (RectTransform)EnhancementFairyStage1Host.Get(view, "_slotParent"));
+            UnityEngine.Object.DestroyImmediate(old.gameObject);
+            host.BindAndAssertPhase3Attendance(1, true, true);
+            Assert.That(EnhancementFairyStage1Host.Get(slots[0], "_data"), Is.SameAs(replacement));
+            rewards[8] = replacement;
+            host.BindAndAssertPhase3Attendance(8, true, true);
+            Assert.That(((TMPro.TextMeshProUGUI)EnhancementFairyStage1Host.Get(slots[0], "_dayText")).text,
+                Does.StartWith("8"));
+            slots.RemoveAt(6);
+            host.BindAndAssertPhase3Attendance(8, true, true);
+            Assert.That(((GameObject)EnhancementFairyStage1Host.Get(slots[5], "_specialImages")).activeSelf, Is.True);
+        }
+    }
+
+    [Test]
+    public void Attendance_DisplayTracksConfirmedProgressAdAvailabilityAndLastReward()
+    {
+        using (var wallet = new EconomyUserInfoScope())
+        using (var host = new EnhancementFairyStage1Host())
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            host.PreparePhase3Attendance(fonts, new DateTime(2026, 10, 2, 13, 0, 0), 7);
+            var view = host.SceneComponents<UIAttendance>()[0];
+            var ad = (WatchAdButton)EnhancementFairyStage1Host.Get(view, "_adButton");
+            var adButton = (Button)EnhancementFairyStage1Host.Get(ad, "_adButton");
+            host.BindAndAssertPhase3Attendance(7, true, true);
+            Assert.That(adButton.interactable, Is.True);
+            EnhancementFairyStage1Host.Set(view, "_adEarned", true);
+            host.BindAndAssertPhase3Attendance(7, true, true);
+            Assert.That(adButton.interactable, Is.False);
+            EnhancementFairyStage1Host.Set(view, "_adEarned", false);
+            host.BindAndAssertPhase3Attendance(7, true, false);
+            Assert.That(adButton.interactable, Is.False);
+            host.BindAndAssertPhase3Attendance(7, false, false);
+            host.BindAndAssertPhase3Attendance(8, true, true);
+            EnhancementFairyStage1Host.Invoke(view, "BindConfirmedState", 29, true, true);
+            host.AssertPhase3Attendance(28, true);
+            Assert.That(((UIButtonAndPressEffect)EnhancementFairyStage1Host.Get(view, "_attendanceButton")).interactable, Is.False);
+            Assert.That(adButton.interactable, Is.False);
+            AttendanceDataManager.Instance.GetRewardDic()[29] = new AttendanceData(MoneyType.Gold, 10);
+            host.BindAndAssertPhase3Attendance(29, true, true);
+        }
     }
 
     private AttendanceTestMemory PrepareAttendance(Fixture fixture, DateTime now, int day)

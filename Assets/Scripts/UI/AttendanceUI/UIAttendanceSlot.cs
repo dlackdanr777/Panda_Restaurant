@@ -31,9 +31,6 @@ public class UIAttendanceSlot : MonoBehaviour
             return;
         }
 
-        if (_data == data)
-            return;
-
         _data = data;
         _dayText.text = day + "일";
         _normalImages.gameObject.SetActive(true);
@@ -54,10 +51,6 @@ public class UIAttendanceSlot : MonoBehaviour
             DebugLog.LogError("현재 데이터는 Null입니다.");
             return;
         }
-
-        if (_data == data)
-            return;
-
 
         _data = data;
         _dayText.text = "개근상";
