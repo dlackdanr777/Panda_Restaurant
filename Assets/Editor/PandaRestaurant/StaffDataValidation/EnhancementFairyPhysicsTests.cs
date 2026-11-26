@@ -568,7 +568,11 @@ public sealed class EnhancementFairyPhysicsTests
             switch (reason)
             {
                 case "cancel": f.Input(7, end, TouchPhase.Canceled); break;
-                case "multitouch": f.Input(8, end, TouchPhase.Began); break;
+                case "multitouch":
+                    FairyBirthInputTests.TouchCountFrame(f.Host, 2, 8, end, TouchPhase.Began);
+                    FairyBirthInputTests.TouchCountFrame(f.Host, 1, 7, end, TouchPhase.Ended);
+                    FairyBirthInputTests.TouchCountFrame(f.Host, 0, 0, end, TouchPhase.Ended);
+                    break;
                 case "input-block": f.Host.Controller.SetWorldInputBlocked(f, true); break;
                 case "floor": f.Host.Move(ERestaurantFloorType.Floor2); break;
                 case "pause": EnhancementFairyStage1Host.Invoke(f.Host.Habitat, "OnApplicationPause", true); break;

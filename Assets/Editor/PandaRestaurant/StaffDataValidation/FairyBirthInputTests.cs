@@ -218,6 +218,108 @@ public sealed class FairyBirthInputTests
         }
     }
 
+    [Test]
+    public void Stage1_MultitouchCancelsMovedBackgroundUntilAllFingersRelease()
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        {
+            sound.StartFloor3();
+            using (var background = new OwnedDragBackground(host))
+            {
+                Vector3 origin = host.Camera.transform.position;
+                var floor = host.Controller.CurrentFloor;
+                var room = host.Controller.CurrentRestaurant;
+                EnhancementFairyStage1Host.Set(host.Controller, "_moveThreshold", .01f);
+                int starts = 0, ends = 0, taps = 0;
+                host.Controller.OnStartMoveCameraHandler += () => starts++;
+                host.Controller.OnEndMoveCameraHandler += (_, __) => ends++;
+                host.Controller.OnWorldTapHandler += _ => { taps++; return false; };
+                Vector2 point = background.ScreenPosition;
+                Vector2 moved = point + Vector2.right * Mathf.Max(30f, DragThreshold(host) * 2f);
+                TouchCountFrame(host, 1, 7, point, TouchPhase.Began);
+                TouchCountFrame(host, 1, 7, moved, TouchPhase.Moved);
+                Assert.That(host.Camera.transform.position, Is.Not.EqualTo(origin));
+                TouchCountFrame(host, 2, 8, moved, TouchPhase.Began);
+                Assert.That(starts, Is.EqualTo(1));
+                Assert.That(host.Controller.CurrentFloor, Is.EqualTo(floor));
+                Assert.That(host.Controller.CurrentRestaurant, Is.EqualTo(room));
+                TouchCountFrame(host, 1, 7, moved, TouchPhase.Ended);
+                host.CompleteCameraTween();
+                TouchCountFrame(host, 1, 8, point, TouchPhase.Began);
+                TouchCountFrame(host, 1, 8, point, TouchPhase.Ended);
+                TouchCountFrame(host, 0, 0, point, TouchPhase.Ended);
+                TouchCountFrame(host, 1, 7, point, TouchPhase.Ended);
+                Assert.That(taps, Is.Zero);
+                Assert.That(starts, Is.EqualTo(1));
+                Assert.That(ends, Is.EqualTo(1));
+                Assert.That(Vector3.Distance(host.Camera.transform.position, origin), Is.LessThan(.0001f));
+                TouchCountFrame(host, 1, 9, point, TouchPhase.Began);
+                TouchCountFrame(host, 1, 9, point, TouchPhase.Ended);
+                Assert.That(taps, Is.EqualTo(1));
+                Assert.That(starts, Is.EqualTo(1));
+            }
+        }
+    }
+
+    [TestCase("pause")]
+    [TestCase("focus")]
+    [TestCase("disable")]
+    public void Stage1_InterruptedBackgroundRestoresOnlyAfterResume(string interruption)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        {
+            sound.StartFloor3();
+            using (var background = new OwnedDragBackground(host))
+            {
+                Vector3 origin = host.Camera.transform.position;
+                int starts = 0;
+                host.Controller.OnStartMoveCameraHandler += () => starts++;
+                Vector2 point = background.ScreenPosition;
+                Touch(host, point, TouchPhase.Began);
+                Touch(host, point + Vector2.right * Mathf.Max(30f, DragThreshold(host) * 2f), TouchPhase.Moved);
+                Assert.That(host.Camera.transform.position, Is.Not.EqualTo(origin));
+                if (interruption == "disable") host.Controller.enabled = false;
+                else EnhancementFairyStage1Host.Invoke(host.Controller,
+                    interruption == "pause" ? "OnApplicationPause" : "OnApplicationFocus", interruption == "pause");
+                EnhancementFairyStage1Host.Invoke(host.Controller, "RestoreCanceledCameraDrag");
+                Assert.That(starts, Is.Zero);
+                if (interruption == "disable") host.Controller.enabled = true;
+                else EnhancementFairyStage1Host.Invoke(host.Controller,
+                    interruption == "pause" ? "OnApplicationPause" : "OnApplicationFocus", interruption != "pause");
+                EnhancementFairyStage1Host.Invoke(host.Controller, "RestoreCanceledCameraDrag");
+                Assert.That(starts, Is.EqualTo(1));
+                host.CompleteCameraTween();
+                Assert.That(Vector3.Distance(host.Camera.transform.position, origin), Is.LessThan(.0001f));
+            }
+        }
+    }
+
+    [Test]
+    public void Stage1_ExplicitFloorMoveSupersedesDeferredBackgroundRestore()
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        {
+            sound.StartFloor3();
+            using (var background = new OwnedDragBackground(host))
+            {
+                int starts = 0;
+                host.Controller.OnStartMoveCameraHandler += () => starts++;
+                Vector2 point = background.ScreenPosition;
+                Touch(host, point, TouchPhase.Began);
+                Touch(host, point + Vector2.right * Mathf.Max(30f, DragThreshold(host) * 2f), TouchPhase.Moved);
+                EnhancementFairyStage1Host.Invoke(host.Controller, "OnApplicationPause", true);
+                host.Move(ERestaurantFloorType.Floor2);
+                EnhancementFairyStage1Host.Invoke(host.Controller, "OnApplicationPause", false);
+                EnhancementFairyStage1Host.Invoke(host.Controller, "RestoreCanceledCameraDrag");
+                Assert.That(starts, Is.EqualTo(1));
+                Assert.That(host.Controller.CurrentFloor, Is.EqualTo(ERestaurantFloorType.Floor2));
+            }
+        }
+    }
+
     [TestCase("gacha")]
     [TestCase("shop")]
     public void Stage1_ActualNavigationPausesAndResumesTheRemainingBirth(string view)
@@ -1133,6 +1235,12 @@ public sealed class FairyBirthInputTests
 
     private static void Touch(EnhancementFairyStage1Host host, Vector2 position, TouchPhase phase)
         => EnhancementFairyStage1Host.Invoke(host.Controller, "ProcessTouchInputFrame", position, phase);
+
+    internal static void TouchCountFrame(EnhancementFairyStage1Host host, int count, int id, Vector2 position, TouchPhase phase)
+    {
+        if ((bool)EnhancementFairyStage1Host.Invoke(host.Controller, "UpdateTouchInputState", count))
+            host.Controller.ProcessPointerInputFrame(id, position, phase, Time.unscaledTime);
+    }
 
     /// <summary>
     /// Physics.Raycast queries default physics, while Stage1 is safely loaded in a PreviewScene.

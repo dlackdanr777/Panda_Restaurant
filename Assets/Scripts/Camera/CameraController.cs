@@ -25,6 +25,10 @@ public class CameraController : MonoBehaviour
     private int _worldPointerId;
     private bool _worldPointerWasConsumed;
     private bool _waitForAllTouchesReleased;
+    private bool _cameraDragMoved;
+    private bool _pendingCameraDragRestore;
+    private bool _applicationPaused;
+    private bool _applicationUnfocused;
     private PointerEventData _uiPointerEventData;
     private EventSystem _uiPointerEventSystem;
     private readonly List<RaycastResult> _uiPointerResults = new List<RaycastResult>(16);
@@ -53,17 +57,26 @@ public class CameraController : MonoBehaviour
 
     public void CancelWorldPointerGesture(IWorldPointerGestureHandler handler = null)
     {
+        CancelWorldPointerGesture(handler, true);
+    }
+
+    private void CancelWorldPointerGesture(IWorldPointerGestureHandler handler, bool restoreCamera)
+    {
         if (handler != null && !ReferenceEquals(_activeWorldPointerGesture, handler)
             && !ReferenceEquals(_tapOnlyWorldPointerOwner, handler)) return;
         IWorldPointerGestureHandler active = _activeWorldPointerGesture;
         bool owned = active != null || _tapOnlyWorldPointerOwner != null;
+        if (restoreCamera && !owned && _cameraDragMoved) _pendingCameraDragRestore = true;
+        if (!restoreCamera) _pendingCameraDragRestore = false;
+        if (owned || _isDragging || _tapCandidate) _worldPointerWasConsumed = true;
         _activeWorldPointerGesture = null;
         _tapOnlyWorldPointerOwner = null;
-        if (owned) _worldPointerWasConsumed = true;
         _tapCandidate = false;
         _isDragging = _isDraggingEnabled = false;
+        _cameraDragMoved = false;
         // Detach before the callback: cleanup may itself release a camera input block.
         active?.Cancel();
+        if (restoreCamera) RestoreCanceledCameraDrag();
     }
 
     public void SetWorldInputBlocked(object owner, bool blocked)
@@ -141,7 +154,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(ERestaurantFloorType floor, RestaurantType moveType)
     {
-        CancelWorldPointerGesture();
+        CancelWorldPointerGesture(null, false);
         OnPreviewFloorHandler?.Invoke(floor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
@@ -162,7 +175,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(ERestaurantFloorType floor)
     {
-        CancelWorldPointerGesture();
+        CancelWorldPointerGesture(null, false);
         OnPreviewFloorHandler?.Invoke(floor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
@@ -182,7 +195,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(RestaurantType moveType)
     {
-        CancelWorldPointerGesture();
+        CancelWorldPointerGesture(null, false);
         OnPreviewFloorHandler?.Invoke(CurrentFloor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
@@ -254,6 +267,11 @@ public class CameraController : MonoBehaviour
 
     private void Update()
     {
+#if !UNITY_EDITOR
+        UpdateTouchInputState(Input.touchCount);
+#endif
+        RestoreCanceledCameraDrag();
+        if (_applicationPaused || _applicationUnfocused) return;
 #if UNITY_EDITOR
         LogManualPointerDiagnostic();
 #endif
@@ -276,7 +294,9 @@ public class CameraController : MonoBehaviour
         if(UserInfo.IsTutorialStart || _navigationCoordinator.GetOpenViewCount() != 0 || IsWorldInputBlocked)
         {
             CancelWorldPointerGesture();
+            RestoreCanceledCameraDrag();
             _tapCandidate = false;
+            if (_isMoveAction) return;
             if(!_isStopAction)
             {
                 _isStopAction = true;
@@ -302,21 +322,41 @@ public class CameraController : MonoBehaviour
 
     private void OnApplicationFocus(bool hasFocus)
     {
-        if (!hasFocus) CancelWorldPointerGesture();
+        _applicationUnfocused = !hasFocus;
+        if (!hasFocus)
+        {
+            _waitForAllTouchesReleased = true;
+            CancelWorldPointerGesture();
+        }
     }
 
     private void OnApplicationPause(bool paused)
     {
-        if (paused) CancelWorldPointerGesture();
+        _applicationPaused = paused;
+        if (paused)
+        {
+            _waitForAllTouchesReleased = true;
+            CancelWorldPointerGesture();
+        }
     }
 
     private void OnDisable()
     {
+        _waitForAllTouchesReleased = true;
         CancelWorldPointerGesture();
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         RestorePresentationParticleStates();
         _cameraComparisonRoutine = null;
 #endif
+    }
+
+    private void RestoreCanceledCameraDrag()
+    {
+        if (!_pendingCameraDragRestore || !isActiveAndEnabled || _applicationPaused || _applicationUnfocused) return;
+        _pendingCameraDragRestore = false;
+        if (_isMoveAction) return;
+        if (_cam.transform.position != _targetPosDic[CurrentFloor][CurrentRestaurant])
+            MoveCamera(CurrentFloor, CurrentRestaurant);
     }
 
 #if UNITY_EDITOR
@@ -593,17 +633,22 @@ public class CameraController : MonoBehaviour
     // 📌 터치 입력 처리
     private void HandleTouchInput()
     {
-        if (Input.touchCount != 1)
-        {
-            if (Input.touchCount > 1) _waitForAllTouchesReleased = true;
-            else _waitForAllTouchesReleased = false;
-            CancelWorldPointerGesture();
-            return;
-        }
-        // After a second finger joins, neither remaining finger may resume the gesture.
-        if (_waitForAllTouchesReleased) return;
+        if (!UpdateTouchInputState(Input.touchCount)) return;
         Touch touch = Input.GetTouch(0);
         ProcessPointerInputFrame(touch.fingerId, touch.position, touch.phase, Time.unscaledTime);
+    }
+
+    private bool UpdateTouchInputState(int touchCount)
+    {
+        if (touchCount != 1)
+        {
+            if (touchCount > 1) _waitForAllTouchesReleased = true;
+            else _waitForAllTouchesReleased = false;
+            CancelWorldPointerGesture();
+            return false;
+        }
+        // After a second finger joins, neither remaining finger may resume the gesture.
+        return !_waitForAllTouchesReleased;
     }
 
     // Platform polling and input processing share this path with isolated frame replay.
@@ -633,6 +678,7 @@ public class CameraController : MonoBehaviour
         {
             case TouchPhase.Began:
                 CancelWorldPointerGesture();
+                if (_isMoveAction) return;
                 _worldPointerWasConsumed = false;
                 _worldPointerId = pointerId;
                 if (IsPointerOverUI(position)) return;
@@ -699,8 +745,13 @@ public class CameraController : MonoBehaviour
                 }
                 // Release tap-only ownership before dispatch: a valid tap may open
                 // UI and cancel input without recursively cancelling this completed press.
+                if (phase == TouchPhase.Canceled)
+                {
+                    CancelWorldPointerGesture();
+                    return;
+                }
                 _tapOnlyWorldPointerOwner = null;
-                CompletePointerInput(position, phase == TouchPhase.Ended);
+                CompletePointerInput(position, true);
                 break;
         }
     }
@@ -726,6 +777,7 @@ public class CameraController : MonoBehaviour
         bool tapped = allowTap && CompleteWorldTap(position);
         _tapCandidate = false;
         _isDragging = _isDraggingEnabled = false;
+        _cameraDragMoved = false;
         if (dragged && !tapped) HandleCameraSnapBackOrMove();
     }
 
@@ -778,6 +830,7 @@ public class CameraController : MonoBehaviour
         newPosition = ClampCameraPosition(newPosition);
         OnPreviewFloorHandler?.Invoke(CurrentFloor == ERestaurantFloorType.Floor2 && newPosition.y > _floor2Pos_Y
             ? ERestaurantFloorType.Floor3 : CurrentFloor);
+        if (newPosition != _cam.transform.position) _cameraDragMoved = true;
         _cam.transform.position = newPosition;
 
         // 🔹 새로운 기준점 설정 (이전 터치 위치 업데이트)
