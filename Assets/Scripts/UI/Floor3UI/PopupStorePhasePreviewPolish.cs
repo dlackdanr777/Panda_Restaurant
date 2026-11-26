@@ -10,7 +10,7 @@ public sealed class PopupStorePhasePreviewPolish : MonoBehaviour
 {
     [Header("Preview exit modal only")]
     [SerializeField] private string _exitTitle = "도전을 포기하시겠습니까?";
-    [SerializeField, TextArea] private string _exitBody = "영업을 포기하면 사용한 영업권은 반환되지 않으며\n보상을 받을 수 없습니다.";
+    [SerializeField, TextArea] private string _exitBody = "게임을 포기하면 사용한 영업권은 반환되지 않으며\n보상을 받을 수 없습니다.";
     [SerializeField] private string _continueLabel = "계속하기";
     [SerializeField] private string _abandonLabel = "포기하기";
     [SerializeField] private Color _continueTint = Color.white;

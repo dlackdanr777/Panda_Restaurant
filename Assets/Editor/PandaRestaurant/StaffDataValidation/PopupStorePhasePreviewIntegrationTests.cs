@@ -373,6 +373,10 @@ public sealed class PopupStorePhasePreviewIntegrationTests
             var hud = h.Root.GetComponentInChildren<PopupStoreCurrentGradeHud>(true);
             Assert.That(hud.DisplayedGrade, Is.EqualTo(PopupStoreGradeTier.C));
             Assert.That(hud.NextGradeText.text, Is.EqualTo("확보 C상자"));
+            Assert.That(hud.NextGradeText.enabled, Is.False, "Secured grade is represented by its actual reward icon, not a second headline.");
+            Assert.That(hud.EditorPhaseProgressText.transform.parent.name, Is.EqualTo("Grade Progress Track"));
+            Assert.That(hud.EditorPhaseProgressText.rectTransform.anchorMin, Is.EqualTo(Vector2.zero));
+            Assert.That(hud.EditorPhaseProgressText.rectTransform.anchorMax, Is.EqualTo(Vector2.one));
             Assert.That(hud.EditorPhaseProgressText.text, Is.EqualTo("다음 단계 · 3"));
             Assert.That(h.Counter.TryAdd(h.Material("STAFF01")), Is.False);
         }

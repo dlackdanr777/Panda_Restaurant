@@ -74,7 +74,7 @@ public sealed class PopupStorePhasePolishTests
         using (var h = new PolishHost())
         {
             Assert.That(h.Title.text, Is.EqualTo("도전을 포기하시겠습니까?"));
-            Assert.That(h.Body.text, Is.EqualTo("영업을 포기하면 사용한 영업권은 반환되지 않으며\n보상을 받을 수 없습니다."));
+            Assert.That(h.Body.text, Is.EqualTo("게임을 포기하면 사용한 영업권은 반환되지 않으며\n보상을 받을 수 없습니다."));
             Assert.That(h.ContinueText.text, Is.EqualTo("계속하기")); Assert.That(h.AbandonText.text, Is.EqualTo("포기하기"));
             Assert.That(h.Continue.image.color, Is.EqualTo(Color.white));
             Assert.That(h.Abandon.image.color, Is.EqualTo(new Color(1, .45f, 1, 1)));

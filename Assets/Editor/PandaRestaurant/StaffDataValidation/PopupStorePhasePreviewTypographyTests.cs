@@ -77,7 +77,7 @@ public sealed class PopupStorePhasePreviewTypographyTests
     }
 
     [Test]
-    public void RepeatedRefreshUsesOneMemoryLabelAndDisablingRestoresTheAuthoredHudStyle()
+    public void RepeatedRefreshUsesOneAuthoredLabelAndDisablingRestoresTheAuthoredHudStyle()
     {
         using (var h = new Host())
         {
@@ -85,9 +85,10 @@ public sealed class PopupStorePhasePreviewTypographyTests
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Host.Prefab).GetComponentInChildren<PopupStoreCurrentGradeHud>(true);
             for (int i = 0; i < 20; i++) Assert.That(hud.RefreshDisplay(), Is.True);
             var label = hud.EditorPhaseProgressText;
-            Assert.That(h.Root.GetComponentsInChildren<TMP_Text>(true).Count(x => x.name == "Editor Phase Progress Label"), Is.EqualTo(1));
+            Assert.That(h.Root.GetComponentsInChildren<TMP_Text>(true).Count(x => x.name == "Phase Goal Label"), Is.EqualTo(1));
+            Assert.That(h.Root.GetComponentsInChildren<TMP_Text>(true).Count(x => x.name == "Editor Phase Progress Label"), Is.Zero);
             Assert.That(label.raycastTarget, Is.False);
-            Assert.That(label.gameObject.hideFlags & HideFlags.DontSave, Is.EqualTo(HideFlags.DontSave));
+            Assert.That(label.gameObject.hideFlags, Is.EqualTo(HideFlags.None));
             hud.enabled = false;
             DispatchLifecycle(hud, "OnDisable");
             Assert.That(label.enabled, Is.False);

@@ -17,6 +17,59 @@ using Object = UnityEngine.Object;
 
 public sealed class FairyBirthInputTests
 {
+    [TestCase(false)] [TestCase(true)]
+    public void Stage1_FairyCardBackgroundClosesOnceWithOptionalButtonSoundAndSilentProgrammaticClose(bool muted)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            // The existing Stage1 memory host intentionally skips SoundManager.Init.
+            // Bind the same authored clip used by that Init, without initializing any manager/account.
+            var clips = new AudioClip[(int)SoundEffectType.Length];
+            clips[(int)SoundEffectType.ButtonClickSound] = Resources.Load<AudioClip>("Audio/ButtonClickSound");
+            EnhancementFairyStage1Host.Set(sound.Sound, "_clips", clips);
+            var clickClip = sound.Sound.GetEffectClip(SoundEffectType.ButtonClickSound);
+            Assert.That(clickClip, Is.Not.Null);
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                EnhancementFairyStage1Host.Set(sound.Sound, "_soundEffectVolume", 1f);
+                Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.True);
+                sound.Advance(host.Habitat.Settings.TouchDuration + .1f);
+                Assert.That(host.Habitat.IsItemCardOpen, Is.True);
+                var popup = (GachaResultCardPopup)EnhancementFairyStage1Host.Get(host.Habitat, "_itemPopup");
+                var canvas = (GameObject)EnhancementFairyStage1Host.Get(host.Habitat, "_cardCanvas");
+                var background = canvas.GetComponentsInChildren<Button>(true).Single(x => x.name == "Dismiss Background");
+                var content = canvas.GetComponentsInChildren<Button>(true).Single(x => x.name == "Centered Card");
+                int before = sound.Plays.Count;
+                content.onClick.Invoke();
+                Assert.That(popup.IsOpen, Is.True); Assert.That(sound.Plays.Count, Is.EqualTo(before));
+                EnhancementFairyStage1Host.Set(sound.Sound, "_soundEffectVolume", muted ? 0f : 1f);
+                if (cycle == 1) host.Habitat.CloseItemCard();
+                else background.onClick.Invoke();
+                Assert.That(popup.IsOpen, Is.False); Assert.That(host.Controller.IsWorldInputBlocked, Is.False);
+                int expected = before + (!muted && cycle != 1 ? 1 : 0);
+                Assert.That(sound.Plays.Count, Is.EqualTo(expected));
+                if (expected > before) Assert.That(sound.Plays.Last().Clip, Is.SameAs(clickClip));
+                background.onClick.Invoke(); popup.Hide();
+                Assert.That(sound.Plays.Count, Is.EqualTo(expected), "Hidden/automatic dismissals cannot replay the click.");
+                sound.Advance(.6f);
+            }
+            // The shared popup has no sound policy unless its owner subscribes.
+            var parent = (GameObject)EnhancementFairyStage1Host.Get(host.Habitat, "_cardCanvas");
+            var template = (UIGachaCard)EnhancementFairyStage1Host.Get(host.Habitat, "_cardTemplate");
+            using (var shared = new GachaResultCardPopup(parent.transform, template))
+            {
+                var catalog = (Dictionary<string, GachaItemData>)EnhancementFairyStage1Host.Get(host.Habitat, "_catalog");
+                shared.ShowItem(catalog.Values.First());
+                int before = sound.Plays.Count;
+                parent.GetComponentsInChildren<Button>(false).Single(x => x.name == "Dismiss Background").onClick.Invoke();
+                Assert.That(shared.IsOpen, Is.False); Assert.That(sound.Plays.Count, Is.EqualTo(before));
+            }
+        }
+    }
+
     [Test]
     public void Stage1_MouseBackgroundTapDoesNotRestartInFlightBirth()
     {

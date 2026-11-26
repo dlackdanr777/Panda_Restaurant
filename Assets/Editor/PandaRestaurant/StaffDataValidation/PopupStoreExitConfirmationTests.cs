@@ -57,7 +57,7 @@ public sealed class PopupStoreExitConfirmationTests
         var labels = overlay.GetComponentsInChildren<TMP_Text>(true);
         string text = string.Join("\n", labels.Select(t => t.text));
         Assert.That(text, Does.Contain("영업을 포기하시겠습니까?"));
-        Assert.That(text, Does.Contain("영업을 포기하면 사용한 영업권은 반환되지 않으며, 보상을 받을 수 없습니다."));
+        Assert.That(text, Does.Contain("게임을 포기하면 사용한 영업권은 반환되지 않으며\n보상을 받을 수 없습니다."));
         Assert.That(text, Does.Contain("계속하기").And.Contain("포기하고 나가기"));
         var font = ((TMP_Text)Read(prefab.GetComponent<PopupStoreBusinessClock>(), "_timeText")).font;
         foreach (var label in labels) { Assert.That(label.font, Is.SameAs(font)); Assert.That(label.raycastTarget, Is.False); }

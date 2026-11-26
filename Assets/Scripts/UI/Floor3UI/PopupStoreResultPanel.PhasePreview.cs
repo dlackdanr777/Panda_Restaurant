@@ -16,6 +16,18 @@ public sealed partial class PopupStoreResultPanel
     [SerializeField] private Vector2 _phaseSummaryNoBoxScorePosition = new Vector2(0, -20);
     [SerializeField, Min(1)] private float _phaseSummaryScoreFontSize = 44;
     [SerializeField, Min(1)] private float _phaseSummaryMinimumScoreFontSize = 30;
+    [Header("Abandoned result — presentation only")]
+    [SerializeField] private Vector2 _abandonedPanelSize = new Vector2(840, 380);
+    [SerializeField] private Vector2 _abandonedTitlePosition = Vector2.zero;
+    [SerializeField] private Vector2 _abandonedTitleSize = new Vector2(720, 90);
+    [SerializeField] private Vector2 _abandonedButtonPosition = new Vector2(0, -175);
+    [SerializeField] private Vector2 _abandonedButtonSize = new Vector2(260, 90);
+    [SerializeField, Min(1)] private float _abandonedTitleFontSize = 60;
+    [SerializeField] private Image _abandonedInterior;
+    [SerializeField] private string _abandonedTitle = "영업 포기";
+    [SerializeField] private string _abandonedButtonLabel = "나가기";
+    [Tooltip("Original 2162 x 1505 artwork pixels: left, bottom, right, top. Scaled to the imported texture resolution without changing its asset.")]
+    [SerializeField] private Vector4 _abandonedFrameBorder = new Vector4(460, 300, 150, 450);
     public PopupStorePhaseResult EditorShownPhaseResult { get; private set; }
     private bool _editorPhaseRewardVisible;
     private PopupStorePreviewTextStyle _editorPhaseGradeStyle, _editorPhaseCountStyle, _editorPhaseScoreStyle;
@@ -58,6 +70,9 @@ public sealed partial class PopupStoreResultPanel
             { preview.FailClosed("Phase summary needs its original local box image and approved grade mapping."); return true; }
             var sprite = hasBox ? gradeHud.SpriteFor(securedGrade) : null;
             EditorShownPhaseResult = result;
+            string oldTitle = _titleText.text, oldScore = _scoreText.text, oldConfirm = _confirmText.text;
+            bool scoreActive = _scoreText.gameObject.activeSelf;
+            Action restoreAbandoned = null;
             _titleText.text = "게임 종료";
             _scoreText.text = "기록 점수 " + result.TotalScore.ToString(CultureInfo.InvariantCulture);
             var position = _scoreText.rectTransform.anchoredPosition;
@@ -72,6 +87,9 @@ public sealed partial class PopupStoreResultPanel
             bool boxInteractable = boxButton != null && boxButton.interactable;
             _editorPhaseScoreStyle = new PopupStorePreviewTextStyle(_scoreText);
             _editorRestoreSummary = () => {
+                restoreAbandoned?.Invoke();
+                _titleText.text = oldTitle; _scoreText.text = oldScore; _confirmText.text = oldConfirm;
+                _scoreText.gameObject.SetActive(scoreActive);
                 _scoreText.rectTransform.anchoredPosition = position; _scoreText.rectTransform.sizeDelta = size;
                 _scoreText.alignment = alignment;
                 _gradeText.gameObject.SetActive(gradeActive); _countText.gameObject.SetActive(countActive);
@@ -94,6 +112,8 @@ public sealed partial class PopupStoreResultPanel
             if (boxButton != null) boxButton.interactable = false;
             _editorPhaseRewardVisible = true;
             _confirmText.text = "받기";
+            if (result.EndReason == PopupStorePhaseEndReason.Abandoned)
+                restoreAbandoned = ApplyAbandonedLayout();
             _lockedGroup = _inputGroup;
             _oldInteractable = _lockedGroup.interactable; _oldRaycasts = _lockedGroup.blocksRaycasts;
             _lockedGroup.interactable = false; _lockedGroup.blocksRaycasts = false;
@@ -143,6 +163,59 @@ public sealed partial class PopupStoreResultPanel
         _editorPhaseRewardVisible = false;
     }
 
+    private Action ApplyAbandonedLayout()
+    {
+        var title = _titleText.rectTransform;
+        var button = (RectTransform)_confirmButton.transform;
+        var panelSize = _panel.sizeDelta; var panelPosition = _panel.anchoredPosition;
+        var titlePosition = title.anchoredPosition; var titleSize = title.sizeDelta;
+        var buttonPosition = button.anchoredPosition;
+        var buttonSize = button.sizeDelta;
+        var titleStyle = new PopupStorePreviewTextStyle(_titleText);
+        bool interiorActive = _abandonedInterior != null && _abandonedInterior.gameObject.activeSelf;
+        var source = _frame.sprite; var imageType = _frame.type;
+        bool aspect = _frame.preserveAspect;
+        float multiplier = _frame.pixelsPerUnitMultiplier;
+        Sprite sliced = null;
+        // A local Sprite wrapper supplies nine-slice borders; the approved texture and importer stay untouched.
+        if (source != null)
+        {
+            float fit = Mathf.Min(_panel.rect.width / source.rect.width, _panel.rect.height / source.rect.height);
+            var border = Vector4.Scale(_abandonedFrameBorder, new Vector4(source.rect.width / 2162f,
+                source.rect.height / 1505f, source.rect.width / 2162f, source.rect.height / 1505f));
+            sliced = Sprite.Create(source.texture, source.rect, source.pivot / source.rect.size,
+                source.pixelsPerUnit, 0, SpriteMeshType.FullRect, border);
+            sliced.name = source.name + " (abandoned layout)";
+            sliced.hideFlags = HideFlags.HideAndDontSave;
+            _frame.sprite = sliced; _frame.type = Image.Type.Sliced; _frame.preserveAspect = false;
+            float reference = _frame.canvas != null ? _frame.canvas.referencePixelsPerUnit : 100f;
+            _frame.pixelsPerUnitMultiplier = reference / (source.pixelsPerUnit * Mathf.Max(.001f, fit));
+        }
+        _panel.sizeDelta = _abandonedPanelSize; _panel.anchoredPosition = Vector2.zero;
+        title.anchoredPosition = _abandonedTitlePosition; title.sizeDelta = _abandonedTitleSize;
+        button.anchoredPosition = _abandonedButtonPosition;
+        button.sizeDelta = _abandonedButtonSize;
+        PopupStorePreviewTextStyle.Apply(_titleText, _abandonedTitleFontSize, _abandonedTitleFontSize);
+        if (_abandonedInterior != null) _abandonedInterior.gameObject.SetActive(true);
+        _titleText.text = _abandonedTitle; _confirmText.text = _abandonedButtonLabel;
+        _scoreText.gameObject.SetActive(false);
+        return () => {
+            _panel.sizeDelta = panelSize; _panel.anchoredPosition = panelPosition;
+            title.anchoredPosition = titlePosition; title.sizeDelta = titleSize;
+            button.anchoredPosition = buttonPosition;
+            button.sizeDelta = buttonSize;
+            titleStyle.Restore();
+            if (_abandonedInterior != null) _abandonedInterior.gameObject.SetActive(interiorActive);
+            _frame.sprite = source; _frame.type = imageType; _frame.preserveAspect = aspect;
+            _frame.pixelsPerUnitMultiplier = multiplier;
+            if (sliced != null)
+            {
+                if (Application.isPlaying) Destroy(sliced);
+                else DestroyImmediate(sliced);
+            }
+        };
+    }
+
     internal bool EditorValidatePhaseSummaryLayout(out string error)
     {
         error = null;
@@ -156,6 +229,22 @@ public sealed partial class PopupStoreResultPanel
             || !Finite(_phaseSummaryScoreFontSize) || !Finite(_phaseSummaryMinimumScoreFontSize)
             || _phaseSummaryMinimumScoreFontSize <= 0 || _phaseSummaryScoreFontSize < _phaseSummaryMinimumScoreFontSize)
             error = "Phase summary layout requires finite positions, positive sizes and a valid score font range.";
+        if (!Finite(_abandonedPanelSize.x) || !Finite(_abandonedPanelSize.y)
+            || _abandonedPanelSize.x <= 0 || _abandonedPanelSize.y <= 0
+            || !Finite(_abandonedTitlePosition.x) || !Finite(_abandonedTitlePosition.y)
+            || !Finite(_abandonedTitleSize.x) || !Finite(_abandonedTitleSize.y)
+            || _abandonedTitleSize.x <= 0 || _abandonedTitleSize.y <= 0
+            || !Finite(_abandonedButtonPosition.x) || !Finite(_abandonedButtonPosition.y)
+            || !Finite(_abandonedButtonSize.x) || !Finite(_abandonedButtonSize.y)
+            || _abandonedButtonSize.x <= 0 || _abandonedButtonSize.y <= 0
+            || !Finite(_abandonedTitleFontSize) || _abandonedTitleFontSize <= 0)
+            error = "Abandoned result requires finite positions and positive sizes.";
+        for (int i = 0; i < 4; i++)
+            if (!Finite(_abandonedFrameBorder[i]) || _abandonedFrameBorder[i] < 0)
+                error = "Abandoned frame borders must be finite and non-negative.";
+        if (_abandonedFrameBorder.x + _abandonedFrameBorder.z >= 2162
+                || _abandonedFrameBorder.y + _abandonedFrameBorder.w >= 1505)
+            error = "Abandoned frame borders must leave a stretchable center.";
         return error == null;
     }
 
@@ -176,7 +265,8 @@ public sealed partial class PopupStoreResultPanel
     {
         if ((GetComponent<PopupStorePhasePreview>()?.IsAccountMode != true && _accountRecovery == null)
             || !_shown || _confirmText == null) return;
-        _confirmText.text = label;
+        _confirmText.text = EditorShownPhaseResult?.EndReason == PopupStorePhaseEndReason.Abandoned
+            ? _abandonedButtonLabel : label;
         if (_confirmButton != null) _confirmButton.interactable = retry && !_appearing;
     }
 }

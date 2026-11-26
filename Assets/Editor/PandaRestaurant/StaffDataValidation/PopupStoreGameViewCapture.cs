@@ -15,7 +15,7 @@ public static class PopupStoreGameViewCapture
 {
     private const BindingFlags Instance = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private const string Folder = "Temp/PopupStoreVerification/UIEvidence";
-    private static readonly Vector2Int[] Resolutions = { new Vector2Int(1920, 1080), new Vector2Int(1280, 720), new Vector2Int(2340, 1080) };
+    private static readonly Vector2Int[] Resolutions = { new Vector2Int(1920, 1080), new Vector2Int(1280, 720), new Vector2Int(2340, 1080), new Vector2Int(2400, 1080) };
     private static Capture _capture;
     public static bool IsActive => _capture != null;
     public static string LastReportPath { get; private set; }
