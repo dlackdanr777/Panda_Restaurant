@@ -55,9 +55,15 @@ public sealed class PopupStoreResultTests
         Assert.That(reward.BoxImage.raycastTarget, Is.False);
         Assert.That(reward.ValidateMapping(out string rewardError), Is.True, rewardError);
         Assert.That(panel.GetComponentsInChildren<Image>(true).Count(image => image == reward.BoxImage), Is.EqualTo(1));
-        // DEV-04C-2 adds exactly the approved reward image; other artwork remains forbidden.
+        var interior = (Image)Read(result, "_abandonedInterior");
+        Assert.That(interior, Is.Not.Null);
+        Assert.That(interior.gameObject.activeSelf, Is.False);
+        Assert.That(interior.sprite, Is.Null);
+        Assert.That(interior.raycastTarget, Is.False);
+        Assert.That(Vector4.Distance(interior.color, new Color(1, 248f / 255, 228f / 255, 1)), Is.LessThan(.00001f));
+        // Only the explicitly authored abandoned-state cream surface is added to the approved artwork.
         foreach (var image in panel.GetComponentsInChildren<Image>(true))
-            Assert.That(image == frame || image == reward.BoxImage || image.transform.IsChildOf(button.transform), Is.True, image.name);
+            Assert.That(image == frame || image == reward.BoxImage || image == interior || image.transform.IsChildOf(button.transform), Is.True, image.name);
     }
 
     [TestCase(PopupStoreGradeTier.None)]

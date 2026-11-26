@@ -9,6 +9,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using Object = UnityEngine.Object;
 
 /// <summary>Explicit original-prefab memory render diagnostics; not actual GameView or player approval.</summary>
@@ -21,6 +22,7 @@ public static class PopupStorePhaseTutorialEvidence
         public int width, height, page, playRequests, closeRequests, cueShows, score, finalizations, rewardDraws;
         public int phaseFinalizations, phaseRewardDraws, phaseRewardDecisions, phaseRewardAmount, rewardOpens;
         public string[] textMetrics;
+        public bool outsideFrameButtonRaycast, simulatedExitClick;
     }
     [Serializable] private sealed class Report
     {
@@ -185,7 +187,37 @@ public static class PopupStorePhaseTutorialEvidence
         }
     }
 
-    private static void Render(GameObject prefab, GameObject rewardPrefab, Vector2Int resolution, List<Frame> frames)
+    public static void RunAbandonedHud()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling
+            || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+            throw new InvalidOperationException("Requires idle, account-free EditMode.");
+        Directory.CreateDirectory(Folder);
+        var witness = GachaCollectionPreviewSceneWitness.Capture();
+        var random = UnityEngine.Random.state;
+        var report = new Report { startedUtc = DateTime.UtcNow.ToString("O"),
+            scope = "Original-prefab EditMode memory rendering only, NOT GameView or device evidence. Real isolated C receipts, B transition and abandonment; no live account, reward draw or asset changes." };
+        var frames = new List<Frame>();
+        try
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PopupStorePhasePreviewViewBuilder.PrefabPath);
+            var reward = AssetDatabase.LoadAssetAtPath<GameObject>(PopupStorePhaseRewardViewBuilder.PrefabPath);
+            foreach (int width in new[] { 1920, 2340, 2400 })
+                Render(prefab, reward, new Vector2Int(width, 1080), frames, true);
+            report.success = true;
+        }
+        catch (Exception exception) { report.error = exception.ToString(); }
+        finally
+        {
+            UnityEngine.Random.state = random;
+            try { witness.AssertUnchanged("abandoned HUD evidence"); report.workspaceUnchanged = true; }
+            catch (Exception exception) { report.success = false; report.error += "\n" + exception; }
+            report.frames = frames.ToArray(); report.finishedUtc = DateTime.UtcNow.ToString("O");
+            File.WriteAllText(Folder + "/abandoned-hud-report.json", JsonUtility.ToJson(report, true));
+        }
+    }
+
+    private static void Render(GameObject prefab, GameObject rewardPrefab, Vector2Int resolution, List<Frame> frames, bool abandonedHudOnly = false)
     {
         PopupStorePhasePreviewNavigationTests.Harness host = null;
         StaffGachaOfflineFonts fonts = null;
@@ -208,7 +240,7 @@ public static class PopupStorePhaseTutorialEvidence
                     throw new InvalidOperationException("The evidence renderer found a persistent font reference.");
             foreach (var child in root.GetComponentsInChildren<Transform>(true)) child.gameObject.layer = 31;
             root.GetComponent<CanvasScaler>().enabled = false;
-            var rect = root.GetComponent<RectTransform>(); rect.sizeDelta = new Vector2(1920, 1080);
+            var rect = root.GetComponent<RectTransform>(); rect.sizeDelta = abandonedHudOnly ? new Vector2(resolution.x, resolution.y) : new Vector2(1920, 1080);
             rect.SetPositionAndRotation(Vector3.zero, Quaternion.identity); rect.localScale = Vector3.one;
             cameraObject = new GameObject("phase-tutorial-memory-camera") { hideFlags = HideFlags.HideAndDontSave };
             var camera = cameraObject.AddComponent<Camera>(); camera.enabled = false;
@@ -234,7 +266,37 @@ public static class PopupStorePhaseTutorialEvidence
             for (int page = 0; page < view.PageCount; page++)
             {
                 if (page > 0 && !view.TryNext()) throw new InvalidOperationException("Tutorial navigation rejected page " + page);
-                Capture(host, view, camera, target, "tutorial-" + (page + 1), frames);
+                if (!abandonedHudOnly) Capture(host, view, camera, target, "tutorial-" + (page + 1), frames);
+            }
+            if (abandonedHudOnly)
+            {
+                host.Preview.RenderStart(true, true, 1, 1);
+                if (!view.TryPlay()) throw new InvalidOperationException("Isolated approval rejected.");
+                PopupStorePhasePreviewIntegrationTests.CompleteInitialPresentation(host.Preview, host.Clock);
+                host.Ready(); Capture(host, view, camera, target, "hud-zero-C", frames);
+                host.Pack(); host.Deliver(); host.Entrance.TickEntrance(2);
+                host.Pack(); host.Deliver(); host.Entrance.TickEntrance(2);
+                Capture(host, view, camera, target, "hud-earned-score-C", frames);
+                host.Clock.AdvanceTime(host.Clock.RemainingSeconds);
+                if (!host.Preview.TickCleanup()) throw new InvalidOperationException("C cleanup rejected.");
+                host.NextPhase(); Capture(host, view, camera, target, "hud-B-goal", frames);
+                if (!host.Preview.RequestAbandon() || !host.Preview.TickCleanup())
+                    throw new InvalidOperationException("Actual abandonment rejected.");
+                host.ShowResult(); Capture(host, view, camera, target, "abandoned-final", frames);
+                var button = (Button)typeof(PopupStoreResultPanel).GetField("_confirmButton", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(host.Panel);
+                var outsidePoint = button.transform.TransformPoint(new Vector3(0, -30, 0));
+                var pointer = new PointerEventData(EventSystem.current) { position = camera.WorldToScreenPoint(outsidePoint), button = PointerEventData.InputButton.Left };
+                var hits = new List<RaycastResult>();
+                foreach (var raycaster in root.GetComponentsInChildren<GraphicRaycaster>(true))
+                    if (raycaster.isActiveAndEnabled) raycaster.Raycast(pointer, hits);
+                if (!hits.Any(hit => hit.gameObject == button.targetGraphic.gameObject))
+                    throw new InvalidOperationException("The protruding exit button did not receive a GraphicRaycaster hit.");
+                frames[frames.Count - 1].outsideFrameButtonRaycast = true;
+                ExecuteEvents.Execute(button.gameObject, pointer, ExecuteEvents.pointerClickHandler);
+                if (host.Panel.IsVisible) throw new InvalidOperationException("The actual exit handler did not close the abandoned result.");
+                frames[frames.Count - 1].simulatedExitClick = true;
+                host.AssertSingleUseAndNoR1();
+                return;
             }
             host.Preview.RenderStart(false, false, 1, 1);
             foreach (string cue in new[] { "Stage", "3", "2", "1", "GameStart", "Success", "GameOver" })

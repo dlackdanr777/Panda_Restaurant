@@ -96,7 +96,74 @@ public sealed class PopupStorePhaseResultLayoutTests
             Assert.That(h.Preview.Session.State, Is.EqualTo(PopupStorePhaseState.Abandoned));
             Assert.That(h.Preview.SecuredGrade, Is.EqualTo(PopupStoreGradeTier.None));
             Assert.That(Box(h).enabled, Is.False); Assert.That(Box(h).sprite, Is.Null);
-            Assert.That(Text(h, "_scoreText").text, Is.EqualTo("기록 점수 100")); h.AssertNoR1();
+            Assert.That(h.Preview.Session.FinalResult.TotalScore, Is.EqualTo(100));
+            Assert.That(Text(h, "_scoreText").gameObject.activeSelf, Is.False);
+            var panel = Field<RectTransform>(h.Panel, "_panel");
+            Assert.That(panel.sizeDelta, Is.EqualTo(new Vector2(840, 380)));
+            Assert.That(panel.anchoredPosition, Is.EqualTo(Vector2.zero));
+            Assert.That(panel.GetComponentsInChildren<TMP_Text>(false).Where(x => x.enabled)
+                .Select(x => x.text), Is.EquivalentTo(new[] { "영업 포기", "나가기" }));
+            Assert.That(Field<Image>(h.Panel, "_frame").type, Is.EqualTo(Image.Type.Sliced));
+            Assert.That(Field<Button>(h.Panel, "_confirmButton").interactable, Is.True);
+            h.AssertNoR1();
+        }
+    }
+
+    [TestCase(1920)] [TestCase(2340)] [TestCase(2400)]
+    public void AbandonedLayoutFitsWideScreensAndRestoresOriginalFrameAndControls(int width)
+    {
+        using (var h = new Host())
+        {
+            h.Root.GetComponent<RectTransform>().sizeDelta = new Vector2(width, 1080);
+            var panel = Field<RectTransform>(h.Panel, "_panel");
+            var frame = Field<Image>(h.Panel, "_frame");
+            var title = Text(h, "_titleText"); var score = Text(h, "_scoreText");
+            var confirm = Text(h, "_confirmText"); var button = Field<Button>(h.Panel, "_confirmButton");
+            var size = panel.sizeDelta; var position = panel.anchoredPosition;
+            var titlePosition = title.rectTransform.anchoredPosition; var titleSize = title.rectTransform.sizeDelta;
+            var buttonPosition = ((RectTransform)button.transform).anchoredPosition;
+            var buttonSize = ((RectTransform)button.transform).sizeDelta;
+            float titleFont = title.fontSize;
+            var interior = Field<Image>(h.Panel, "_abandonedInterior");
+            Assert.That(interior.gameObject.activeSelf, Is.False);
+            var sprite = frame.sprite; var type = frame.type; bool aspect = frame.preserveAspect;
+            float multiplier = frame.pixelsPerUnitMultiplier;
+            string oldTitle = title.text, oldScore = score.text, oldConfirm = confirm.text;
+            bool scoreActive = score.gameObject.activeSelf;
+            Assert.That(h.Preview.RequestAbandon(), Is.True);
+            Assert.That(h.Preview.TickCleanup(), Is.True); h.ShowResult();
+            Canvas.ForceUpdateCanvases();
+            Assert.That(panel.rect.width, Is.EqualTo(840)); Assert.That(panel.rect.height, Is.EqualTo(380));
+            Assert.That(frame.sprite.texture, Is.SameAs(sprite.texture));
+            Assert.That(frame.sprite.border, Is.EqualTo(Vector4.Scale(new Vector4(460, 300, 150, 450),
+                new Vector4(sprite.rect.width / 2162f, sprite.rect.height / 1505f,
+                    sprite.rect.width / 2162f, sprite.rect.height / 1505f))));
+            var corners = new Vector3[4];
+            title.rectTransform.GetWorldCorners(corners);
+            foreach (var corner in corners) Assert.That(panel.rect.Contains(panel.InverseTransformPoint(corner)), Is.True);
+            Assert.That(title.rectTransform.anchoredPosition, Is.EqualTo(Vector2.zero));
+            Assert.That(interior.gameObject.activeSelf, Is.True);
+            Assert.That(interior.raycastTarget, Is.False);
+            ((RectTransform)button.transform).GetWorldCorners(corners);
+            Assert.That(panel.InverseTransformPoint(corners[0]).y, Is.LessThan(panel.rect.yMin));
+            Assert.That(panel.InverseTransformPoint(corners[1]).y, Is.GreaterThan(panel.rect.yMin));
+            Assert.That(button.GetComponentsInParent<Mask>(true), Is.Empty);
+            Assert.That(button.GetComponentsInParent<RectMask2D>(true), Is.Empty);
+            Assert.That(button.targetGraphic.raycastTarget, Is.True);
+            Assert.That(panel.rect.width, Is.LessThan(width));
+            typeof(PopupStoreResultPanel).GetMethod("OnDisable", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(h.Panel, null);
+            Assert.That(panel.sizeDelta, Is.EqualTo(size)); Assert.That(panel.anchoredPosition, Is.EqualTo(position));
+            Assert.That(title.rectTransform.anchoredPosition, Is.EqualTo(titlePosition));
+            Assert.That(title.rectTransform.sizeDelta, Is.EqualTo(titleSize));
+            Assert.That(((RectTransform)button.transform).anchoredPosition, Is.EqualTo(buttonPosition));
+            Assert.That(((RectTransform)button.transform).sizeDelta, Is.EqualTo(buttonSize));
+            Assert.That(title.fontSize, Is.EqualTo(titleFont));
+            Assert.That(interior.gameObject.activeSelf, Is.False);
+            Assert.That(frame.sprite, Is.SameAs(sprite)); Assert.That(frame.type, Is.EqualTo(type));
+            Assert.That(frame.preserveAspect, Is.EqualTo(aspect)); Assert.That(frame.pixelsPerUnitMultiplier, Is.EqualTo(multiplier));
+            Assert.That(title.text, Is.EqualTo(oldTitle)); Assert.That(score.text, Is.EqualTo(oldScore));
+            Assert.That(confirm.text, Is.EqualTo(oldConfirm)); Assert.That(score.gameObject.activeSelf, Is.EqualTo(scoreActive));
+            h.AssertNoR1();
         }
     }
 

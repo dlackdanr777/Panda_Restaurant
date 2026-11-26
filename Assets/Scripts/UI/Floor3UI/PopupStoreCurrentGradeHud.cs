@@ -13,6 +13,8 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
     [SerializeField] private PopupStoreBusinessClock _clock;
     [SerializeField] private Image _rewardImage;
     [SerializeField] private TMP_Text _nextGradeText;
+    [SerializeField] private TMP_Text _phaseProgressText;
+    [SerializeField] private bool _showSecuredGradeLabel;
     [SerializeField] private Sprite _cSprite, _bSprite, _aSprite, _sSprite, _ssSprite, _sssSprite;
     [SerializeField] private bool _showImage = true;
     [SerializeField] private bool _showNextGrade = true;
@@ -133,7 +135,7 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
                     _editorNextGradeStyle = new PopupStorePreviewTextStyle(_displayedText);
                     PopupStorePreviewTextStyle.Apply(_displayedText, 24, 22);
                 }
-                _displayedText.enabled = _showNextGrade; _displayedText.raycastTarget = false;
+                _displayedText.enabled = _showNextGrade && _showSecuredGradeLabel; _displayedText.raycastTarget = false;
                 _displayedText.text = "확보 " + (DisplayedGrade == PopupStoreGradeTier.None ? "없음" : DisplayedGrade + "상자");
                 RenderEditorPhaseProgress(preview);
             }
@@ -255,6 +257,8 @@ public sealed class PopupStoreCurrentGradeHud : MonoBehaviour
 
     private void RenderEditorPhaseProgress(PopupStorePhasePreview preview)
     {
+        if (_editorPhaseProgressText == null && _phaseProgressText != null)
+            _editorPhaseProgressText = _phaseProgressText;
         if (_editorPhaseProgressText == null)
         {
             // The authored stage TMP is inactive and belongs to an older layout. Keep every

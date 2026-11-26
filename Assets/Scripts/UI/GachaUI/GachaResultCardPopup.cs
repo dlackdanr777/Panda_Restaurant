@@ -12,6 +12,7 @@ public sealed class GachaResultCardPopup : IDisposable
     public bool IsOpen => _root != null && _root.activeInHierarchy;
     public UIGachaCard Card => _card;
     public event Action Closed;
+    public event Action BackgroundDismissed;
 
     public GachaResultCardPopup(Transform parent, UIGachaCard template)
     {
@@ -30,7 +31,7 @@ public sealed class GachaResultCardPopup : IDisposable
         _background = backdrop.GetComponent<Button>();
         _background.targetGraphic = shade;
         _background.transition = Selectable.Transition.None;
-        _background.onClick.AddListener(Hide);
+        _background.onClick.AddListener(OnBackgroundClicked);
 
         _content = new GameObject("Centered Card", typeof(RectTransform), typeof(Image), typeof(Button)).GetComponent<RectTransform>();
         _content.SetParent(rootRect, false);
@@ -99,6 +100,13 @@ public sealed class GachaResultCardPopup : IDisposable
         _content.anchoredPosition = Vector2.zero;
     }
 
+    private void OnBackgroundClicked()
+    {
+        if (!IsOpen) return;
+        Hide();
+        BackgroundDismissed?.Invoke();
+    }
+
     public void Hide()
     {
         bool wasOpen = IsOpen;
@@ -110,7 +118,9 @@ public sealed class GachaResultCardPopup : IDisposable
     {
         if (_root == null) return;
         Hide();
-        _background.onClick.RemoveListener(Hide);
+        _background.onClick.RemoveListener(OnBackgroundClicked);
+        BackgroundDismissed = null;
+        Closed = null;
         if (Application.isPlaying) UnityEngine.Object.Destroy(_root);
         else UnityEngine.Object.DestroyImmediate(_root);
     }

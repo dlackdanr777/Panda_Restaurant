@@ -17,6 +17,59 @@ using Object = UnityEngine.Object;
 
 public sealed class FairyBirthInputTests
 {
+    [TestCase(false)] [TestCase(true)]
+    public void Stage1_FairyCardBackgroundClosesOnceWithOptionalButtonSoundAndSilentProgrammaticClose(bool muted)
+    {
+        using (var host = new EnhancementFairyStage1Host())
+        using (var sound = new FairyBirthSoundScope(host))
+        using (var fonts = new StaffGachaOfflineFonts())
+        {
+            var body = PrepareTouchFairy(host, sound, fonts);
+            // The existing Stage1 memory host intentionally skips SoundManager.Init.
+            // Bind the same authored clip used by that Init, without initializing any manager/account.
+            var clips = new AudioClip[(int)SoundEffectType.Length];
+            clips[(int)SoundEffectType.ButtonClickSound] = Resources.Load<AudioClip>("Audio/ButtonClickSound");
+            EnhancementFairyStage1Host.Set(sound.Sound, "_clips", clips);
+            var clickClip = sound.Sound.GetEffectClip(SoundEffectType.ButtonClickSound);
+            Assert.That(clickClip, Is.Not.Null);
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                EnhancementFairyStage1Host.Set(sound.Sound, "_soundEffectVolume", 1f);
+                Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(body.bounds.center)), Is.True);
+                sound.Advance(host.Habitat.Settings.TouchDuration + .1f);
+                Assert.That(host.Habitat.IsItemCardOpen, Is.True);
+                var popup = (GachaResultCardPopup)EnhancementFairyStage1Host.Get(host.Habitat, "_itemPopup");
+                var canvas = (GameObject)EnhancementFairyStage1Host.Get(host.Habitat, "_cardCanvas");
+                var background = canvas.GetComponentsInChildren<Button>(true).Single(x => x.name == "Dismiss Background");
+                var content = canvas.GetComponentsInChildren<Button>(true).Single(x => x.name == "Centered Card");
+                int before = sound.Plays.Count;
+                content.onClick.Invoke();
+                Assert.That(popup.IsOpen, Is.True); Assert.That(sound.Plays.Count, Is.EqualTo(before));
+                EnhancementFairyStage1Host.Set(sound.Sound, "_soundEffectVolume", muted ? 0f : 1f);
+                if (cycle == 1) host.Habitat.CloseItemCard();
+                else background.onClick.Invoke();
+                Assert.That(popup.IsOpen, Is.False); Assert.That(host.Controller.IsWorldInputBlocked, Is.False);
+                int expected = before + (!muted && cycle != 1 ? 1 : 0);
+                Assert.That(sound.Plays.Count, Is.EqualTo(expected));
+                if (expected > before) Assert.That(sound.Plays.Last().Clip, Is.SameAs(clickClip));
+                background.onClick.Invoke(); popup.Hide();
+                Assert.That(sound.Plays.Count, Is.EqualTo(expected), "Hidden/automatic dismissals cannot replay the click.");
+                sound.Advance(.6f);
+            }
+            // The shared popup has no sound policy unless its owner subscribes.
+            var parent = (GameObject)EnhancementFairyStage1Host.Get(host.Habitat, "_cardCanvas");
+            var template = (UIGachaCard)EnhancementFairyStage1Host.Get(host.Habitat, "_cardTemplate");
+            using (var shared = new GachaResultCardPopup(parent.transform, template))
+            {
+                var catalog = (Dictionary<string, GachaItemData>)EnhancementFairyStage1Host.Get(host.Habitat, "_catalog");
+                shared.ShowItem(catalog.Values.First());
+                int before = sound.Plays.Count;
+                parent.GetComponentsInChildren<Button>(false).Single(x => x.name == "Dismiss Background").onClick.Invoke();
+                Assert.That(shared.IsOpen, Is.False); Assert.That(sound.Plays.Count, Is.EqualTo(before));
+            }
+        }
+    }
+
     [Test]
     public void Stage1_MouseBackgroundTapDoesNotRestartInFlightBirth()
     {
@@ -635,7 +688,7 @@ public sealed class FairyBirthInputTests
             Assert.That(f.Sound.Plays.Count, Is.EqualTo(1));
             var played = f.Sound.Plays.Single();
             Assert.That(played.Clip, Is.SameAs(f.Settings.WallCollisionClip));
-            Assert.That(played.Volume, Is.InRange(.001f, .30f));
+            Assert.That(played.Volume, Is.InRange(.001f, f.Settings.SafeWallCollisionVolume));
             Assert.That(played.Pitch, Is.EqualTo(f.Settings.WallCollisionPitch));
             Assert.That(played.Owner, Is.SameAs(EnhancementFairyStage1Host.Get(f.Views[0], "WallSoundOwner")));
             Assert.That(body.TryConsumeWallImpact(out _), Is.False, "The habitat drains the contact exactly once.");
@@ -643,6 +696,70 @@ public sealed class FairyBirthInputTests
             Assert.That(f.Sound.Plays.Count, Is.EqualTo(1), "Moving away from the wall must not repeat the contact.");
             f.AssertPoolUnchanged();
             CollectionAssert.AreEquivalent(ownership, UserInfo.GetGiveGachaItemCountDic());
+        }
+    }
+
+    [TestCase(30, false)] [TestCase(60, false)]
+    [TestCase(30, true)] [TestCase(60, true)]
+    public void Stage1_VerticalBoundaryDispatchesSamePooledClipAtRaisedVolume(int fps, bool ceiling)
+    {
+        using (var f = new WallSoundFixture())
+        {
+            var body = f.Arm(0, 1, 10f);
+            Rect room = f.Settings.Physics.SafeBounds;
+            body.Position = new Vector2(room.center.x, ceiling
+                ? room.yMax - body.HalfExtents.y - .001f : room.yMin + body.HalfExtents.y + .001f);
+            body.Velocity = Vector2.up * (ceiling ? 10f : -10f);
+            f.Sound.Advance(1f / fps);
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(1));
+            var played = f.Sound.Plays.Single();
+            Assert.That(played.Clip, Is.SameAs(f.Settings.WallCollisionClip));
+            Assert.That(f.Settings.WallCollisionVolume, Is.EqualTo(.30f * 1.15f).Within(.000001f));
+            Assert.That(played.Volume, Is.InRange(.345f * .65f, .345f));
+            Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False);
+            f.Sound.Advance(.05f);
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(1));
+            f.AssertPoolUnchanged();
+        }
+    }
+
+    [TestCase(30)] [TestCase(60)]
+    public void Stage1_RepeatedFloorBouncesRespectCooldownAndStopOnAiReturn(int fps)
+    {
+        using (var f = new WallSoundFixture())
+        {
+            var body = f.Arm(0, 1, 10f); Rect room = f.Settings.Physics.SafeBounds;
+            body.Position = new Vector2(room.center.x, room.yMin + body.HalfExtents.y + .5f);
+            body.Velocity = Vector2.down * 12f;
+            for (int i = 0; i < fps * 5; i++) f.Sound.Advance(1f / fps);
+            Assert.That(f.Sound.Plays.Count, Is.InRange(2, f.Settings.Physics.SafeMaximumBounceCount + 1));
+            for (int i = 1; i < f.Sound.Plays.Count; i++)
+                Assert.That(f.Sound.Plays[i].Time - f.Sound.Plays[i - 1].Time,
+                    Is.GreaterThanOrEqualTo(f.Settings.SafePerFairyWallSoundCooldown - .0001f));
+            Assert.That(body.Mode, Is.EqualTo(EnhancementFairyPhysicsSolver.BodyMode.Autonomous));
+            int count = f.Sound.Plays.Count;
+            f.Sound.Advance(.1f);
+            Assert.That(f.Sound.Plays.Count, Is.EqualTo(count), "Restored walking must remain silent.");
+            f.AssertPoolUnchanged();
+        }
+    }
+
+    [TestCase(false, "mute")] [TestCase(true, "mute")]
+    [TestCase(false, "drag")] [TestCase(true, "drag")]
+    [TestCase(false, "slow")] [TestCase(true, "slow")]
+    public void Stage1_VerticalBoundaryHonorsMuteDragAndMinimumSpeed(bool ceiling, string gate)
+    {
+        using (var f = new WallSoundFixture())
+        {
+            var body = f.Arm(0, 1, 10f); Rect room = f.Settings.Physics.SafeBounds;
+            body.Position = new Vector2(room.center.x, ceiling
+                ? room.yMax - body.HalfExtents.y - .001f : room.yMin + body.HalfExtents.y + .001f);
+            body.Velocity = Vector2.up * (ceiling ? 1f : -1f) * (gate == "slow" ? .5f : 10f);
+            if (gate == "mute") EnhancementFairyStage1Host.Set(f.Sound.Sound, "_effectVolume", 0f);
+            if (gate == "drag") body.Mode = EnhancementFairyPhysicsSolver.BodyMode.Dragging;
+            f.Sound.Advance(1f / 60f);
+            Assert.That(f.Sound.Plays, Is.Empty);
+            f.AssertPoolUnchanged();
         }
     }
 
@@ -693,13 +810,23 @@ public sealed class FairyBirthInputTests
         }
     }
 
-    [Test]
-    public void Stage1_FivePhysicalFairiesKeepTwoWallVoicesAndCancelOnlyTheirOwnSource()
+    [TestCase(false)] [TestCase(true)]
+    public void Stage1_FivePhysicalFairiesKeepTwoWallVoicesAndCancelOnlyTheirOwnSource(bool mixedSurfaces)
     {
         using (var f = new WallSoundFixture(5))
         {
             f.Settings.GlobalWallSoundCooldown = 0f; // Exercise the concurrent cap independently of the normal global throttle.
-            for (int i = 0; i < 5; i++) f.Arm(i, i % 2 == 0 ? -1 : 1, 10f);
+            for (int i = 0; i < 5; i++)
+            {
+                var body = f.Arm(i, i % 2 == 0 ? -1 : 1, 10f);
+                if (mixedSurfaces && i > 0)
+                {
+                    Rect room = f.Settings.Physics.SafeBounds; bool ceiling = i % 2 == 1;
+                    body.Position = new Vector2(room.center.x + i * 3f, ceiling
+                        ? room.yMax - body.HalfExtents.y - .001f : room.yMin + body.HalfExtents.y + .001f);
+                    body.Velocity = Vector2.up * (ceiling ? 10f : -10f);
+                }
+            }
             f.Sound.Advance(1f / 60f);
             Assert.That(f.Host.Habitat.PhysicalFairyCount, Is.EqualTo(5));
             Assert.That(f.Sound.Plays.Count, Is.EqualTo(2));

@@ -81,6 +81,77 @@ public sealed class EnhancementFairyPhysicsTests
         Assert.That(body.TryConsumeWallImpact(out _), Is.False, "Moving inward after reflection is silent.");
     }
 
+    [TestCase(30, false)] [TestCase(60, false)]
+    [TestCase(30, true)] [TestCase(60, true)]
+    public void VerticalBoundaryReportsIncomingNormalSpeedAndConsumesOnce(int fps, bool ceiling)
+    {
+        var settings = SolverSettings(); settings.AirDamping = 0f; settings.Gravity = .1f;
+        var solver = new EnhancementFairyPhysicsSolver();
+        float y = ceiling ? settings.SafeBounds.yMax - .851f : settings.SafeBounds.yMin + .851f;
+        var body = MakeBody(1, new Vector2(0f, y)); body.Mode = Mode.Physics;
+        body.Velocity = Vector2.up * (ceiling ? 10f : -10f);
+        solver.Step(new[] { body }, 1, 1f / fps, settings);
+        Assert.That(body.TryConsumeBoundaryImpact(out var impact), Is.True);
+        Assert.That(impact.Surface, Is.EqualTo(ceiling ? EnhancementFairyPhysicsSolver.BoundarySurface.Ceiling
+            : EnhancementFairyPhysicsSolver.BoundarySurface.Floor));
+        Assert.That(impact.Side, Is.Zero);
+        Assert.That(impact.Speed, Is.InRange(9.99f, 10.01f));
+        Assert.That(body.Velocity.y * (ceiling ? 1f : -1f), Is.LessThan(0f));
+        float restitution = ceiling ? settings.SafeWallRestitution : settings.SafeFloorRestitution;
+        Assert.That(Mathf.Abs(body.Velocity.y), Is.EqualTo(impact.Speed * restitution).Within(.01f));
+        Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False);
+    }
+
+    [TestCase(30)] [TestCase(60)]
+    public void RepeatedFloorBouncesReportOnlyNewArrivalsAboveAudibleSpeed(int fps)
+    {
+        var settings = SolverSettings(); var solver = new EnhancementFairyPhysicsSolver();
+        var body = MakeBody(1, new Vector2(0f, 5f)); body.Mode = Mode.Physics;
+        body.Velocity = Vector2.down * 12f; int audible = 0;
+        for (int i = 0; i < fps * 5; i++)
+        {
+            solver.Step(new[] { body }, 1, 1f / fps, settings);
+            if (body.TryConsumeBoundaryImpact(out var impact) && impact.Speed >= 2.5f)
+            {
+                Assert.That(impact.Surface, Is.EqualTo(EnhancementFairyPhysicsSolver.BoundarySurface.Floor));
+                audible++;
+            }
+        }
+        Assert.That(audible, Is.InRange(2, settings.SafeMaximumBounceCount + 1),
+            "Actual rebounds and the final landing may sound, but resting frames must not.");
+        AssertRestored(body, settings);
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void InitialVerticalOverlapAndPairCorrectionStaySilent(bool ceiling)
+    {
+        var settings = SolverSettings(); settings.Gravity = .1f;
+        var solver = new EnhancementFairyPhysicsSolver();
+        float edge = ceiling ? settings.Bounds.yMax - .85f : settings.Bounds.yMin + .85f;
+        float direction = ceiling ? 1f : -1f;
+        var body = MakeBody(1, new Vector2(0f, edge + direction * .1f));
+        body.Mode = Mode.Physics; body.Velocity = Vector2.up * direction * 10f;
+        solver.Step(new[] { body }, 1, 1f / 120f, settings);
+        Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False, "Initial correction is not an arrival.");
+        body.Position = new Vector2(0f, edge - direction * .01f); body.Velocity = Vector2.zero;
+        var other = MakeBody(2, new Vector2(0f, edge - direction * .3f)); other.Mode = Mode.Physics;
+        solver.Step(new[] { body, other }, 2, 1f / 120f, settings);
+        Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False, "Pair separation cannot create audio.");
+    }
+
+    [Test]
+    public void CornerContactSharesOneStrongestBoundarySlot()
+    {
+        var settings = SolverSettings(); settings.AirDamping = 0f; settings.Gravity = .1f;
+        var body = MakeBody(1, new Vector2(settings.Bounds.xMax - .651f, .851f));
+        body.Mode = Mode.Physics; body.Velocity = new Vector2(6f, -10f);
+        new EnhancementFairyPhysicsSolver().Step(new[] { body }, 1, 1f / 60f, settings);
+        Assert.That(body.TryConsumeBoundaryImpact(out var impact), Is.True);
+        Assert.That(impact.Surface, Is.EqualTo(EnhancementFairyPhysicsSolver.BoundarySurface.Floor));
+        Assert.That(impact.Speed, Is.GreaterThan(9.99f));
+        Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False);
+    }
+
     [Test]
     public void MultipleWallHitsInOneCatchUpStepKeepOnlyTheStrongestContact()
     {
@@ -119,7 +190,9 @@ public sealed class EnhancementFairyPhysicsTests
             case "autonomous": body.Mode = Mode.Autonomous; body.Position.x = wall + .1f; break;
         }
         solver.Step(new[] { body }, 1, 1f / 60f, settings);
-        Assert.That(body.TryConsumeWallImpact(out _), Is.False, motion);
+        if (motion == "floor" || motion == "ceiling")
+            Assert.That(body.TryConsumeWallImpact(out _), Is.False, "The legacy side-wall-only API remains compatible.");
+        else Assert.That(body.TryConsumeBoundaryImpact(out _), Is.False, motion);
         if (motion == "floor") Assert.That(body.BounceCount, Is.EqualTo(1));
         if (motion == "ceiling") Assert.That(body.Velocity.y, Is.LessThan(0f));
         if (motion == "outside-outward") Assert.That(body.Velocity.x, Is.LessThan(0f), "The pre-existing correction reflection stays unchanged but silent.");
@@ -135,7 +208,7 @@ public sealed class EnhancementFairyPhysicsTests
         var bodies = new[] { a, b };
         solver.Step(bodies, 2, 1f / 120f, settings);
         Assert.That(a.Position.x, Is.EqualTo(wall).Within(.0001f), "Pair separation actually pushed the right body into the wall clamp.");
-        Assert.That(a.TryConsumeWallImpact(out _), Is.False); Assert.That(b.TryConsumeWallImpact(out _), Is.False);
+        Assert.That(a.TryConsumeBoundaryImpact(out _), Is.False); Assert.That(b.TryConsumeBoundaryImpact(out _), Is.False);
     }
 
     [TestCase("next-frame")] [TestCase("zero-delta")] [TestCase("begin-drag")]
@@ -403,10 +476,12 @@ public sealed class EnhancementFairyPhysicsTests
             for (int cycle = 0; cycle < 20; cycle++)
             {
                 Vector2 point = f.Place(); Vector2 end = point + new Vector2(90f, 110f);
+                int soundsBeforeDrag = f.Sound.Plays.Count;
                 f.Input(pointer, point, TouchPhase.Began); f.Input(pointer, end, TouchPhase.Moved, .06f); f.Advance(.15f);
                 Assert.That(f.Host.Habitat.DraggedFairyItemId, Is.EqualTo(f.Id));
                 Assert.That(f.Host.Controller.IsCameraMoving, Is.False); Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera));
                 Assert.That(f.Brain.GroundPosition.y, Is.EqualTo(f.Settings.GroundArea.y).Within(.0001f));
+                Assert.That(f.Sound.Plays.Count, Is.EqualTo(soundsBeforeDrag), "Held dragging stays silent.");
                 f.Input(pointer, end, TouchPhase.Ended, .02f); f.Input(pointer, end, TouchPhase.Ended, .01f);
                 Assert.That(f.Host.Habitat.PhysicalFairyCount, Is.EqualTo(1));
                 f.Advance(f.Settings.Physics.SafeMaximumPhysicalDuration + .2f);
@@ -415,7 +490,9 @@ public sealed class EnhancementFairyPhysicsTests
                 Assert.That(f.Host.Habitat.TryGetPhysicsBody(f.Id, out Body body), Is.True); AssertRestored(body, f.Settings.Physics);
                 Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera));
             }
-            Assert.That(f.Sound.Plays, Is.Empty, "Dragging never requests the short-tap bubble.");
+            Assert.That(f.Sound.Plays.Count(p => p.Clip == f.Settings.BubbleClip), Is.Zero,
+                "Dragging never requests the short-tap bubble; landing after release may play the boundary clip.");
+            Assert.That(f.Sound.Plays.All(p => p.Clip == f.Settings.WallCollisionClip), Is.True);
             Assert.That(f.Host.Habitat.PooledObjectCount, Is.EqualTo(pool)); f.AssertOwnership();
         }
     }
@@ -1003,6 +1080,7 @@ public sealed class EnhancementFairyPhysicsTests
                 Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera));
                 Assert.That(f.Host.Habitat.IsItemCardOpen || f.Host.Habitat.IsItemCardPending, Is.False);
                 Vector2 beforeRelease = body.Position;
+                Assert.That(f.Sound.Plays.Count, Is.EqualTo(1), "Held boundary contact adds no sound.");
                 f.Input(-1, target, TouchPhase.Ended, 0f);
                 Assert.That(body.Mode, Is.EqualTo(Mode.Physics));
                 Assert.That(Vector2.Distance(body.Position, beforeRelease), Is.LessThan(.001f), "Release must not reclamp the current pose.");
@@ -1043,7 +1121,9 @@ public sealed class EnhancementFairyPhysicsTests
                 Assert.That(f.Settings.SafeGroundArea, Is.EqualTo(aiBounds), "The ordinary AI travel rectangle must remain unchanged.");
                 AssertRestored(body, f.Settings.Physics);
                 Assert.That(f.Host.Habitat.IsItemCardOpen || f.Host.Habitat.IsItemCardPending, Is.False);
-                Assert.That(f.Sound.Plays.Count, Is.EqualTo(1), "Dragging adds no card or short-tap bubble.");
+                Assert.That(f.Sound.Plays.Count(p => p.Clip == f.Settings.BubbleClip), Is.EqualTo(1),
+                    "Dragging adds no card or short-tap bubble; released landing uses a different clip.");
+                Assert.That(f.Sound.Plays.All(p => p.Clip == f.Settings.BubbleClip || p.Clip == f.Settings.WallCollisionClip), Is.True);
                 Assert.That(f.Host.Camera.transform.position, Is.EqualTo(camera)); f.AssertOwnership();
                 TestContext.WriteLine("PHYSICS_INTERIOR location=" + location + "; fps=" + fps + "; groundX=" + x
                     + "; height=" + height + "; firstVisualStep=" + firstStepDistance + "; handoffX=" + handoffX

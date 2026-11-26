@@ -27,6 +27,10 @@ public sealed class PopupStoreSoundTests
         Assert.That(root.GetComponentsInChildren<AudioSource>(true), Is.Empty,
             "The popup must use the existing SoundManager pool instead of serialized duplicate sources.");
         var settings = (PopupStoreSound.CueSetting[])Get(owners[0], "_cues");
+        var materialAdded = settings.Single(x => x.Cue == PopupStoreSoundCue.MaterialAdded);
+        Assert.That(materialAdded.Volume, Is.EqualTo(.45f * 1.20f).Within(.000001f));
+        Assert.That(AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(materialAdded.Clip)),
+            Is.EqualTo("924be5a011bb21e448fc2086f911e9fe"));
         CollectionAssert.AreEquivalent(Enum.GetValues(typeof(PopupStoreSoundCue)).Cast<PopupStoreSoundCue>(), settings.Select(x => x.Cue));
         foreach (var setting in settings)
         {
@@ -271,7 +275,13 @@ public sealed class PopupStoreSoundTests
         using (var f = new AudioFixture()) using (var h = new GameHost())
         {
             f.Attach(h.Root);
-            for (int i = 0; i < 5; i++) { Assert.That(h.Counter.TryAdd(h.Material("STAFF01")), Is.True); f.Advance(); }
+            string[] cards = { "BOX_PINK", "STAFF01", "RIBBON_PINK", "STAFF01", "BOX_PINK" };
+            foreach (string card in cards)
+            {
+                int before = f.Count(PopupStoreSoundCue.MaterialAdded);
+                Assert.That(h.Counter.TryAdd(h.Material(card)), Is.True); f.Advance();
+                Assert.That(f.Count(PopupStoreSoundCue.MaterialAdded), Is.EqualTo(before + 1), card);
+            }
             Assert.That(f.Count(PopupStoreSoundCue.MaterialAdded), Is.EqualTo(5));
             Assert.That(h.Counter.TryAdd(h.Material("BOX_PINK")), Is.False);
             Assert.That(h.Counter.TryAdd(null), Is.False);

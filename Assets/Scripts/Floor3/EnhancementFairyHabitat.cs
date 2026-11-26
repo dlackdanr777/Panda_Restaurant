@@ -1417,6 +1417,7 @@ public sealed partial class EnhancementFairyHabitat : MonoBehaviour
             scaler.matchWidthOrHeight = .5f;
             _itemPopup = new GachaResultCardPopup(_cardCanvas.transform, _cardTemplate);
             _itemPopup.Closed += OnItemCardClosed;
+            _itemPopup.BackgroundDismissed += OnItemCardBackgroundDismissed;
         }
         _itemPopup.ShowItem(_catalog[view.Brain.ItemId], false);
     }
@@ -1452,6 +1453,13 @@ public sealed partial class EnhancementFairyHabitat : MonoBehaviour
         _itemPopup?.Hide();
     }
     private void OnItemCardClosed() => _cameraController?.SetWorldInputBlocked(this, false);
+    private void OnItemCardBackgroundDismissed()
+    {
+        var sound = SoundManager.TryGetExistingInstance();
+        if (sound != null)
+            sound.PlayPresentationEffect(EffectType.None, sound.GetEffectClip(SoundEffectType.ButtonClickSound),
+                1f, 1f, this, 1);
+    }
 
     private void OnDisable()
     {

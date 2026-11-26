@@ -205,6 +205,8 @@ public static partial class PopupStoreVerificationRunner
             RunApprovedUiOperation("PopupStorePhaseRewardViewBuilder", "Build", null);
         else if (request == "phase-tutorial-evidence")
             RunApprovedUiOperation("PopupStorePhaseTutorialEvidence", "Run", null);
+        else if (request == "ui-abandoned-hud-evidence")
+            RunApprovedUiOperation("PopupStorePhaseTutorialEvidence", "RunAbandonedHud", null);
         else if (request == "phase-gameplay-evidence")
             RunApprovedUiOperation("PopupStorePhaseTutorialEvidence", "CaptureCurrentGameplay", null);
         else if (request == "phase-preview-probe") StartPhasePreviewPlayProbe();
@@ -1260,6 +1262,7 @@ public static partial class PopupStoreVerificationRunner
                 "PopupStoreAccountPhaseConnectionTests", "PopupStorePhaseRewardIntegrationTests"
             }
             : request == "run-sound" ? new[] {
+                "PopupStorePhaseResultLayoutTests", "PopupStorePhasePolishTests",
                 "PopupStoreSoundTests", "PresentationSoundTests",
                 "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
                 "PopupStorePackingTests", "PopupStoreUnorderedPackingTests", "PopupStorePackingPresentationTests",
